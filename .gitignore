@@ -1,0 +1,70 @@
+# ============================================
+# Android / Kotlin / Gradle
+# ============================================
+
+# Gradle
+.gradle/
+build/
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+
+# Android Studio
+*.iml
+.idea/
+*.apk
+*.aab
+*.ap_
+*.dex
+output.json
+local.properties
+
+# Signing
+*.jks
+*.keystore
+release/
+
+# Google Services (contains API keys)
+google-services.json
+
+# ============================================
+# Secrets & API Keys
+# ============================================
+keys/
+.mcp.json
+*.key
+*.pem
+*.env
+.env*
+
+# ============================================
+# OS & IDE
+# ============================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.nfs*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# JetBrains IDE
+.idea/
+*.iws
+*.ipr
+out/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# ============================================
+# Claude Code (local-only files)
+# ============================================
+CLAUDE.local.md
