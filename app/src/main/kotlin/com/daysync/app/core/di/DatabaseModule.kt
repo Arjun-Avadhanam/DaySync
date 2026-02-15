@@ -35,7 +35,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "daysync.db"
         )
-            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
 
