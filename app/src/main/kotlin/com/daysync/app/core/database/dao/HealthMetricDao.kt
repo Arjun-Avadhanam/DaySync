@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.daysync.app.core.database.entity.HealthMetricEntity
+import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -28,6 +29,28 @@ interface HealthMetricDao {
 
     @Query("SELECT * FROM health_metrics WHERE isDeleted = 0 ORDER BY timestamp DESC")
     fun getAll(): Flow<List<HealthMetricEntity>>
+
+    @Query(
+        "SELECT * FROM health_metrics WHERE isDeleted = 0 " +
+            "AND timestamp >= :start AND timestamp < :end ORDER BY timestamp DESC"
+    )
+    fun getByDateRange(start: Instant, end: Instant): Flow<List<HealthMetricEntity>>
+
+    @Query(
+        "SELECT * FROM health_metrics WHERE isDeleted = 0 AND type = :type " +
+            "AND timestamp >= :start AND timestamp < :end ORDER BY timestamp DESC"
+    )
+    fun getByTypeAndDateRange(
+        type: String,
+        start: Instant,
+        end: Instant,
+    ): Flow<List<HealthMetricEntity>>
+
+    @Query(
+        "SELECT * FROM health_metrics WHERE isDeleted = 0 AND type = :type " +
+            "ORDER BY timestamp DESC LIMIT 1"
+    )
+    fun getLatestByType(type: String): Flow<HealthMetricEntity?>
 
     @Query("SELECT * FROM health_metrics WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<HealthMetricEntity>

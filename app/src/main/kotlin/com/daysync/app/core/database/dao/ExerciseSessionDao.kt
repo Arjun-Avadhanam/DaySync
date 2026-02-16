@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.daysync.app.core.database.entity.ExerciseSessionEntity
+import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -28,6 +29,18 @@ interface ExerciseSessionDao {
 
     @Query("SELECT * FROM exercise_sessions WHERE isDeleted = 0 ORDER BY startTime DESC")
     fun getAll(): Flow<List<ExerciseSessionEntity>>
+
+    @Query(
+        "SELECT * FROM exercise_sessions WHERE isDeleted = 0 " +
+            "AND startTime >= :start AND startTime < :end ORDER BY startTime DESC"
+    )
+    fun getByDateRange(start: Instant, end: Instant): Flow<List<ExerciseSessionEntity>>
+
+    @Query(
+        "SELECT * FROM exercise_sessions WHERE isDeleted = 0 " +
+            "ORDER BY startTime DESC LIMIT :limit"
+    )
+    fun getRecent(limit: Int): Flow<List<ExerciseSessionEntity>>
 
     @Query("SELECT * FROM exercise_sessions WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<ExerciseSessionEntity>
