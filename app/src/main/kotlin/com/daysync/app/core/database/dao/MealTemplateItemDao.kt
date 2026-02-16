@@ -28,4 +28,10 @@ interface MealTemplateItemDao {
 
     @Query("SELECT * FROM meal_template_items WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<MealTemplateItemEntity>
+
+    @Query("SELECT * FROM meal_template_items WHERE templateId = :templateId")
+    suspend fun getByTemplateIdSync(templateId: String): List<MealTemplateItemEntity>
+
+    @Query("DELETE FROM meal_template_items WHERE templateId = :templateId")
+    suspend fun deleteByTemplateId(templateId: String)
 }

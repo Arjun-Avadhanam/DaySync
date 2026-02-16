@@ -31,4 +31,16 @@ interface FoodItemDao {
 
     @Query("SELECT * FROM food_items WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<FoodItemEntity>
+
+    @Query("SELECT * FROM food_items WHERE isDeleted = 0 AND name LIKE '%' || :query || '%' ORDER BY name ASC")
+    fun searchByName(query: String): Flow<List<FoodItemEntity>>
+
+    @Query("SELECT * FROM food_items WHERE isDeleted = 0 AND category = :category ORDER BY name ASC")
+    fun getByCategory(category: String): Flow<List<FoodItemEntity>>
+
+    @Query("SELECT DISTINCT category FROM food_items WHERE isDeleted = 0 AND category IS NOT NULL ORDER BY category ASC")
+    fun getAllCategories(): Flow<List<String>>
+
+    @Query("SELECT COUNT(*) FROM food_items WHERE isDeleted = 0")
+    fun getCount(): Flow<Int>
 }

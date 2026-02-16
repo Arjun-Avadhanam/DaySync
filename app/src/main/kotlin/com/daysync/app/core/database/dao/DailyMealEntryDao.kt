@@ -35,4 +35,16 @@ interface DailyMealEntryDao {
 
     @Query("SELECT * FROM daily_meal_entries WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<DailyMealEntryEntity>
+
+    @Query("SELECT * FROM daily_meal_entries WHERE date = :date AND mealTime = :mealTime AND isDeleted = 0 ORDER BY lastModified ASC")
+    fun getByDateAndMealTime(date: LocalDate, mealTime: String): Flow<List<DailyMealEntryEntity>>
+
+    @Query("SELECT * FROM daily_meal_entries WHERE date >= :startDate AND date <= :endDate AND isDeleted = 0 ORDER BY date ASC, mealTime ASC")
+    fun getByDateRange(startDate: LocalDate, endDate: LocalDate): Flow<List<DailyMealEntryEntity>>
+
+    @Query("SELECT * FROM daily_meal_entries WHERE date = :date AND isDeleted = 0 ORDER BY mealTime ASC")
+    suspend fun getMealEntriesByDateSync(date: LocalDate): List<DailyMealEntryEntity>
+
+    @Query("DELETE FROM daily_meal_entries WHERE id = :id")
+    suspend fun deleteById(id: String)
 }
