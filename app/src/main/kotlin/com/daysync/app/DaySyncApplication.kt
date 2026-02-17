@@ -9,6 +9,7 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.daysync.app.core.sync.DailySyncWorker
+import com.daysync.app.feature.expenses.service.ExpenseNotificationChannel
 import dagger.hilt.android.HiltAndroidApp
 import java.time.Duration
 import java.time.ZoneId
@@ -29,6 +30,7 @@ class DaySyncApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        ExpenseNotificationChannel.createChannel(this)
         scheduleDailySync()
     }
 
