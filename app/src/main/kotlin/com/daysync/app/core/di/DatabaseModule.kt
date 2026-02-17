@@ -8,6 +8,7 @@ import com.daysync.app.core.database.dao.DailyNutritionSummaryDao
 import com.daysync.app.core.database.dao.ExerciseSessionDao
 import com.daysync.app.core.database.dao.ExpenseDao
 import com.daysync.app.core.database.dao.FoodItemDao
+import com.daysync.app.core.database.dao.PayeeRuleDao
 import com.daysync.app.core.database.dao.HealthMetricDao
 import com.daysync.app.core.database.dao.JournalEntryDao
 import com.daysync.app.core.database.dao.MealTemplateDao
@@ -51,8 +52,9 @@ object DatabaseModule {
     @Provides fun provideDailyMealEntryDao(db: AppDatabase): DailyMealEntryDao = db.dailyMealEntryDao()
     @Provides fun provideDailyNutritionSummaryDao(db: AppDatabase): DailyNutritionSummaryDao = db.dailyNutritionSummaryDao()
 
-    // Expense DAO
+    // Expense DAOs
     @Provides fun provideExpenseDao(db: AppDatabase): ExpenseDao = db.expenseDao()
+    @Provides fun providePayeeRuleDao(db: AppDatabase): PayeeRuleDao = db.payeeRuleDao()
 
     // Sport DAO
     @Provides fun provideSportEventDao(db: AppDatabase): SportEventDao = db.sportEventDao()

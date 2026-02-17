@@ -8,6 +8,7 @@ import com.daysync.app.core.database.dao.DailyNutritionSummaryDao
 import com.daysync.app.core.database.dao.ExerciseSessionDao
 import com.daysync.app.core.database.dao.ExpenseDao
 import com.daysync.app.core.database.dao.FoodItemDao
+import com.daysync.app.core.database.dao.PayeeRuleDao
 import com.daysync.app.core.database.dao.HealthMetricDao
 import com.daysync.app.core.database.dao.JournalEntryDao
 import com.daysync.app.core.database.dao.MealTemplateDao
@@ -31,6 +32,7 @@ import com.daysync.app.core.database.entity.JournalEntryEntity
 import com.daysync.app.core.database.entity.MealTemplateEntity
 import com.daysync.app.core.database.entity.MealTemplateItemEntity
 import com.daysync.app.core.database.entity.MediaItemEntity
+import com.daysync.app.core.database.entity.PayeeRuleEntity
 import com.daysync.app.core.database.entity.SleepSessionEntity
 import com.daysync.app.core.database.entity.SportEntity
 import com.daysync.app.core.database.entity.SportEventEntity
@@ -50,8 +52,9 @@ import com.daysync.app.core.database.entity.WatchlistEntryEntity
         MealTemplateItemEntity::class,
         DailyMealEntryEntity::class,
         DailyNutritionSummaryEntity::class,
-        // Expenses (1)
+        // Expenses (2)
         ExpenseEntity::class,
+        PayeeRuleEntity::class,
         // Sports (10)
         SportEntity::class,
         CompetitionEntity::class,
@@ -68,7 +71,7 @@ import com.daysync.app.core.database.entity.WatchlistEntryEntity
         // Media (1)
         MediaItemEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -87,6 +90,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     // Expenses
     abstract fun expenseDao(): ExpenseDao
+    abstract fun payeeRuleDao(): PayeeRuleDao
 
     // Sports
     abstract fun sportEventDao(): SportEventDao
