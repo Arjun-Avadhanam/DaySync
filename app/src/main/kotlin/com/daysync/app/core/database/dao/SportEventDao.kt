@@ -29,6 +29,9 @@ interface SportEventDao {
     @Query("SELECT * FROM sports")
     fun getAllSports(): Flow<List<SportEntity>>
 
+    @Query("SELECT * FROM sports WHERE id = :id")
+    suspend fun getSportById(id: String): SportEntity?
+
     // Competitions
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCompetition(entity: CompetitionEntity)
@@ -39,6 +42,15 @@ interface SportEventDao {
     @Query("SELECT * FROM competitions WHERE sportId = :sportId")
     fun getCompetitionsBySport(sportId: String): Flow<List<CompetitionEntity>>
 
+    @Query("SELECT * FROM competitions WHERE id = :id")
+    suspend fun getCompetitionById(id: String): CompetitionEntity?
+
+    @Query("SELECT * FROM competitions")
+    fun getAllCompetitions(): Flow<List<CompetitionEntity>>
+
+    @Query("SELECT * FROM competitions")
+    suspend fun getAllCompetitionsList(): List<CompetitionEntity>
+
     // Competitors
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCompetitor(entity: CompetitorEntity)
@@ -48,6 +60,12 @@ interface SportEventDao {
 
     @Query("SELECT * FROM competitors WHERE sportId = :sportId")
     fun getCompetitorsBySport(sportId: String): Flow<List<CompetitorEntity>>
+
+    @Query("SELECT * FROM competitors WHERE id = :id")
+    suspend fun getCompetitorById(id: String): CompetitorEntity?
+
+    @Query("SELECT * FROM competitors WHERE id IN (:ids)")
+    suspend fun getCompetitorsByIds(ids: List<String>): List<CompetitorEntity>
 
     // Venues
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -75,8 +93,53 @@ interface SportEventDao {
     @Query("SELECT * FROM sport_events WHERE isDeleted = 0 ORDER BY scheduledAt ASC")
     fun getAllEvents(): Flow<List<SportEventEntity>>
 
+    @Query(
+        """SELECT * FROM sport_events
+           WHERE status IN ('SCHEDULED', 'LIVE') AND isDeleted = 0
+           ORDER BY scheduledAt ASC"""
+    )
+    fun getUpcomingEvents(): Flow<List<SportEventEntity>>
+
+    @Query(
+        """SELECT * FROM sport_events
+           WHERE status IN ('SCHEDULED', 'LIVE') AND isDeleted = 0 AND sportId = :sportId
+           ORDER BY scheduledAt ASC"""
+    )
+    fun getUpcomingEventsBySport(sportId: String): Flow<List<SportEventEntity>>
+
+    @Query(
+        """SELECT * FROM sport_events
+           WHERE status = 'COMPLETED' AND isDeleted = 0
+           ORDER BY scheduledAt DESC"""
+    )
+    fun getRecentResults(): Flow<List<SportEventEntity>>
+
+    @Query(
+        """SELECT * FROM sport_events
+           WHERE status = 'COMPLETED' AND isDeleted = 0 AND sportId = :sportId
+           ORDER BY scheduledAt DESC"""
+    )
+    fun getRecentResultsBySport(sportId: String): Flow<List<SportEventEntity>>
+
     @Query("SELECT * FROM sport_events WHERE status = 'LIVE' AND isDeleted = 0")
     fun getLiveEvents(): Flow<List<SportEventEntity>>
+
+    @Query(
+        """SELECT * FROM sport_events
+           WHERE competitionId = :competitionId AND isDeleted = 0
+           ORDER BY scheduledAt ASC"""
+    )
+    fun getEventsByCompetition(competitionId: String): Flow<List<SportEventEntity>>
+
+    @Query(
+        """SELECT * FROM sport_events
+           WHERE scheduledAt BETWEEN :startMillis AND :endMillis AND isDeleted = 0
+           ORDER BY scheduledAt ASC"""
+    )
+    fun getEventsByDateRange(startMillis: Long, endMillis: Long): Flow<List<SportEventEntity>>
+
+    @Query("SELECT * FROM sport_events WHERE status = :status AND isDeleted = 0 ORDER BY scheduledAt ASC")
+    fun getEventsByStatus(status: String): Flow<List<SportEventEntity>>
 
     @Query("SELECT * FROM sport_events WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSyncEvents(): List<SportEventEntity>
@@ -91,6 +154,9 @@ interface SportEventDao {
     @Query("SELECT * FROM event_participants WHERE eventId = :eventId")
     fun getParticipantsByEvent(eventId: String): Flow<List<EventParticipantEntity>>
 
+    @Query("SELECT * FROM event_participants WHERE eventId = :eventId")
+    suspend fun getParticipantsByEventList(eventId: String): List<EventParticipantEntity>
+
     // Watchlist
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertWatchlistEntry(entity: WatchlistEntryEntity)
@@ -98,8 +164,25 @@ interface SportEventDao {
     @Delete
     suspend fun deleteWatchlistEntry(entity: WatchlistEntryEntity)
 
+    @Query("DELETE FROM watchlist_entries WHERE eventId = :eventId")
+    suspend fun deleteWatchlistByEventId(eventId: String)
+
     @Query("SELECT * FROM watchlist_entries WHERE isDeleted = 0")
     fun getWatchlist(): Flow<List<WatchlistEntryEntity>>
+
+    @Query("SELECT eventId FROM watchlist_entries WHERE isDeleted = 0")
+    fun getWatchlistedEventIds(): Flow<List<String>>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM watchlist_entries WHERE eventId = :eventId AND isDeleted = 0)")
+    suspend fun isEventWatchlisted(eventId: String): Boolean
+
+    @Query(
+        """SELECT e.* FROM sport_events e
+           INNER JOIN watchlist_entries w ON e.id = w.eventId
+           WHERE w.isDeleted = 0 AND e.isDeleted = 0
+           ORDER BY e.scheduledAt ASC"""
+    )
+    fun getWatchlistedEvents(): Flow<List<SportEventEntity>>
 
     @Query("SELECT * FROM watchlist_entries WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSyncWatchlist(): List<WatchlistEntryEntity>
@@ -114,6 +197,12 @@ interface SportEventDao {
     @Query("SELECT * FROM followed_competitors WHERE isDeleted = 0")
     fun getFollowedCompetitors(): Flow<List<FollowedCompetitorEntity>>
 
+    @Query("SELECT competitorId FROM followed_competitors WHERE isDeleted = 0")
+    suspend fun getFollowedCompetitorIds(): List<String>
+
+    @Query("DELETE FROM followed_competitors WHERE competitorId = :competitorId")
+    suspend fun deleteFollowedCompetitorById(competitorId: String)
+
     // Followed Competitions
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFollowedCompetition(entity: FollowedCompetitionEntity)
@@ -123,4 +212,10 @@ interface SportEventDao {
 
     @Query("SELECT * FROM followed_competitions WHERE isDeleted = 0")
     fun getFollowedCompetitions(): Flow<List<FollowedCompetitionEntity>>
+
+    @Query("SELECT competitionId FROM followed_competitions WHERE isDeleted = 0")
+    suspend fun getFollowedCompetitionIds(): List<String>
+
+    @Query("DELETE FROM followed_competitions WHERE competitionId = :competitionId")
+    suspend fun deleteFollowedCompetitionById(competitionId: String)
 }
