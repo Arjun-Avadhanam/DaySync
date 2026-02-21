@@ -4,6 +4,7 @@ import com.daysync.app.core.database.dao.CategoryTotal
 import com.daysync.app.core.database.entity.PayeeRuleEntity
 import com.daysync.app.feature.expenses.model.Expense
 import com.daysync.app.feature.expenses.service.ParsedTransaction
+import com.daysync.app.feature.expenses.service.ReceiptData
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.LocalDate
 
@@ -27,6 +28,9 @@ interface ExpenseRepository {
 
     // CSV import
     suspend fun importFromCsv(entries: List<CsvExpenseEntry>): ImportResult
+
+    // Receipt scanning
+    suspend fun saveFromReceipt(receiptData: ReceiptData, receiptDate: LocalDate?): Expense
 
     // Payee rules
     fun getPayeeRules(): Flow<List<PayeeRuleEntity>>

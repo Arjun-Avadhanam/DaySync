@@ -8,10 +8,12 @@ import com.daysync.app.core.database.entity.PayeeRuleEntity
 import com.daysync.app.core.sync.SyncStatus
 import com.daysync.app.feature.expenses.model.Expense
 import com.daysync.app.feature.expenses.model.ExpenseCategory
+import com.daysync.app.feature.expenses.model.formatIndianCurrency
 import com.daysync.app.feature.expenses.model.generateExpenseId
 import com.daysync.app.feature.expenses.model.toDomain
 import com.daysync.app.feature.expenses.model.toEntity
 import com.daysync.app.feature.expenses.service.ParsedTransaction
+import com.daysync.app.feature.expenses.service.ReceiptData
 import com.daysync.app.feature.expenses.service.TransactionDeduplicator
 import kotlin.time.Clock
 import kotlinx.coroutines.flow.Flow
@@ -171,6 +173,40 @@ class ExpenseRepositoryImpl(
         }
 
         return ImportResult(imported = imported, skippedDuplicates = skipped, errors = errors)
+    }
+
+    override suspend fun saveFromReceipt(
+        receiptData: ReceiptData,
+        receiptDate: LocalDate?,
+    ): Expense {
+        val date = receiptDate
+            ?: receiptData.date?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+            ?: Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Kolkata")).date
+
+        val category = receiptData.category?.let { cat ->
+            if (ExpenseCategory.fromCategoryString(cat) != null) cat else null
+        } ?: ExpenseCategory.suggestFromMerchant(receiptData.merchantName, null)
+
+        val lineItemsSummary = receiptData.lineItems?.joinToString(", ") { item ->
+            "${item.name} ${formatIndianCurrency(item.totalPrice)}"
+        }
+        val notes = lineItemsSummary?.let { "Items: $it" }
+
+        val entity = ExpenseEntity(
+            id = generateExpenseId(),
+            title = receiptData.merchantName,
+            date = date,
+            category = category,
+            unitCost = receiptData.totalAmount,
+            totalAmount = receiptData.totalAmount,
+            source = "RECEIPT",
+            merchantName = receiptData.merchantName,
+            notes = notes,
+            syncStatus = SyncStatus.PENDING,
+            lastModified = Clock.System.now(),
+        )
+        expenseDao.insert(entity)
+        return entity.toDomain()
     }
 
     override fun getPayeeRules(): Flow<List<PayeeRuleEntity>> {

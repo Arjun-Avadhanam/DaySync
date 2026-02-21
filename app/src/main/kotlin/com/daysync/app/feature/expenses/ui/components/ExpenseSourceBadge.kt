@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Icon
@@ -25,6 +26,7 @@ fun ExpenseSourceBadge(
     val (icon, label) = when (source) {
         "NOTIFICATION" -> Icons.Default.Notifications to "Auto"
         "CSV" -> null to "CSV"
+        "RECEIPT" -> Icons.Default.CameraAlt to "Scan"
         else -> Icons.Default.Edit to "Manual"
     }
 
