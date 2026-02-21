@@ -16,6 +16,7 @@ import com.daysync.app.feature.nutrition.ui.screens.NutritionHistoryScreen
 import com.daysync.app.feature.nutrition.ui.screens.NutritionLogTemplateScreen
 import com.daysync.app.feature.nutrition.ui.screens.NutritionMealEntryScreen
 import com.daysync.app.feature.nutrition.ui.screens.NutritionMealTemplatesScreen
+import com.daysync.app.feature.nutrition.ui.screens.NutritionScanLabelScreen
 
 @Composable
 fun NutritionNavHost(
@@ -62,6 +63,13 @@ fun NutritionNavHost(
                 onNavigateBack = { navController.popBackStack() },
                 onAddFood = { navController.navigate(AddFood) },
                 onEditFood = { foodId -> navController.navigate(EditFood(foodId = foodId)) },
+                onScanLabel = { navController.navigate(ScanLabel) },
+            )
+        }
+
+        composable<ScanLabel> {
+            NutritionScanLabelScreen(
+                onNavigateBack = { navController.popBackStack() },
             )
         }
 

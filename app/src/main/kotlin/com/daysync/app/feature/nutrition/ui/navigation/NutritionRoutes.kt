@@ -20,4 +20,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable data class DailySummary(val date: String)
 
+@Serializable data object ScanLabel
+
 @Serializable data object History
