@@ -18,6 +18,7 @@ data class MediaItemEntity(
     val creators: List<String> = emptyList(),
     val completedDate: LocalDate? = null,
     val notes: String? = null,
+    val coverImageUrl: String? = null,
     override val syncStatus: SyncStatus = SyncStatus.PENDING,
     override val lastModified: Instant = Clock.System.now(),
     override val isDeleted: Boolean = false,
