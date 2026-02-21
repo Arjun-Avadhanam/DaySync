@@ -15,3 +15,4 @@ import kotlinx.serialization.Serializable
 @Serializable data class ExpenseDetail(val expenseId: String)
 @Serializable data object ExpenseCsvImport
 @Serializable data object ExpensePayeeRules
+@Serializable data object ExpenseReceiptScan

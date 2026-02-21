@@ -60,6 +60,7 @@ import com.daysync.app.ui.navigation.ExpenseAdd
 import com.daysync.app.ui.navigation.ExpenseCsvImport
 import com.daysync.app.ui.navigation.ExpenseDetail
 import com.daysync.app.ui.navigation.ExpensePayeeRules
+import com.daysync.app.ui.navigation.ExpenseReceiptScan
 import kotlinx.datetime.LocalDate
 import java.time.Month
 import java.time.format.TextStyle
@@ -97,6 +98,13 @@ fun ExpensesScreen(
                             onClick = {
                                 menuExpanded = false
                                 navController.navigate(ExpenseCsvImport)
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Scan Receipt") },
+                            onClick = {
+                                menuExpanded = false
+                                navController.navigate(ExpenseReceiptScan)
                             },
                         )
                         DropdownMenuItem(

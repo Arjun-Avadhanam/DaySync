@@ -11,6 +11,7 @@ import com.daysync.app.feature.expenses.ui.CsvImportScreen
 import com.daysync.app.feature.expenses.ui.ExpenseFormScreen
 import com.daysync.app.feature.expenses.ui.ExpensesScreen
 import com.daysync.app.feature.expenses.ui.PayeeRulesScreen
+import com.daysync.app.feature.expenses.ui.ReceiptScanScreen
 import com.daysync.app.feature.health.ui.HealthScreen
 import com.daysync.app.feature.journal.ui.JournalScreen
 import com.daysync.app.feature.media.ui.MediaScreen
@@ -51,6 +52,9 @@ fun DaySyncNavHost(
         }
         composable<ExpensePayeeRules> {
             PayeeRulesScreen(onNavigateBack = { navController.popBackStack() })
+        }
+        composable<ExpenseReceiptScan> {
+            ReceiptScanScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }
