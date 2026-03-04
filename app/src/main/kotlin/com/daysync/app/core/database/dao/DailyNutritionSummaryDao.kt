@@ -32,4 +32,7 @@ interface DailyNutritionSummaryDao {
 
     @Query("SELECT * FROM daily_nutrition_summaries WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<DailyNutritionSummaryEntity>
+
+    @Query("UPDATE daily_nutrition_summaries SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
 }

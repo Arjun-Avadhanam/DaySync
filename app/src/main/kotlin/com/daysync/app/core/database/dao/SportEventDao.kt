@@ -81,6 +81,9 @@ interface SportEventDao {
     @Query("SELECT * FROM sport_events WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSyncEvents(): List<SportEventEntity>
 
+    @Query("UPDATE sport_events SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markEventsSynced(ids: List<String>)
+
     // Event Participants
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertParticipant(entity: EventParticipantEntity)
@@ -104,6 +107,9 @@ interface SportEventDao {
     @Query("SELECT * FROM watchlist_entries WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSyncWatchlist(): List<WatchlistEntryEntity>
 
+    @Query("UPDATE watchlist_entries SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markWatchlistSynced(ids: List<String>)
+
     // Followed Competitors
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFollowedCompetitor(entity: FollowedCompetitorEntity)
@@ -114,6 +120,12 @@ interface SportEventDao {
     @Query("SELECT * FROM followed_competitors WHERE isDeleted = 0")
     fun getFollowedCompetitors(): Flow<List<FollowedCompetitorEntity>>
 
+    @Query("SELECT * FROM followed_competitors WHERE syncStatus = 'PENDING'")
+    suspend fun getPendingSyncFollowedCompetitors(): List<FollowedCompetitorEntity>
+
+    @Query("UPDATE followed_competitors SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markFollowedCompetitorsSynced(ids: List<String>)
+
     // Followed Competitions
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFollowedCompetition(entity: FollowedCompetitionEntity)
@@ -123,4 +135,26 @@ interface SportEventDao {
 
     @Query("SELECT * FROM followed_competitions WHERE isDeleted = 0")
     fun getFollowedCompetitions(): Flow<List<FollowedCompetitionEntity>>
+
+    @Query("SELECT * FROM followed_competitions WHERE syncStatus = 'PENDING'")
+    suspend fun getPendingSyncFollowedCompetitions(): List<FollowedCompetitionEntity>
+
+    @Query("UPDATE followed_competitions SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markFollowedCompetitionsSynced(ids: List<String>)
+
+    // Reference data getters (suspend, returns List — for backup sync)
+    @Query("SELECT * FROM sports")
+    suspend fun getAllSportsList(): List<SportEntity>
+
+    @Query("SELECT * FROM competitions")
+    suspend fun getAllCompetitionsList(): List<CompetitionEntity>
+
+    @Query("SELECT * FROM competitors")
+    suspend fun getAllCompetitorsList(): List<CompetitorEntity>
+
+    @Query("SELECT * FROM venues")
+    suspend fun getAllVenuesList(): List<VenueEntity>
+
+    @Query("SELECT * FROM event_participants")
+    suspend fun getAllParticipantsList(): List<EventParticipantEntity>
 }

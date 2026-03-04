@@ -31,4 +31,7 @@ interface MediaItemDao {
 
     @Query("SELECT * FROM media_items WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<MediaItemEntity>
+
+    @Query("UPDATE media_items SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
 }

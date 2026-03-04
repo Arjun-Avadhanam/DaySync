@@ -31,4 +31,7 @@ interface ExerciseSessionDao {
 
     @Query("SELECT * FROM exercise_sessions WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<ExerciseSessionEntity>
+
+    @Query("UPDATE exercise_sessions SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
 }

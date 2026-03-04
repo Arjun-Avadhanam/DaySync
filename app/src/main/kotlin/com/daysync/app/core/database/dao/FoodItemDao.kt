@@ -31,4 +31,7 @@ interface FoodItemDao {
 
     @Query("SELECT * FROM food_items WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<FoodItemEntity>
+
+    @Query("UPDATE food_items SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
 }

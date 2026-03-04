@@ -35,4 +35,7 @@ interface ExpenseDao {
 
     @Query("SELECT * FROM expenses WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<ExpenseEntity>
+
+    @Query("UPDATE expenses SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
 }

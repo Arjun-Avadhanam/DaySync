@@ -32,4 +32,7 @@ interface JournalEntryDao {
 
     @Query("SELECT * FROM journal_entries WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<JournalEntryEntity>
+
+    @Query("UPDATE journal_entries SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
 }

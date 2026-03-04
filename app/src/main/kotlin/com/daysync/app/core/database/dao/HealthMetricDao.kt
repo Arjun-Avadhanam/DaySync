@@ -31,4 +31,7 @@ interface HealthMetricDao {
 
     @Query("SELECT * FROM health_metrics WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<HealthMetricEntity>
+
+    @Query("UPDATE health_metrics SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
 }
