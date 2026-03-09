@@ -59,6 +59,12 @@ android {
         compose = true
         buildConfig = true
     }
+
+    packaging {
+        resources {
+            excludes += setOf("META-INF/INDEX.LIST", "META-INF/DEPENDENCIES")
+        }
+    }
 }
 
 room {
@@ -108,6 +114,13 @@ dependencies {
     implementation(libs.supabase.storage)
     implementation(libs.supabase.realtime)
     implementation(libs.ktor.client.okhttp)
+
+    // Google Gen AI (Gemini)
+    implementation(libs.google.genai)
+
+    // Ktor (for Groq fallback)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
 
     // Kotlinx
     implementation(libs.kotlinx.serialization.json)
