@@ -2,7 +2,6 @@ package com.daysync.app.ui.navigation
 
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -17,13 +16,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.daysync.app.feature.ai.ui.AiChatSheet
+import com.daysync.app.feature.ai.ui.AiViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AiFab() {
+fun AiFab(
+    viewModel: AiViewModel = hiltViewModel(),
+) {
     var showSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
@@ -41,14 +43,13 @@ fun AiFab() {
             modifier = Modifier.fillMaxHeight(0.85f),
         ) {
             AiChatSheet(
+                viewModel = viewModel,
                 onDismiss = {
                     scope.launch { sheetState.hide() }.invokeOnCompletion {
                         showSheet = false
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
