@@ -31,4 +31,7 @@ interface MediaItemDao {
 
     @Query("SELECT * FROM media_items WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<MediaItemEntity>
+
+    @Query("SELECT * FROM media_items WHERE isDeleted = 0 AND status IN ('IN_PROGRESS', 'DONE') ORDER BY completedDate DESC")
+    suspend fun getActiveAndCompleted(): List<MediaItemEntity>
 }

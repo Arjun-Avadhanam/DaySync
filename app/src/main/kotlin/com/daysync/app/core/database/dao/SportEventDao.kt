@@ -123,4 +123,10 @@ interface SportEventDao {
 
     @Query("SELECT * FROM followed_competitions WHERE isDeleted = 0")
     fun getFollowedCompetitions(): Flow<List<FollowedCompetitionEntity>>
+
+    @Query("SELECT * FROM sport_events WHERE scheduledAt >= :startMillis AND scheduledAt <= :endMillis AND isDeleted = 0 ORDER BY scheduledAt ASC")
+    suspend fun getEventsByDateRange(startMillis: Long, endMillis: Long): List<SportEventEntity>
+
+    @Query("SELECT se.* FROM sport_events se INNER JOIN watchlist_entries we ON se.id = we.eventId WHERE se.isDeleted = 0 ORDER BY se.scheduledAt DESC")
+    suspend fun getWatchlistedEventsList(): List<SportEventEntity>
 }

@@ -31,4 +31,7 @@ interface SleepSessionDao {
 
     @Query("SELECT * FROM sleep_sessions WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<SleepSessionEntity>
+
+    @Query("SELECT * FROM sleep_sessions WHERE startTime >= :startMillis AND startTime <= :endMillis AND isDeleted = 0")
+    suspend fun getByDateRange(startMillis: Long, endMillis: Long): List<SleepSessionEntity>
 }

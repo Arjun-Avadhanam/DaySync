@@ -10,6 +10,12 @@ import com.daysync.app.core.database.entity.ExpenseEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.LocalDate
 
+data class CategoryTotal(
+    val category: String,
+    val total: Double,
+    val count: Int,
+)
+
 @Dao
 interface ExpenseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -35,4 +41,10 @@ interface ExpenseDao {
 
     @Query("SELECT * FROM expenses WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<ExpenseEntity>
+
+    @Query("SELECT * FROM expenses WHERE date >= :startDate AND date <= :endDate AND isDeleted = 0 ORDER BY date ASC")
+    suspend fun getByDateRange(startDate: String, endDate: String): List<ExpenseEntity>
+
+    @Query("SELECT category, SUM(totalAmount) as total, COUNT(*) as count FROM expenses WHERE date >= :startDate AND date <= :endDate AND isDeleted = 0 AND category IS NOT NULL GROUP BY category ORDER BY total DESC")
+    suspend fun getTotalByCategory(startDate: String, endDate: String): List<CategoryTotal>
 }
