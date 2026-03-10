@@ -31,4 +31,19 @@ interface MediaItemDao {
 
     @Query("SELECT * FROM media_items WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<MediaItemEntity>
+
+    @Query("SELECT * FROM media_items WHERE status = :status AND isDeleted = 0 ORDER BY lastModified DESC")
+    fun getByStatus(status: String): Flow<List<MediaItemEntity>>
+
+    @Query("SELECT * FROM media_items WHERE mediaType IN (:types) AND isDeleted = 0 ORDER BY lastModified DESC")
+    fun getByTypes(types: List<String>): Flow<List<MediaItemEntity>>
+
+    @Query("SELECT * FROM media_items WHERE status = 'DONE' AND isDeleted = 0 ORDER BY completedDate DESC")
+    fun getFinished(): Flow<List<MediaItemEntity>>
+
+    @Query("SELECT * FROM media_items WHERE title LIKE '%' || :query || '%' AND isDeleted = 0 ORDER BY lastModified DESC")
+    fun searchByTitle(query: String): Flow<List<MediaItemEntity>>
+
+    @Query("UPDATE media_items SET isDeleted = 1, syncStatus = 'PENDING', lastModified = :now WHERE id = :id")
+    suspend fun softDelete(id: String, now: Long)
 }
