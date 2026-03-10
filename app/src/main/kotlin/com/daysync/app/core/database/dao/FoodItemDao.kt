@@ -43,4 +43,7 @@ interface FoodItemDao {
 
     @Query("SELECT COUNT(*) FROM food_items WHERE isDeleted = 0")
     fun getCount(): Flow<Int>
+
+    @Query("UPDATE food_items SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
 }

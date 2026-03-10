@@ -49,4 +49,7 @@ interface MediaItemDao {
 
     @Query("SELECT * FROM media_items WHERE isDeleted = 0 AND status IN ('IN_PROGRESS', 'DONE') ORDER BY completedDate DESC")
     suspend fun getActiveAndCompleted(): List<MediaItemEntity>
+
+    @Query("UPDATE media_items SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
 }

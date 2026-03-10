@@ -38,4 +38,7 @@ interface DailyNutritionSummaryDao {
 
     @Query("SELECT * FROM daily_nutrition_summaries WHERE date >= :startDate AND date <= :endDate AND isDeleted = 0 ORDER BY date ASC")
     suspend fun getByDateRangeList(startDate: String, endDate: String): List<DailyNutritionSummaryEntity>
+
+    @Query("UPDATE daily_nutrition_summaries SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
 }

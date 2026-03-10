@@ -57,4 +57,7 @@ interface JournalEntryDao {
 
     @Query("SELECT * FROM journal_entries WHERE isDeleted = 0 AND (title LIKE '%' || :query || '%' OR content LIKE '%' || :query || '%') ORDER BY date DESC")
     suspend fun searchEntriesList(query: String): List<JournalEntryEntity>
+
+    @Query("UPDATE journal_entries SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
 }

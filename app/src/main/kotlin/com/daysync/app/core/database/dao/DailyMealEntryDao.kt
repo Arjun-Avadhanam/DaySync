@@ -47,4 +47,7 @@ interface DailyMealEntryDao {
 
     @Query("DELETE FROM daily_meal_entries WHERE id = :id")
     suspend fun deleteById(id: String)
+
+    @Query("UPDATE daily_meal_entries SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
 }

@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.daysync.app.core.database.entity.SyncLogEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SyncLogDao {
@@ -16,4 +17,10 @@ interface SyncLogDao {
 
     @Query("SELECT * FROM sync_logs ORDER BY lastSyncAt DESC")
     suspend fun getAll(): List<SyncLogEntity>
+
+    @Query("SELECT * FROM sync_logs ORDER BY lastSyncAt DESC")
+    fun observeAll(): Flow<List<SyncLogEntity>>
+
+    @Query("SELECT * FROM sync_logs ORDER BY lastSyncAt DESC LIMIT 1")
+    fun observeLastSync(): Flow<SyncLogEntity?>
 }

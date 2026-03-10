@@ -1,0 +1,17 @@
+package com.daysync.app.core.di
+
+import com.daysync.app.core.sync.DaySyncEngine
+import com.daysync.app.core.sync.SyncEngine
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class SyncModule {
+    @Binds
+    @Singleton
+    abstract fun bindSyncEngine(impl: DaySyncEngine): SyncEngine
+}

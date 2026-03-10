@@ -47,4 +47,7 @@ interface SleepSessionDao {
 
     @Query("SELECT * FROM sleep_sessions WHERE startTime >= :startMillis AND startTime <= :endMillis AND isDeleted = 0")
     suspend fun getByDateRange(startMillis: Long, endMillis: Long): List<SleepSessionEntity>
+
+    @Query("UPDATE sleep_sessions SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
 }

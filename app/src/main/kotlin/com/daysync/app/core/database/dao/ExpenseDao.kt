@@ -100,4 +100,7 @@ interface ExpenseDao {
 
     @Query("SELECT category, SUM(totalAmount) as total, COUNT(*) as count FROM expenses WHERE date >= :startDate AND date <= :endDate AND isDeleted = 0 AND category IS NOT NULL GROUP BY category ORDER BY total DESC")
     suspend fun getTotalByCategoryList(startDate: String, endDate: String): List<CategoryTotal>
+
+    @Query("UPDATE expenses SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
 }

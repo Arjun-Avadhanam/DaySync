@@ -34,4 +34,7 @@ interface MealTemplateItemDao {
 
     @Query("DELETE FROM meal_template_items WHERE templateId = :templateId")
     suspend fun deleteByTemplateId(templateId: String)
+
+    @Query("UPDATE meal_template_items SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
 }

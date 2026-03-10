@@ -28,4 +28,7 @@ interface MealTemplateDao {
 
     @Query("SELECT * FROM meal_templates WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<MealTemplateEntity>
+
+    @Query("UPDATE meal_templates SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
 }
