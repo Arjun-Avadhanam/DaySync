@@ -46,4 +46,7 @@ interface MediaItemDao {
 
     @Query("UPDATE media_items SET isDeleted = 1, syncStatus = 'PENDING', lastModified = :now WHERE id = :id")
     suspend fun softDelete(id: String, now: Long)
+
+    @Query("SELECT * FROM media_items WHERE isDeleted = 0 AND status IN ('IN_PROGRESS', 'DONE') ORDER BY completedDate DESC")
+    suspend fun getActiveAndCompleted(): List<MediaItemEntity>
 }

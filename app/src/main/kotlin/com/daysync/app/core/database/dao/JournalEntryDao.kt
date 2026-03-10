@@ -51,4 +51,10 @@ interface JournalEntryDao {
 
     @Query("SELECT * FROM journal_entries WHERE date = :date AND isDeleted = 0")
     fun getByDateFlow(date: LocalDate): Flow<JournalEntryEntity?>
+
+    @Query("SELECT * FROM journal_entries WHERE date >= :startDate AND date <= :endDate AND isDeleted = 0 ORDER BY date ASC")
+    suspend fun getByDateRangeList(startDate: String, endDate: String): List<JournalEntryEntity>
+
+    @Query("SELECT * FROM journal_entries WHERE isDeleted = 0 AND (title LIKE '%' || :query || '%' OR content LIKE '%' || :query || '%') ORDER BY date DESC")
+    suspend fun searchEntriesList(query: String): List<JournalEntryEntity>
 }

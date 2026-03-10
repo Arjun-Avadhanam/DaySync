@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "49d37321fae78a5310fa5915769bb961",
+    "identityHash": "58cbb24326c6ef64d09805f6c7514fd2",
     "entities": [
       {
         "tableName": "health_metrics",
@@ -1737,7 +1737,7 @@
       },
       {
         "tableName": "media_items",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `mediaType` TEXT NOT NULL, `status` TEXT NOT NULL, `score` REAL, `creators` TEXT NOT NULL, `completedDate` TEXT, `notes` TEXT, `coverImageUrl` TEXT, `syncStatus` TEXT NOT NULL, `lastModified` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `mediaType` TEXT NOT NULL, `status` TEXT NOT NULL, `score` REAL, `creators` TEXT NOT NULL, `completedDate` TEXT, `notes` TEXT, `syncStatus` TEXT NOT NULL, `lastModified` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -1785,11 +1785,6 @@
             "affinity": "TEXT"
           },
           {
-            "fieldPath": "coverImageUrl",
-            "columnName": "coverImageUrl",
-            "affinity": "TEXT"
-          },
-          {
             "fieldPath": "syncStatus",
             "columnName": "syncStatus",
             "affinity": "TEXT",
@@ -1818,7 +1813,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '49d37321fae78a5310fa5915769bb961')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '58cbb24326c6ef64d09805f6c7514fd2')"
     ]
   }
 }

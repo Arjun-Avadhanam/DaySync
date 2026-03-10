@@ -54,4 +54,7 @@ interface HealthMetricDao {
 
     @Query("SELECT * FROM health_metrics WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<HealthMetricEntity>
+
+    @Query("SELECT * FROM health_metrics WHERE timestamp >= :startMillis AND timestamp <= :endMillis AND isDeleted = 0")
+    suspend fun getByDateRange(startMillis: Long, endMillis: Long): List<HealthMetricEntity>
 }
