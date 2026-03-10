@@ -35,4 +35,63 @@ interface ExpenseDao {
 
     @Query("SELECT * FROM expenses WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<ExpenseEntity>
+
+    @Query(
+        "SELECT * FROM expenses WHERE date >= :startDate AND date <= :endDate " +
+            "AND isDeleted = 0 ORDER BY date DESC, lastModified DESC"
+    )
+    fun getExpensesInRange(startDate: LocalDate, endDate: LocalDate): Flow<List<ExpenseEntity>>
+
+    @Query(
+        "SELECT category, SUM(totalAmount) as total, COUNT(*) as count " +
+            "FROM expenses WHERE date >= :startDate AND date <= :endDate " +
+            "AND isDeleted = 0 AND category IS NOT NULL " +
+            "GROUP BY category ORDER BY total DESC"
+    )
+    fun getTotalByCategory(startDate: LocalDate, endDate: LocalDate): Flow<List<CategoryTotal>>
+
+    @Query(
+        "SELECT COALESCE(SUM(totalAmount), 0.0) FROM expenses " +
+            "WHERE date = :date AND isDeleted = 0"
+    )
+    fun getDailyTotal(date: LocalDate): Flow<Double>
+
+    @Query(
+        "SELECT COALESCE(SUM(totalAmount), 0.0) FROM expenses " +
+            "WHERE date >= :startDate AND date <= :endDate AND isDeleted = 0"
+    )
+    fun getMonthlyTotal(startDate: LocalDate, endDate: LocalDate): Flow<Double>
+
+    @Query(
+        "SELECT * FROM expenses WHERE LOWER(merchantName) LIKE '%' || LOWER(:merchantName) || '%' " +
+            "AND isDeleted = 0 ORDER BY date DESC"
+    )
+    fun getByMerchant(merchantName: String): Flow<List<ExpenseEntity>>
+
+    @Query(
+        "SELECT * FROM expenses WHERE ABS(totalAmount - :amount) < 0.01 " +
+            "AND date = :date AND lastModified >= :windowStart AND lastModified <= :windowEnd " +
+            "AND isDeleted = 0 LIMIT 1"
+    )
+    suspend fun findDuplicate(
+        amount: Double,
+        date: LocalDate,
+        windowStart: Long,
+        windowEnd: Long,
+    ): ExpenseEntity?
+
+    @Query(
+        "SELECT DISTINCT merchantName FROM expenses " +
+            "WHERE merchantName IS NOT NULL AND isDeleted = 0 ORDER BY merchantName ASC"
+    )
+    fun getAllMerchantNames(): Flow<List<String>>
+
+    @Query(
+        "SELECT DISTINCT category FROM expenses " +
+            "WHERE category IS NOT NULL AND isDeleted = 0 ORDER BY category ASC"
+    )
+    fun getAllUsedCategories(): Flow<List<String>>
+
+    @Query("DELETE FROM expenses WHERE id = :id")
+    suspend fun deleteById(id: String)
 }

@@ -43,6 +43,10 @@ googleGenai = "1.5.0"
 coil = "3.3.0"
 vico = "2.4.3"
 
+# ML Kit
+mlkitTextRecognition = "16.0.1"
+mlkitDocumentScanner = "16.0.0"
+
 # Testing
 junit = "4.13.2"
 junitAndroidExt = "1.2.1"
@@ -111,6 +115,10 @@ coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp"
 
 # Vico Charts
 vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
+
+# ML Kit
+mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTextRecognition" }
+gms-mlkit-document-scanner = { group = "com.google.android.gms", name = "play-services-mlkit-document-scanner", version.ref = "mlkitDocumentScanner" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

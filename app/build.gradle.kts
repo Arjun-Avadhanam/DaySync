@@ -139,6 +139,10 @@ dependencies {
     // Vico Charts
     implementation(libs.vico.compose.m3)
 
+    // ML Kit
+    implementation(libs.mlkit.text.recognition)
+    implementation(libs.gms.mlkit.document.scanner)
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
