@@ -32,4 +32,23 @@ interface JournalEntryDao {
 
     @Query("SELECT * FROM journal_entries WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<JournalEntryEntity>
+
+    @Query(
+        "SELECT * FROM journal_entries WHERE date >= :startDate AND date <= :endDate " +
+            "AND isDeleted = 0 ORDER BY date DESC"
+    )
+    fun getByDateRange(startDate: LocalDate, endDate: LocalDate): Flow<List<JournalEntryEntity>>
+
+    @Query(
+        "SELECT * FROM journal_entries WHERE isDeleted = 0 AND isArchived = 0 " +
+            "AND (title LIKE '%' || :query || '%' OR content LIKE '%' || :query || '%') " +
+            "ORDER BY date DESC"
+    )
+    fun searchEntries(query: String): Flow<List<JournalEntryEntity>>
+
+    @Query("SELECT * FROM journal_entries WHERE isDeleted = 0 AND isArchived = 1 ORDER BY date DESC")
+    fun getArchivedEntries(): Flow<List<JournalEntryEntity>>
+
+    @Query("SELECT * FROM journal_entries WHERE date = :date AND isDeleted = 0")
+    fun getByDateFlow(date: LocalDate): Flow<JournalEntryEntity?>
 }

@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "53823946c462c903fe2638c1b07933d4",
+    "identityHash": "58cbb24326c6ef64d09805f6c7514fd2",
     "entities": [
       {
         "tableName": "health_metrics",
@@ -155,7 +155,7 @@
       },
       {
         "tableName": "exercise_sessions",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `exerciseType` TEXT NOT NULL, `startTime` INTEGER NOT NULL, `endTime` INTEGER NOT NULL, `title` TEXT, `calories` REAL, `activeCalories` REAL, `avgHeartRate` INTEGER, `maxHeartRate` INTEGER, `minHeartRate` INTEGER, `distance` REAL, `elevationGain` REAL, `steps` INTEGER, `activeDurationMs` INTEGER, `avgSpeedMps` REAL, `maxSpeedMps` REAL, `avgCadenceSpm` REAL, `maxCadenceSpm` REAL, `zone1Seconds` INTEGER, `zone2Seconds` INTEGER, `zone3Seconds` INTEGER, `zone4Seconds` INTEGER, `zone5Seconds` INTEGER, `laps` TEXT, `hasRoute` INTEGER NOT NULL, `notes` TEXT, `syncStatus` TEXT NOT NULL, `lastModified` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `exerciseType` TEXT NOT NULL, `startTime` INTEGER NOT NULL, `endTime` INTEGER NOT NULL, `calories` REAL, `avgHeartRate` INTEGER, `maxHeartRate` INTEGER, `distance` REAL, `elevationGain` REAL, `notes` TEXT, `syncStatus` TEXT NOT NULL, `lastModified` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -182,18 +182,8 @@
             "notNull": true
           },
           {
-            "fieldPath": "title",
-            "columnName": "title",
-            "affinity": "TEXT"
-          },
-          {
             "fieldPath": "calories",
             "columnName": "calories",
-            "affinity": "REAL"
-          },
-          {
-            "fieldPath": "activeCalories",
-            "columnName": "activeCalories",
             "affinity": "REAL"
           },
           {
@@ -207,11 +197,6 @@
             "affinity": "INTEGER"
           },
           {
-            "fieldPath": "minHeartRate",
-            "columnName": "minHeartRate",
-            "affinity": "INTEGER"
-          },
-          {
             "fieldPath": "distance",
             "columnName": "distance",
             "affinity": "REAL"
@@ -220,72 +205,6 @@
             "fieldPath": "elevationGain",
             "columnName": "elevationGain",
             "affinity": "REAL"
-          },
-          {
-            "fieldPath": "steps",
-            "columnName": "steps",
-            "affinity": "INTEGER"
-          },
-          {
-            "fieldPath": "activeDurationMs",
-            "columnName": "activeDurationMs",
-            "affinity": "INTEGER"
-          },
-          {
-            "fieldPath": "avgSpeedMps",
-            "columnName": "avgSpeedMps",
-            "affinity": "REAL"
-          },
-          {
-            "fieldPath": "maxSpeedMps",
-            "columnName": "maxSpeedMps",
-            "affinity": "REAL"
-          },
-          {
-            "fieldPath": "avgCadenceSpm",
-            "columnName": "avgCadenceSpm",
-            "affinity": "REAL"
-          },
-          {
-            "fieldPath": "maxCadenceSpm",
-            "columnName": "maxCadenceSpm",
-            "affinity": "REAL"
-          },
-          {
-            "fieldPath": "zone1Seconds",
-            "columnName": "zone1Seconds",
-            "affinity": "INTEGER"
-          },
-          {
-            "fieldPath": "zone2Seconds",
-            "columnName": "zone2Seconds",
-            "affinity": "INTEGER"
-          },
-          {
-            "fieldPath": "zone3Seconds",
-            "columnName": "zone3Seconds",
-            "affinity": "INTEGER"
-          },
-          {
-            "fieldPath": "zone4Seconds",
-            "columnName": "zone4Seconds",
-            "affinity": "INTEGER"
-          },
-          {
-            "fieldPath": "zone5Seconds",
-            "columnName": "zone5Seconds",
-            "affinity": "INTEGER"
-          },
-          {
-            "fieldPath": "laps",
-            "columnName": "laps",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "hasRoute",
-            "columnName": "hasRoute",
-            "affinity": "INTEGER",
-            "notNull": true
           },
           {
             "fieldPath": "notes",
@@ -1894,7 +1813,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '53823946c462c903fe2638c1b07933d4')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '58cbb24326c6ef64d09805f6c7514fd2')"
     ]
   }
 }
