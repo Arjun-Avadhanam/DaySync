@@ -10,12 +10,6 @@ import com.daysync.app.core.database.entity.ExpenseEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.LocalDate
 
-data class CategoryTotal(
-    val category: String,
-    val total: Double,
-    val count: Int,
-)
-
 @Dao
 interface ExpenseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
