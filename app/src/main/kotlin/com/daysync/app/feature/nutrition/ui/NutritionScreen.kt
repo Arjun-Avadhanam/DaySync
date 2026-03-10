@@ -2,9 +2,9 @@ package com.daysync.app.feature.nutrition.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.daysync.app.core.ui.PlaceholderScreen
+import com.daysync.app.feature.nutrition.ui.navigation.NutritionNavHost
 
 @Composable
 fun NutritionScreen(modifier: Modifier = Modifier) {
-    PlaceholderScreen(title = "Nutrition", modifier = modifier)
+    NutritionNavHost(modifier = modifier)
 }

@@ -36,6 +36,9 @@ kotlinxDatetime = "0.6.2"
 # Health Connect
 healthConnect = "1.1.0"
 
+# Google Gen AI
+googleGenai = "1.5.0"
+
 # UI Libraries
 coil = "3.3.0"
 vico = "2.4.3"
@@ -96,6 +99,9 @@ kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime",
 
 # Health Connect
 androidx-health-connect = { group = "androidx.health.connect", name = "connect-client", version.ref = "healthConnect" }
+
+# Google Gen AI
+google-genai = { group = "com.google.genai", name = "google-genai", version.ref = "googleGenai" }
 
 # Coil
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }

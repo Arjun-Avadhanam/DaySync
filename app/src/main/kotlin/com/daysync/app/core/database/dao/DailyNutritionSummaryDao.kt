@@ -32,4 +32,7 @@ interface DailyNutritionSummaryDao {
 
     @Query("SELECT * FROM daily_nutrition_summaries WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<DailyNutritionSummaryEntity>
+
+    @Query("SELECT * FROM daily_nutrition_summaries WHERE date >= :startDate AND date <= :endDate AND isDeleted = 0 ORDER BY date ASC")
+    fun getByDateRange(startDate: LocalDate, endDate: LocalDate): Flow<List<DailyNutritionSummaryEntity>>
 }

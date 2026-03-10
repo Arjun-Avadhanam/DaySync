@@ -59,6 +59,15 @@ android {
         compose = true
         buildConfig = true
     }
+
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/INDEX.LIST",
+                "META-INF/DEPENDENCIES",
+            )
+        }
+    }
 }
 
 room {
@@ -115,6 +124,9 @@ dependencies {
 
     // Health Connect
     implementation(libs.androidx.health.connect)
+
+    // Google Gen AI (Gemini)
+    implementation(libs.google.genai)
 
     // Coil (image loading)
     implementation(libs.coil.compose)
