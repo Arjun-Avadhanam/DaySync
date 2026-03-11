@@ -14,7 +14,7 @@ import com.daysync.app.feature.ai.data.AiRepositoryImpl
 import com.daysync.app.feature.ai.data.DataContextBuilder
 import com.daysync.app.feature.ai.data.GeminiChatService
 import com.daysync.app.feature.ai.data.GroqChatService
-import com.google.genai.Client
+import com.google.ai.client.generativeai.GenerativeModel
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -33,10 +33,11 @@ object AiModule {
 
     @Provides
     @Singleton
-    fun provideGeminiClient(): Client {
-        return Client.builder()
-            .apiKey(BuildConfig.GEMINI_API_KEY)
-            .build()
+    fun provideGeminiModel(): GenerativeModel {
+        return GenerativeModel(
+            modelName = "gemini-2.5-flash",
+            apiKey = BuildConfig.GEMINI_API_KEY,
+        )
     }
 
     @Provides
@@ -79,8 +80,8 @@ object AiModule {
 
     @Provides
     @Singleton
-    fun provideGeminiChatService(client: Client): GeminiChatService {
-        return GeminiChatService(client)
+    fun provideGeminiChatService(): GeminiChatService {
+        return GeminiChatService(apiKey = BuildConfig.GEMINI_API_KEY)
     }
 
     @Provides

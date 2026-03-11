@@ -3,10 +3,8 @@ package com.daysync.app.feature.nutrition.data
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import com.daysync.app.feature.nutrition.domain.model.NutritionLabelResult
-import com.google.genai.Client
-import com.google.genai.types.Content
-import com.google.genai.types.GenerateContentConfig
-import com.google.genai.types.Part
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.content
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -16,25 +14,25 @@ import javax.inject.Singleton
 
 @Singleton
 class NutritionLabelExtractor @Inject constructor(
-    private val client: Client,
+    private val model: GenerativeModel,
 ) {
     private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
 
     suspend fun extractFromImage(imageBytes: ByteArray): NutritionLabelResult =
         withContext(Dispatchers.IO) {
             val compressed = compressBitmapForApi(imageBytes, maxDim = 1024)
+            val bitmap = BitmapFactory.decodeByteArray(compressed, 0, compressed.size)
+                ?: throw IllegalStateException("Failed to decode image")
 
-            val content = Content.fromParts(
-                Part.fromBytes(compressed, "image/jpeg"),
-                Part.fromText(PROMPT),
+            val response = model.generateContent(
+                content {
+                    image(bitmap)
+                    text(PROMPT)
+                },
             )
+            bitmap.recycle()
 
-            val config = GenerateContentConfig.builder()
-                .responseMimeType("application/json")
-                .build()
-
-            val response = client.models.generateContent("gemini-2.5-flash", content, config)
-            val text = response.text()
+            val text = response.text
                 ?: throw IllegalStateException("Empty response from Gemini")
 
             json.decodeFromString<NutritionLabelResult>(text)

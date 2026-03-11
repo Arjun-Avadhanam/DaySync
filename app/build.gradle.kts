@@ -122,8 +122,8 @@ dependencies {
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
 
-    // Google Gen AI (Gemini)
-    implementation(libs.google.genai)
+    // Google Generative AI (Gemini - Android SDK)
+    implementation(libs.google.generativeai)
 
     // Ktor (for Groq fallback)
     implementation(libs.ktor.client.content.negotiation)
@@ -135,9 +135,6 @@ dependencies {
 
     // Health Connect
     implementation(libs.androidx.health.connect)
-
-    // Google Gen AI (Gemini)
-    implementation(libs.google.genai)
 
     // Coil (image loading)
     implementation(libs.coil.compose)

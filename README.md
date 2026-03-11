@@ -58,10 +58,10 @@ app/src/main/kotlin/com/daysync/
 
 ## Setup
 
-> **Prerequisites:** Android Studio (latest stable), JDK 17+, Android SDK 34+
+> **Prerequisites:** Android Studio Panda 2+ (2025.3.2), JDK 17, Android SDK 36 (compileSdk/targetSdk 36, minSdk 28)
 
 ```bash
-git clone https://github.com/arjun/DaySync.git
+git clone https://github.com/Arjun-Avadhanam/DaySync.git
 cd DaySync
 # Open in Android Studio and sync Gradle
 ```
@@ -79,7 +79,12 @@ API keys required (stored in `local.properties`, never committed):
 
 ## Status
 
-**Pre-implementation** -- architecture and research phase complete. See the [implementation plan](/home/arjun/.claude/plans/hazy-herding-cupcake.md) for detailed design.
+**In development** -- all feature modules implemented, integration testing in progress.
+
+- Phase 1 (Foundation): Done -- Room DB, Hilt DI, navigation, sync engine, Material 3 theme
+- Phase 2-5 (Features): Done -- Health, Nutrition, Expenses, Sports, Journal, Media, AI all implemented
+- Phase 6 (Integration): In progress -- feature branches merged, testing on device
+- Phase 7 (Polish & Migration): Not started
 
 ## License
 

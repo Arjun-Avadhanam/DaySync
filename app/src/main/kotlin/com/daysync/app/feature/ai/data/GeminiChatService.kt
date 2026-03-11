@@ -2,42 +2,45 @@ package com.daysync.app.feature.ai.data
 
 import com.daysync.app.feature.ai.model.ChatMessage
 import com.daysync.app.feature.ai.model.Role
-import com.google.genai.Client
-import com.google.genai.types.Content
-import com.google.genai.types.GenerateContentConfig
-import com.google.genai.types.Part
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.content
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 
 class GeminiChatService(
-    private val client: Client,
+    private val apiKey: String,
 ) {
     companion object {
         private const val MODEL = "gemini-2.5-flash"
+    }
+
+    private fun createModel(systemPrompt: String): GenerativeModel {
+        return GenerativeModel(
+            modelName = MODEL,
+            apiKey = apiKey,
+            systemInstruction = content { text(systemPrompt) },
+        )
     }
 
     fun generateStream(
         messages: List<ChatMessage>,
         systemPrompt: String,
     ): Flow<String> = flow {
+        val model = createModel(systemPrompt)
+
         val contents = messages.map { msg ->
-            Content.builder()
-                .role(if (msg.role == Role.USER) "user" else "model")
-                .parts(listOf(Part.fromText(msg.content)))
-                .build()
+            content(role = if (msg.role == Role.USER) "user" else "model") {
+                text(msg.content)
+            }
         }
 
-        val config = GenerateContentConfig.builder()
-            .systemInstruction(Content.fromParts(Part.fromText(systemPrompt)))
-            .build()
-
-        val stream = client.models.generateContentStream(MODEL, contents, config)
-        for (chunk in stream) {
-            val text = chunk.text()
-            if (!text.isNullOrEmpty()) {
-                emit(text)
+        model.generateContentStream(*contents.toTypedArray()).collect { chunk ->
+            chunk.text?.let { text ->
+                if (text.isNotEmpty()) {
+                    emit(text)
+                }
             }
         }
     }.flowOn(Dispatchers.IO)
@@ -46,18 +49,15 @@ class GeminiChatService(
         messages: List<ChatMessage>,
         systemPrompt: String,
     ): String {
+        val model = createModel(systemPrompt)
+
         val contents = messages.map { msg ->
-            Content.builder()
-                .role(if (msg.role == Role.USER) "user" else "model")
-                .parts(listOf(Part.fromText(msg.content)))
-                .build()
+            content(role = if (msg.role == Role.USER) "user" else "model") {
+                text(msg.content)
+            }
         }
 
-        val config = GenerateContentConfig.builder()
-            .systemInstruction(Content.fromParts(Part.fromText(systemPrompt)))
-            .build()
-
-        val response = client.models.generateContent(MODEL, contents, config)
-        return response.text() ?: ""
+        val response = model.generateContent(*contents.toTypedArray())
+        return response.text ?: ""
     }
 }
