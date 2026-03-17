@@ -51,6 +51,9 @@ mlkitDocumentScanner = "16.0.0"
 junit = "4.13.2"
 junitAndroidExt = "1.2.1"
 espressoCore = "3.6.1"
+mockk = "1.13.16"
+coroutinesTest = "1.10.2"
+turbine = "1.2.0"
 
 [libraries]
 # AndroidX Core
@@ -124,6 +127,9 @@ gms-mlkit-document-scanner = { group = "com.google.android.gms", name = "play-se
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitAndroidExt" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }
+turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
