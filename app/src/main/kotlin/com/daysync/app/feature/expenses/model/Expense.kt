@@ -81,9 +81,9 @@ fun formatIndianCurrency(amount: Double): String {
         } else {
             val lastThree = wholeStr.takeLast(3)
             val remaining = wholeStr.dropLast(3)
-            val grouped = buildString {
-                remaining.reversed().chunked(2).joinTo(this, ",") { it.reversed() }
-            }
+            val grouped = remaining.reversed().chunked(2)
+                .reversed()
+                .joinToString(",") { it.reversed() }
             append(grouped)
             append(",")
             append(lastThree)

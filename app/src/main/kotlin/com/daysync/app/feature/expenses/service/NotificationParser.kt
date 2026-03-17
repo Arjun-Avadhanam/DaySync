@@ -301,9 +301,10 @@ object NotificationParser {
         return null
     }
 
-    private fun isLikelyP2P(payeeName: String): Boolean {
-        val lower = payeeName.lowercase()
-        return BUSINESS_KEYWORDS.none { lower.contains(it) } &&
-            !lower.contains("@") // VPA addresses are not P2P names
+    private fun isLikelyP2P(@Suppress("UNUSED_PARAMETER") payeeName: String): Boolean {
+        // Default to merchant — most notification payments are to merchants.
+        // Misclassifying a merchant as P2P loses auto-categorization.
+        // Users can manually reclassify P2P transfers if needed.
+        return false
     }
 }
