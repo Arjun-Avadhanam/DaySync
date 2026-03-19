@@ -85,6 +85,9 @@ fun ExpensesScreen(
             TopAppBar(
                 title = { Text("Expenses") },
                 actions = {
+                    IconButton(onClick = { navController.navigate(ExpenseAdd) }) {
+                        Icon(Icons.Default.Add, contentDescription = "Add expense")
+                    }
                     var menuExpanded by remember { mutableStateOf(false) }
                     IconButton(onClick = { menuExpanded = true }) {
                         Icon(Icons.Default.MoreVert, contentDescription = "More options")
@@ -117,11 +120,6 @@ fun ExpensesScreen(
                     }
                 },
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { navController.navigate(ExpenseAdd) }) {
-                Icon(Icons.Default.Add, contentDescription = "Add expense")
-            }
         },
     ) { innerPadding ->
         Column(

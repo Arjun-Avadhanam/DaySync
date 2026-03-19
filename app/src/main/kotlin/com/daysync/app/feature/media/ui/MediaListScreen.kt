@@ -77,6 +77,9 @@ fun MediaListScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onAddClick) {
+                        Icon(Icons.Filled.Add, contentDescription = "Add media")
+                    }
                     IconButton(onClick = {
                         showSearch = !showSearch
                         if (!showSearch) onSearchQueryChange("")
@@ -94,11 +97,6 @@ fun MediaListScreen(
                     }
                 },
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = onAddClick) {
-                Icon(Icons.Filled.Add, contentDescription = "Add media")
-            }
         },
         modifier = modifier,
     ) { padding ->

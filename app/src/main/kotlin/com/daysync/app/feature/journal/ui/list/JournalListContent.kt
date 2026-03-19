@@ -77,6 +77,11 @@ fun JournalListContent(
                             Icon(Icons.Default.Close, contentDescription = "Close search")
                         }
                     } else {
+                        if (!showArchived) {
+                            IconButton(onClick = onNewEntry) {
+                                Icon(Icons.Default.Add, contentDescription = "New entry")
+                            }
+                        }
                         IconButton(onClick = onSearchToggle) {
                             Icon(Icons.Default.Search, contentDescription = "Search")
                         }
@@ -107,13 +112,6 @@ fun JournalListContent(
                     }
                 },
             )
-        },
-        floatingActionButton = {
-            if (!showArchived) {
-                FloatingActionButton(onClick = onNewEntry) {
-                    Icon(Icons.Default.Add, contentDescription = "New entry")
-                }
-            }
         },
         modifier = modifier,
     ) { padding ->
