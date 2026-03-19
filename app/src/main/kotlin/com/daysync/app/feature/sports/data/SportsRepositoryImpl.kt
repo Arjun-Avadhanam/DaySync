@@ -1,5 +1,6 @@
 package com.daysync.app.feature.sports.data
 
+import android.util.Log
 import com.daysync.app.core.database.dao.SportEventDao
 import com.daysync.app.core.database.entity.CompetitionEntity
 import com.daysync.app.core.database.entity.CompetitorEntity
@@ -38,6 +39,10 @@ class SportsRepositoryImpl @Inject constructor(
     private val jolpicaApi: JolpicaApiService,
     private val apiFootballService: ApiFootballService,
 ) : SportsRepository {
+
+    companion object {
+        private const val TAG = "SportsRepository"
+    }
 
     override suspend fun ensureSeedData() {
         SeedData.ensureSeedData(dao)
@@ -171,25 +176,20 @@ class SportsRepositoryImpl @Inject constructor(
 
     // Refresh
     override suspend fun refreshFootballFixtures(competitionCode: String, competitionId: String) {
-        try {
-            val response = footballDataApi.getMatches(competitionCode)
-            val events = response.matches.map { it.toSportEventEntity(competitionId) }
-            if (events.isNotEmpty()) {
-                dao.insertEvents(events)
-            }
-            // Also insert teams as competitors
-            val competitors = response.matches.flatMap { match ->
-                listOfNotNull(
-                    match.homeTeam?.toCompetitorEntity(),
-                    match.awayTeam?.toCompetitorEntity(),
-                )
-            }.distinctBy { it.id }
-            if (competitors.isNotEmpty()) {
-                dao.insertCompetitors(competitors)
-            }
-        } catch (e: Exception) {
-            // Log but don't crash -- caller handles
-            throw e
+        val response = footballDataApi.getMatches(competitionCode)
+        // Insert competitors BEFORE events (events have FK to competitors)
+        val competitors = response.matches.flatMap { match ->
+            listOfNotNull(
+                match.homeTeam?.toCompetitorEntity(),
+                match.awayTeam?.toCompetitorEntity(),
+            )
+        }.distinctBy { it.id }
+        if (competitors.isNotEmpty()) {
+            dao.insertCompetitors(competitors)
+        }
+        val events = response.matches.map { it.toSportEventEntity(competitionId) }
+        if (events.isNotEmpty()) {
+            dao.insertEvents(events)
         }
     }
 
@@ -206,6 +206,8 @@ class SportsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun refreshAllSports() {
+        val errors = mutableListOf<String>()
+
         // Football-Data.org competitions (free tier)
         val fdCompetitions = mapOf(
             "PL" to "football-pl",
@@ -216,22 +218,39 @@ class SportsRepositoryImpl @Inject constructor(
         for ((code, id) in fdCompetitions) {
             try {
                 refreshFootballFixtures(code, id)
-            } catch (_: Exception) {
-                // Continue with other competitions
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to refresh FD fixtures for $code: ${e.message}", e)
+                errors += "Football ($code): ${e.message}"
             }
         }
 
         // API-Football for gap competitions (Europa, EFL, etc.)
-        refreshApiFootballCompetitions()
+        try { refreshApiFootballCompetitions() } catch (e: Exception) {
+            Log.e(TAG, "Failed to refresh API-Football: ${e.message}", e)
+            errors += "API-Football: ${e.message}"
+        }
 
         // NBA via BallDontLie
-        try { refreshNbaGames() } catch (_: Exception) {}
+        try { refreshNbaGames() } catch (e: Exception) {
+            Log.e(TAG, "Failed to refresh NBA: ${e.message}", e)
+            errors += "NBA: ${e.message}"
+        }
 
         // F1 via Jolpica
-        try { refreshF1Schedule() } catch (_: Exception) {}
+        try { refreshF1Schedule() } catch (e: Exception) {
+            Log.e(TAG, "Failed to refresh F1: ${e.message}", e)
+            errors += "F1: ${e.message}"
+        }
 
         // ESPN for UFC/Tennis
-        try { refreshEspnScoreboard("mma", "ufc", "mma-ufc") } catch (_: Exception) {}
+        try { refreshEspnScoreboard("mma", "ufc", "mma-ufc") } catch (e: Exception) {
+            Log.e(TAG, "Failed to refresh ESPN: ${e.message}", e)
+            errors += "ESPN: ${e.message}"
+        }
+
+        if (errors.isNotEmpty()) {
+            throw Exception("Some sports failed to refresh:\n${errors.joinToString("\n")}")
+        }
     }
 
     private suspend fun refreshApiFootballCompetitions() {
@@ -247,10 +266,7 @@ class SportsRepositoryImpl @Inject constructor(
             if (apiFootballService.isBudgetExhausted) break
             try {
                 val response = apiFootballService.getFixtures(leagueId, currentYear)
-                val events = response.response.mapNotNull {
-                    it.toSportEventEntity(compId)
-                }
-                if (events.isNotEmpty()) dao.insertEvents(events)
+                // Insert competitors BEFORE events (FK dependency)
                 val competitors = response.response.flatMap { fixture ->
                     listOfNotNull(
                         fixture.teams?.home?.toCompetitorEntity(),
@@ -258,7 +274,13 @@ class SportsRepositoryImpl @Inject constructor(
                     )
                 }.distinctBy { it.id }
                 if (competitors.isNotEmpty()) dao.insertCompetitors(competitors)
-            } catch (_: Exception) {}
+                val events = response.response.mapNotNull {
+                    it.toSportEventEntity(compId)
+                }
+                if (events.isNotEmpty()) dao.insertEvents(events)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to refresh API-Football league $leagueId: ${e.message}", e)
+            }
         }
     }
 
@@ -267,12 +289,13 @@ class SportsRepositoryImpl @Inject constructor(
             .toLocalDateTime(TimeZone.UTC).date
         val dates = (-3..7).map { today.plus(it, DateTimeUnit.DAY).toString() }
         val response = ballDontLieApi.getGames(dates = dates, perPage = 100)
-        val events = response.data.mapNotNull { it.toSportEventEntity() }
-        if (events.isNotEmpty()) dao.insertEvents(events)
+        // Insert competitors BEFORE events (FK dependency)
         val competitors = response.data.flatMap { game ->
             listOfNotNull(game.homeTeam?.toCompetitorEntity(), game.visitorTeam?.toCompetitorEntity())
         }.distinctBy { it.id }
         if (competitors.isNotEmpty()) dao.insertCompetitors(competitors)
+        val events = response.data.mapNotNull { it.toSportEventEntity() }
+        if (events.isNotEmpty()) dao.insertEvents(events)
     }
 
     private suspend fun refreshF1Schedule() {
@@ -306,14 +329,15 @@ class SportsRepositoryImpl @Inject constructor(
             "racing" -> "f1"
             else -> sport
         }
-        val events = response.events.mapNotNull { it.toSportEventEntity(sportId, competitionId) }
-        if (events.isNotEmpty()) dao.insertEvents(events)
+        // Insert competitors BEFORE events (FK dependency)
         val competitors = response.events.flatMap { event ->
             event.competitions.flatMap { comp ->
                 comp.competitors.mapNotNull { it.toCompetitorEntity(sportId) }
             }
         }.distinctBy { it.id }
         if (competitors.isNotEmpty()) dao.insertCompetitors(competitors)
+        val events = response.events.mapNotNull { it.toSportEventEntity(sportId, competitionId) }
+        if (events.isNotEmpty()) dao.insertEvents(events)
     }
 
     override suspend fun getStandings(competitionCode: String): List<StandingRow> {
