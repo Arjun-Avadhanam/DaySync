@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import android.util.Log
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.time.Clock
@@ -84,14 +85,21 @@ class AiViewModel @Inject constructor(
                     isGenerating = false,
                 )
             } catch (e: Exception) {
+                Log.e("AiChat", "AI generation failed", e)
                 // Remove the empty assistant placeholder on error
                 if (_messages[assistantIndex].content.isEmpty()) {
                     _messages.removeAt(assistantIndex)
                 } else {
                     _messages[assistantIndex] = _messages[assistantIndex].copy(isStreaming = false)
                 }
+                val errorMsg = when {
+                    e.message?.contains("API key", ignoreCase = true) == true -> "API key error: ${e.message}"
+                    e.message?.contains("network", ignoreCase = true) == true -> "Network error — check your connection"
+                    e.message?.contains("timeout", ignoreCase = true) == true -> "Request timed out — try again"
+                    else -> "AI error: ${e.message ?: "Unknown error"}"
+                }
                 _uiState.value = AiChatUiState.Error(
-                    message = e.message ?: "Something went wrong",
+                    message = errorMsg,
                     messages = _messages.toList(),
                 )
             }
