@@ -88,14 +88,24 @@ class HealthConnectManager(private val context: Context) {
         }
 
         // Total calories
-        tryAggregate(timeRange, setOf(TotalCaloriesBurnedRecord.ENERGY_TOTAL))?.let { result ->
+        val totalCalResult = tryAggregate(timeRange, setOf(TotalCaloriesBurnedRecord.ENERGY_TOTAL))
+        android.util.Log.d("HealthConnect", "Total calories aggregate result: $totalCalResult")
+        android.util.Log.d("HealthConnect", "Total calories energy: ${totalCalResult?.get(TotalCaloriesBurnedRecord.ENERGY_TOTAL)}")
+        totalCalResult?.let { result ->
             result[TotalCaloriesBurnedRecord.ENERGY_TOTAL]?.let { energy ->
+                android.util.Log.d("HealthConnect", "Total calories kcal: ${energy.inKilocalories}")
                 metrics += metric("TOTAL_CALORIES", energy.inKilocalories, "kcal", ts)
             }
         }
 
+        // Also check individual records count for diagnosis
+        val totalCalRecords = readRecords<TotalCaloriesBurnedRecord>(timeRange)
+        android.util.Log.d("HealthConnect", "Total calories individual records count: ${totalCalRecords?.size}, sum: ${totalCalRecords?.sumOf { it.energy.inKilocalories }}")
+
         // Active calories
-        tryAggregate(timeRange, setOf(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL))?.let { result ->
+        val activeCalResult = tryAggregate(timeRange, setOf(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL))
+        android.util.Log.d("HealthConnect", "Active calories aggregate: ${activeCalResult?.get(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL)}")
+        activeCalResult?.let { result ->
             result[ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL]?.let { energy ->
                 metrics += metric("ACTIVE_CALORIES", energy.inKilocalories, "kcal", ts)
             }
@@ -330,6 +340,7 @@ class HealthConnectManager(private val context: Context) {
             ReadRecordsRequest(T::class, timeRangeFilter = timeRange),
         ).records
     } catch (e: Exception) {
+        android.util.Log.w("HealthConnect", "Failed to read ${T::class.simpleName}: ${e.message}")
         null
     }
 
@@ -341,6 +352,7 @@ class HealthConnectManager(private val context: Context) {
             AggregateRequest(metrics = metrics, timeRangeFilter = timeRange),
         )
     } catch (e: Exception) {
+        android.util.Log.w("HealthConnect", "Failed to aggregate ${metrics.map { it.metricKey }}: ${e.message}")
         null
     }
 

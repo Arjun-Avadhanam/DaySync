@@ -35,6 +35,7 @@ data class HealthDailySummary(
     val floorsClimbed: Double? = null,
     val vo2Max: Double? = null,
     val weight: Double? = null,
+    val debugInfo: String? = null, // Temporary: remove after diagnosing calories issue
 )
 
 data class SleepSummary(

@@ -48,7 +48,7 @@ fun HealthSummaryCard(
                 )
                 MetricItem(
                     label = "Calories",
-                    value = summary.activeCalories?.let { "${it.toInt()} kcal" } ?: "--",
+                    value = summary.totalCalories?.let { "${it.toInt()} kcal" } ?: "--",
                     modifier = Modifier.weight(1f),
                 )
                 MetricItem(
@@ -77,6 +77,15 @@ fun HealthSummaryCard(
                     label = "Floors",
                     value = summary.floorsClimbed?.let { "${it.toInt()}" } ?: "--",
                     modifier = Modifier.weight(1f),
+                )
+            }
+            // Temporary debug info
+            summary.debugInfo?.let { debug ->
+                Text(
+                    text = debug,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f),
+                    modifier = Modifier.padding(top = 8.dp),
                 )
             }
         }

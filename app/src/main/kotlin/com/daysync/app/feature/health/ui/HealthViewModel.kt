@@ -124,6 +124,7 @@ class HealthViewModel @Inject constructor(
         metrics: List<com.daysync.app.core.database.entity.HealthMetricEntity>,
     ): HealthDailySummary {
         val byType = metrics.associateBy { it.type }
+        val debug = "Metrics found: ${metrics.size}, types: ${metrics.map { it.type }.distinct()}"
         return HealthDailySummary(
             steps = byType["STEPS"]?.value?.toLong(),
             totalCalories = byType["TOTAL_CALORIES"]?.value,
@@ -137,6 +138,7 @@ class HealthViewModel @Inject constructor(
             floorsClimbed = byType["FLOORS"]?.value,
             vo2Max = byType["VO2MAX"]?.value,
             weight = byType["WEIGHT"]?.value,
+            debugInfo = debug,
         )
     }
 
@@ -215,12 +217,12 @@ class HealthViewModel @Inject constructor(
 
     private fun formatLabel(instant: Instant, period: HealthPeriod): String {
         val zone = ZoneId.of("Asia/Kolkata")
-        val date = java.time.Instant.ofEpochMilli(instant.toEpochMilliseconds())
-            .atZone(zone).toLocalDate()
+        val dateTime = java.time.Instant.ofEpochMilli(instant.toEpochMilliseconds())
+            .atZone(zone).toLocalDateTime()
         return when (period) {
-            HealthPeriod.DAILY -> date.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
-            HealthPeriod.WEEKLY -> date.format(java.time.format.DateTimeFormatter.ofPattern("EEE"))
-            HealthPeriod.MONTHLY -> date.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM"))
+            HealthPeriod.DAILY -> dateTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+            HealthPeriod.WEEKLY -> dateTime.format(java.time.format.DateTimeFormatter.ofPattern("EEE"))
+            HealthPeriod.MONTHLY -> dateTime.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM"))
         }
     }
 }
