@@ -59,6 +59,7 @@ data class WorkoutSummary(
         }
 
     val displayType: String get() = formatExerciseType(session.exerciseType)
+    val debugType: String get() = session.exerciseType // Temporary: raw type from Health Connect
 
     val paceMinPerKm: Double?
         get() {

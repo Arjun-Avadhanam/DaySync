@@ -72,7 +72,7 @@ private fun WorkoutItem(workout: WorkoutSummary) {
                 fontWeight = FontWeight.Medium,
             )
             Text(
-                text = date.format(dateFormatter),
+                text = "${date.format(dateFormatter)} [${workout.debugType}]",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

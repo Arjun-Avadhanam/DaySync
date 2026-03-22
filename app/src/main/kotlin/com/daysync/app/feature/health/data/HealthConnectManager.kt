@@ -224,7 +224,10 @@ class HealthConnectManager(private val context: Context) {
             TimeRangeFilter.between(start, end),
         ) ?: return emptyList()
 
-        return records.map { session -> enrichExerciseSession(session, zoneConfig) }
+        return records.map { session ->
+            android.util.Log.d("HealthConnect", "Exercise session: type=${session.exerciseType}, title=${session.title}")
+            enrichExerciseSession(session, zoneConfig)
+        }
     }
 
     private suspend fun enrichExerciseSession(
