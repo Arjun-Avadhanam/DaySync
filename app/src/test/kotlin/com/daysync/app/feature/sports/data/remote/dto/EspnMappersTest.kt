@@ -92,12 +92,16 @@ class EspnMappersTest {
     }
 
     @Test
-    fun `toSportEventEntity returns null when no competitions`() {
+    fun `toSportEventEntity creates entity with empty competitions`() {
+        // Individual sports (tennis, MMA) return empty competitions when not live
         val event = EspnEvent(
             id = "1", date = "2026-03-15T20:00:00Z",
             competitions = emptyList(),
         )
-        assertNull(event.toSportEventEntity("football", "comp"))
+        val entity = event.toSportEventEntity("football", "comp")
+        assertNotNull(entity)
+        assertNull(entity!!.homeCompetitorId)
+        assertNull(entity.awayCompetitorId)
     }
 
     @Test
