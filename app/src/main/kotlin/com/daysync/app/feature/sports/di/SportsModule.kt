@@ -4,6 +4,7 @@ import com.daysync.app.BuildConfig
 import com.daysync.app.feature.sports.data.SportsRepository
 import com.daysync.app.feature.sports.data.SportsRepositoryImpl
 import com.daysync.app.feature.sports.data.remote.ApiFootballKey
+import com.daysync.app.feature.sports.data.remote.BallDontLieApiKey
 import com.daysync.app.feature.sports.data.remote.FootballDataApiKey
 import dagger.Binds
 import dagger.Module
@@ -55,6 +56,11 @@ object SportsProviderModule {
     @Singleton
     fun provideApiFootballKey(): ApiFootballKey =
         ApiFootballKey(BuildConfig.API_FOOTBALL_KEY)
+
+    @Provides
+    @Singleton
+    fun provideBallDontLieApiKey(): BallDontLieApiKey =
+        BallDontLieApiKey(BuildConfig.API_NBA_KEY)
 }
 
 @Module

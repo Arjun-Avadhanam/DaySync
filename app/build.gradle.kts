@@ -46,6 +46,7 @@ android {
         buildConfigField("String", "GROQ_API_KEY", "\"${localProperties.getProperty("GROQ_API_KEY", "")}\"")
         buildConfigField("String", "FOOTBALL_DATA_API_KEY", "\"${localProperties.getProperty("FOOTBALL_DATA_API_KEY", "")}\"")
         buildConfigField("String", "API_FOOTBALL_KEY", "\"${localProperties.getProperty("API_FOOTBALL_KEY", "")}\"")
+        buildConfigField("String", "API_NBA_KEY", "\"${localProperties.getProperty("API_NBA_KEY", "")}\"")
         buildConfigField("String", "TMDB_API_KEY", "\"${localProperties.getProperty("TMDB_API_KEY", "")}\"")
         buildConfigField("String", "RAWG_API_KEY", "\"${localProperties.getProperty("RAWG_API_KEY", "")}\"")
     }
