@@ -33,6 +33,22 @@ sealed interface ResultDetail {
         val fastestLapTime: String?,
     ) : ResultDetail
 
+    data class Mma(
+        val cardName: String?,
+        val weightClass: String?,
+        val scheduledRounds: Int?,
+        val isMainEvent: Boolean,
+        val isChampionship: Boolean,
+        val fightOrder: Int?,
+        val fighter1Record: String?,
+        val fighter2Record: String?,
+        val method: String?,
+        val endedRound: Int?,
+        val endedTime: String?,
+        val currentRound: Int?,
+        val roundTime: String?,
+    ) : ResultDetail
+
     data class Unknown(val raw: String) : ResultDetail
 
     companion object {
@@ -60,6 +76,21 @@ sealed interface ResultDetail {
                         winnerTime = obj["winner_time"]?.jsonPrimitive?.content,
                         fastestLapDriver = obj["fastest_lap_driver"]?.jsonPrimitive?.content,
                         fastestLapTime = obj["fastest_lap_time"]?.jsonPrimitive?.content,
+                    )
+                    "mma" -> Mma(
+                        cardName = obj["card_name"]?.jsonPrimitive?.content,
+                        weightClass = obj["weight_class"]?.jsonPrimitive?.content,
+                        scheduledRounds = obj["scheduled_rounds"]?.jsonPrimitive?.intOrNull,
+                        isMainEvent = obj["is_main_event"]?.jsonPrimitive?.content == "true",
+                        isChampionship = obj["is_championship"]?.jsonPrimitive?.content == "true",
+                        fightOrder = obj["fight_order"]?.jsonPrimitive?.intOrNull,
+                        fighter1Record = obj["fighter1_record"]?.jsonPrimitive?.content,
+                        fighter2Record = obj["fighter2_record"]?.jsonPrimitive?.content,
+                        method = obj["method"]?.jsonPrimitive?.content,
+                        endedRound = obj["ended_round"]?.jsonPrimitive?.intOrNull,
+                        endedTime = obj["ended_time"]?.jsonPrimitive?.content,
+                        currentRound = obj["current_round"]?.jsonPrimitive?.intOrNull,
+                        roundTime = obj["round_time"]?.jsonPrimitive?.content,
                     )
                     else -> Unknown(jsonString)
                 }

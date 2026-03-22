@@ -100,6 +100,12 @@ object SeedData {
             shortName = "UFC", country = "International",
             espnSlug = "ufc",
         ),
+        // Tennis - ATP Tour (generic for ESPN scoreboard)
+        CompetitionEntity(
+            id = "tennis-atp", sportId = "tennis", name = "ATP Tour",
+            shortName = "ATP", country = "International",
+            espnSlug = "atp",
+        ),
     )
 
     suspend fun ensureSeedData(dao: SportEventDao) {

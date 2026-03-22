@@ -23,6 +23,9 @@ data class EspnEvent(
 
 @Serializable
 data class EspnEventStatus(
+    val clock: Double? = null, // Seconds remaining in current round
+    val displayClock: String? = null, // e.g. "1:17", "5:00"
+    val period: Int? = null, // Current/ended round number
     val type: EspnStatusType? = null,
 )
 
@@ -40,10 +43,13 @@ data class EspnStatusType(
 @Serializable
 data class EspnCompetition(
     val id: String? = null,
+    val date: String? = null, // Individual fight time
     val venue: EspnVenue? = null,
     val competitors: List<EspnCompetitor> = emptyList(),
     val status: EspnEventStatus? = null,
     val type: EspnCompetitionType? = null,
+    val format: EspnFormat? = null,
+    val details: List<EspnDetail> = emptyList(),
 )
 
 @Serializable
@@ -52,12 +58,55 @@ data class EspnCompetitionType(
 )
 
 @Serializable
+data class EspnFormat(
+    val regulation: EspnRegulation? = null,
+)
+
+@Serializable
+data class EspnRegulation(
+    val periods: Int? = null, // 5 = championship/main event, 3 = regular
+)
+
+@Serializable
+data class EspnDetail(
+    val type: EspnDetailType? = null,
+)
+
+@Serializable
+data class EspnDetailType(
+    val id: String? = null,
+    val text: String? = null, // "Unofficial Winner Decision", "Unofficial Winner Kotko", etc.
+)
+
+@Serializable
 data class EspnCompetitor(
     val id: String? = null,
     val homeAway: String? = null,
     val winner: Boolean? = null,
     val team: EspnTeam? = null,
+    val athlete: EspnAthlete? = null, // For individual sports (MMA, Tennis)
     val score: String? = null,
+    val records: List<EspnRecord> = emptyList(),
+)
+
+@Serializable
+data class EspnAthlete(
+    val fullName: String? = null,
+    val displayName: String? = null,
+    val shortName: String? = null,
+    val flag: EspnFlag? = null,
+)
+
+@Serializable
+data class EspnFlag(
+    val href: String? = null, // Country flag image URL
+    val alt: String? = null, // Country name
+)
+
+@Serializable
+data class EspnRecord(
+    val name: String? = null,
+    val summary: String? = null, // e.g. "20-0-0"
 )
 
 @Serializable
@@ -98,4 +147,12 @@ data class EspnLeague(
     val id: String? = null,
     val name: String? = null,
     val abbreviation: String? = null,
+    val calendar: List<EspnCalendarEntry> = emptyList(),
+)
+
+@Serializable
+data class EspnCalendarEntry(
+    val label: String? = null,
+    val startDate: String? = null,
+    val endDate: String? = null,
 )

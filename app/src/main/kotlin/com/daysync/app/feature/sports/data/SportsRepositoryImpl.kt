@@ -17,11 +17,13 @@ import com.daysync.app.feature.sports.data.remote.EspnApiService
 import com.daysync.app.feature.sports.data.remote.FootballDataApiService
 import com.daysync.app.feature.sports.data.remote.JolpicaApiService
 import com.daysync.app.feature.sports.data.remote.dto.toCompetitorEntity
+import com.daysync.app.feature.sports.data.remote.dto.toMmaFightEntities
 import com.daysync.app.feature.sports.data.remote.dto.toParticipantEntity
 import com.daysync.app.feature.sports.data.remote.dto.toSportEventEntity
 import com.daysync.app.feature.sports.data.remote.dto.toVenueEntity
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
@@ -242,10 +244,16 @@ class SportsRepositoryImpl @Inject constructor(
             errors += "F1: ${e.message}"
         }
 
-        // ESPN for UFC/Tennis
-        try { refreshEspnScoreboard("mma", "ufc", "mma-ufc") } catch (e: Exception) {
-            Log.e(TAG, "Failed to refresh ESPN: ${e.message}", e)
-            errors += "ESPN: ${e.message}"
+        // UFC via ESPN (MMA-specific: each fight = separate event)
+        try { refreshMmaEvents() } catch (e: Exception) {
+            Log.e(TAG, "Failed to refresh MMA: ${e.message}", e)
+            errors += "MMA: ${e.message}"
+        }
+
+        // ESPN for Tennis (ATP)
+        try { refreshEspnScoreboard("tennis", "atp", "tennis-atp") } catch (e: Exception) {
+            Log.e(TAG, "Failed to refresh ESPN Tennis: ${e.message}", e)
+            errors += "ESPN Tennis: ${e.message}"
         }
 
         if (errors.isNotEmpty()) {
@@ -318,6 +326,52 @@ class SportsRepositoryImpl @Inject constructor(
             race.results.mapNotNull { it.toParticipantEntity(eventId) }
         }
         if (participants.isNotEmpty()) dao.insertParticipants(participants)
+    }
+
+    private suspend fun refreshMmaEvents() {
+        // Get calendar for past 3 + next 5 events
+        val currentResponse = espnApi.getScoreboard("mma", "ufc")
+        val calendar = currentResponse.leagues.flatMap { it.calendar }
+
+        val now = Clock.System.now().toLocalDateTime(TimeZone.UTC)
+        val nowIso = now.toString()
+        val pastEntries = calendar.filter { (it.startDate ?: "") < nowIso }.takeLast(3)
+        val futureEntries = calendar.filter { (it.startDate ?: "") >= nowIso }.take(5)
+        val entriesToFetch = pastEntries + futureEntries
+
+        // Fetch each event by date (startDate - 1 day for ESPN's local-time query)
+        for (entry in entriesToFetch) {
+            val startDate = entry.startDate ?: continue
+            try {
+                // Parse UTC date and subtract 1 day for ESPN query date
+                val datePart = startDate.take(10) // "2026-03-08"
+                val localDate = kotlinx.datetime.LocalDate.parse(datePart)
+                val queryDate = localDate.minus(1, DateTimeUnit.DAY)
+                val queryStr = queryDate.toString().replace("-", "")
+
+                val response = espnApi.getScoreboard("mma", "ufc", dates = queryStr)
+                for (event in response.events) {
+                    val fights = event.toMmaFightEntities("mma-ufc")
+                    if (fights.isEmpty()) continue
+
+                    // Insert fighters BEFORE fight events (FK dependency)
+                    val fighters = fights.flatMap { listOf(it.fighter1, it.fighter2) }.distinctBy { it.id }
+                    dao.insertCompetitors(fighters)
+                    dao.insertEvents(fights.map { it.event })
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to fetch MMA event for ${entry.label}: ${e.message}")
+            }
+        }
+
+        // Also process current response (may contain live/just-completed event)
+        for (event in currentResponse.events) {
+            val fights = event.toMmaFightEntities("mma-ufc")
+            if (fights.isEmpty()) continue
+            val fighters = fights.flatMap { listOf(it.fighter1, it.fighter2) }.distinctBy { it.id }
+            dao.insertCompetitors(fighters)
+            dao.insertEvents(fights.map { it.event })
+        }
     }
 
     private suspend fun refreshEspnScoreboard(sport: String, league: String, competitionId: String) {
