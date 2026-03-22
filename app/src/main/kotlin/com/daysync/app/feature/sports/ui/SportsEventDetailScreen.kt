@@ -137,7 +137,10 @@ fun SportsEventDetailScreen(
                 Column(modifier = Modifier.padding(12.dp)) {
                     InfoRow("Date", "${local.date.day} ${local.month.name.take(3)} ${local.year}")
                     InfoRow("Time", "%02d:%02d IST".format(local.hour, local.minute))
-                    event.season?.let { InfoRow("Season", it) }
+                    event.season?.let {
+                        val label = if (event.sportId == "mma") "Card" else "Season"
+                        InfoRow(label, it)
+                    }
                     event.dataSource?.let { InfoRow("Source", it) }
                 }
             }

@@ -25,13 +25,8 @@ fun SportsScoreDisplay(
     when (detail) {
         is ResultDetail.Football -> FootballScoreDetail(detail, modifier)
         is ResultDetail.F1 -> F1ResultDetail(detail, modifier)
-        is ResultDetail.Unknown -> {
-            Text(
-                text = detail.raw,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = modifier.padding(16.dp),
-            )
-        }
+        is ResultDetail.Mma -> MmaFightDetail(detail, modifier)
+        is ResultDetail.Unknown -> {} // Don't show raw JSON
         null -> {}
     }
 }
@@ -94,6 +89,49 @@ private fun F1ResultDetail(detail: ResultDetail.F1, modifier: Modifier = Modifie
         if (detail.fastestLapDriver != null) {
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             ScoreRow("Fastest Lap", "${detail.fastestLapDriver} (${detail.fastestLapTime ?: ""})")
+        }
+    }
+}
+
+@Composable
+private fun MmaFightDetail(detail: ResultDetail.Mma, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.padding(16.dp)) {
+        Text(
+            text = "Fight Details",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        detail.cardName?.let { ScoreRow("Card", it) }
+        detail.weightClass?.let { ScoreRow("Weight Class", it) }
+        detail.scheduledRounds?.let { ScoreRow("Rounds", "$it") }
+
+        if (detail.isChampionship) {
+            ScoreRow("Type", "Championship")
+        } else if (detail.isMainEvent) {
+            ScoreRow("Type", "Main Event")
+        }
+
+        if (detail.fighter1Record != null || detail.fighter2Record != null) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            detail.fighter1Record?.let { ScoreRow("Fighter 1 Record", it) }
+            detail.fighter2Record?.let { ScoreRow("Fighter 2 Record", it) }
+        }
+
+        if (detail.method != null) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            ScoreRow("Method", detail.method)
+            if (detail.endedRound != null) {
+                val roundStr = "R${detail.endedRound}" + (detail.endedTime?.let { " $it" } ?: "")
+                ScoreRow("Ended", roundStr)
+            }
+        }
+
+        if (detail.currentRound != null) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            val liveStr = "R${detail.currentRound}" + (detail.roundTime?.let { " $it" } ?: "")
+            ScoreRow("Live", liveStr)
         }
     }
 }
