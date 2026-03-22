@@ -150,12 +150,12 @@ class HealthViewModel @Inject constructor(
         val metrics = healthRepository.getMetricsByTypeAndDateRange("STEPS", start, end).first()
         if (metrics.isEmpty()) return emptyList()
 
-        return metrics.reversed().map { metric ->
-            StepsTrendPoint(
-                label = formatLabel(metric.timestamp, period),
-                steps = metric.value.toLong(),
-            )
-        }
+        // Deduplicate by label (multiple syncs create duplicate entries per day)
+        return metrics.reversed()
+            .groupBy { formatLabel(it.timestamp, period) }
+            .map { (label, group) ->
+                StepsTrendPoint(label = label, steps = group.last().value.toLong())
+            }
     }
 
     private suspend fun buildHeartRateTrend(
@@ -169,15 +169,18 @@ class HealthViewModel @Inject constructor(
         val minMetrics = healthRepository.getMetricsByTypeAndDateRange("HR_MIN", start, end).first()
             .associateBy { formatLabel(it.timestamp, period) }
 
-        return avgMetrics.reversed().map { avg ->
-            val label = formatLabel(avg.timestamp, period)
-            HeartRateTrendPoint(
-                label = label,
-                avg = avg.value.toLong(),
-                min = minMetrics[label]?.value?.toLong() ?: avg.value.toLong(),
-                max = maxMetrics[label]?.value?.toLong() ?: avg.value.toLong(),
-            )
-        }
+        // Deduplicate by label
+        return avgMetrics.reversed()
+            .groupBy { formatLabel(it.timestamp, period) }
+            .map { (label, group) ->
+                val avg = group.last()
+                HeartRateTrendPoint(
+                    label = label,
+                    avg = avg.value.toLong(),
+                    min = minMetrics[label]?.value?.toLong() ?: avg.value.toLong(),
+                    max = maxMetrics[label]?.value?.toLong() ?: avg.value.toLong(),
+                )
+            }
     }
 
     private suspend fun buildSleepTrend(
@@ -186,15 +189,19 @@ class HealthViewModel @Inject constructor(
         period: HealthPeriod,
     ): List<SleepTrendPoint> {
         val sessions = healthRepository.getSleepSessions(start, end).first()
-        return sessions.reversed().map { session ->
-            SleepTrendPoint(
-                label = formatLabel(session.startTime, period),
-                totalMinutes = session.totalMinutes,
-                deepMinutes = session.deepMinutes,
-                lightMinutes = session.lightMinutes,
-                remMinutes = session.remMinutes,
-                awakeMinutes = session.awakeMinutes,
-            )
+        // Deduplicate by label
+        return sessions.reversed()
+            .groupBy { formatLabel(it.startTime, period) }
+            .map { (label, group) ->
+                val session = group.last()
+                SleepTrendPoint(
+                    label = label,
+                    totalMinutes = session.totalMinutes,
+                    deepMinutes = session.deepMinutes,
+                    lightMinutes = session.lightMinutes,
+                    remMinutes = session.remMinutes,
+                    awakeMinutes = session.awakeMinutes,
+                )
         }
     }
 

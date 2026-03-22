@@ -41,7 +41,7 @@ fun StepsTrendChart(
     data: List<StepsTrendPoint>,
     modifier: Modifier = Modifier,
 ) {
-    if (data.isEmpty()) return
+    if (data.size < 2) return
 
     ChartCard(title = "Steps Trend", modifier = modifier) {
         val modelProducer = remember(data) {
@@ -88,7 +88,7 @@ fun HeartRateTrendChart(
     data: List<HeartRateTrendPoint>,
     modifier: Modifier = Modifier,
 ) {
-    if (data.isEmpty()) return
+    if (data.size < 2) return
 
     ChartCard(title = "Heart Rate Trend", modifier = modifier) {
         val modelProducer = remember(data) {
@@ -138,7 +138,7 @@ fun SleepTrendChart(
     data: List<SleepTrendPoint>,
     modifier: Modifier = Modifier,
 ) {
-    if (data.isEmpty()) return
+    if (data.size < 2) return
 
     ChartCard(title = "Sleep Trend", modifier = modifier) {
         val modelProducer = remember(data) {
