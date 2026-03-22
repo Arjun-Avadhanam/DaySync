@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.daysync.app.feature.sports.data.model.ResultDetail
 import com.daysync.app.feature.sports.data.model.SportEventWithDetails
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -153,9 +154,20 @@ private fun TeamMatchupRow(event: SportEventWithDetails) {
             }
         }
 
-        // Score or "vs"
-        val scoreText = when (event.status) {
-            "COMPLETED", "LIVE" -> "${event.homeScore ?: 0} - ${event.awayScore ?: 0}"
+        // Score or "vs" — for MMA show winner indicator instead of numeric scores
+        val mmaDetail = if (event.sportId == "mma") {
+            ResultDetail.parse(event.resultDetail, "mma") as? ResultDetail.Mma
+        } else null
+
+        val scoreText = when {
+            mmaDetail != null && event.status == "COMPLETED" -> {
+                when (mmaDetail.winner) {
+                    event.homeCompetitorName -> "W - L"
+                    event.awayCompetitorName -> "L - W"
+                    else -> "vs"
+                }
+            }
+            event.status == "COMPLETED" || event.status == "LIVE" -> "${event.homeScore ?: 0} - ${event.awayScore ?: 0}"
             else -> "vs"
         }
         Text(

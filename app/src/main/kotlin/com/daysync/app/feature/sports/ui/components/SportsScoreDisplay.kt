@@ -119,9 +119,10 @@ private fun MmaFightDetail(detail: ResultDetail.Mma, modifier: Modifier = Modifi
             detail.fighter2Record?.let { ScoreRow("Fighter 2 Record", it) }
         }
 
-        if (detail.method != null) {
+        if (detail.winner != null || detail.method != null) {
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            ScoreRow("Method", detail.method)
+            detail.winner?.let { ScoreRow("Winner", it) }
+            detail.method?.let { ScoreRow("Method", it) }
             if (detail.endedRound != null) {
                 val roundStr = "R${detail.endedRound}" + (detail.endedTime?.let { " $it" } ?: "")
                 ScoreRow("Ended", roundStr)

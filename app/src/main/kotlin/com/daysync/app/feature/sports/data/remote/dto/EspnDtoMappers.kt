@@ -115,6 +115,13 @@ fun EspnEvent.toMmaFightEntities(
             det.type?.text?.contains("Winner") == true
         }?.type?.text?.removePrefix("Unofficial Winner ")
 
+        // Determine winner
+        val winnerName = when {
+            fighter1.winner == true -> fighter1Name
+            fighter2.winner == true -> fighter2Name
+            else -> null
+        }
+
         val endedRound = fight.status?.period
         val endedTime = fight.status?.displayClock
 
@@ -130,6 +137,7 @@ fun EspnEvent.toMmaFightEntities(
             fighter1.records.firstOrNull()?.summary?.let { put("fighter1_record", it) }
             fighter2.records.firstOrNull()?.summary?.let { put("fighter2_record", it) }
             if (fightStatus == "COMPLETED") {
+                winnerName?.let { put("winner", it) }
                 method?.let { put("method", it) }
                 endedRound?.let { put("ended_round", it) }
                 endedTime?.let { put("ended_time", it) }
