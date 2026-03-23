@@ -30,4 +30,9 @@ class JolpicaApiService @Inject constructor(
         val response = httpClient.get("$baseUrl/current/results.json")
         return json.decodeFromString(response.bodyAsText())
     }
+
+    suspend fun getQualifyingResults(season: String, round: String): JolpicaResponse {
+        val response = httpClient.get("$baseUrl/$season/$round/qualifying.json")
+        return json.decodeFromString(response.bodyAsText())
+    }
 }

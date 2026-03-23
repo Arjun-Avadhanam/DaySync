@@ -26,12 +26,21 @@ sealed interface ResultDetail {
     ) : ResultDetail
 
     data class F1(
+        val circuit: String?,
+        val circuitCity: String?,
+        val circuitCountry: String?,
         val totalLaps: String?,
         val winner: String?,
         val winnerTeam: String?,
         val winnerTime: String?,
         val fastestLapDriver: String?,
         val fastestLapTime: String?,
+        val fastestLapNumber: String?,
+        val poleDriver: String?,
+        val poleTeam: String?,
+        val poleTime: String?,
+        val finishers: Int?,
+        val retirements: Int?,
     ) : ResultDetail
 
     data class Mma(
@@ -89,12 +98,21 @@ sealed interface ResultDetail {
                         elapsed = obj["elapsed"]?.jsonPrimitive?.intOrNull,
                     )
                     "f1" -> F1(
+                        circuit = obj["circuit"]?.jsonPrimitive?.content,
+                        circuitCity = obj["circuit_city"]?.jsonPrimitive?.content,
+                        circuitCountry = obj["circuit_country"]?.jsonPrimitive?.content,
                         totalLaps = obj["total_laps"]?.jsonPrimitive?.content,
                         winner = obj["winner"]?.jsonPrimitive?.content,
                         winnerTeam = obj["winner_team"]?.jsonPrimitive?.content,
                         winnerTime = obj["winner_time"]?.jsonPrimitive?.content,
                         fastestLapDriver = obj["fastest_lap_driver"]?.jsonPrimitive?.content,
                         fastestLapTime = obj["fastest_lap_time"]?.jsonPrimitive?.content,
+                        fastestLapNumber = obj["fastest_lap_number"]?.jsonPrimitive?.content,
+                        poleDriver = obj["pole_driver"]?.jsonPrimitive?.content,
+                        poleTeam = obj["pole_team"]?.jsonPrimitive?.content,
+                        poleTime = obj["pole_time"]?.jsonPrimitive?.content,
+                        finishers = obj["finishers"]?.jsonPrimitive?.intOrNull,
+                        retirements = obj["retirements"]?.jsonPrimitive?.intOrNull,
                     )
                     "tennis" -> Tennis(
                         tournament = obj["tournament"]?.jsonPrimitive?.content,

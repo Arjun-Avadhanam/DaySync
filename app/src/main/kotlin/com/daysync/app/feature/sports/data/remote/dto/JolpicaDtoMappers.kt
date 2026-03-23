@@ -23,11 +23,19 @@ fun JolpicaRace.toSportEventEntity(): SportEventEntity? {
     }
 
     val hasResults = results.isNotEmpty()
+    val hasQualifying = qualifyingResults.isNotEmpty()
     val status = if (hasResults) "COMPLETED" else "SCHEDULED"
 
-    val resultJson = if (hasResults) {
-        buildJsonObject {
-            put("type", "f1")
+    val resultJson = buildJsonObject {
+        put("type", "f1")
+        circuit?.let {
+            it.circuitName?.let { name -> put("circuit", name) }
+            it.location?.let { loc ->
+                loc.locality?.let { city -> put("circuit_city", city) }
+                loc.country?.let { country -> put("circuit_country", country) }
+            }
+        }
+        if (hasResults) {
             put("total_laps", results.firstOrNull()?.laps ?: "0")
             val winner = results.firstOrNull()
             winner?.let {
@@ -38,9 +46,22 @@ fun JolpicaRace.toSportEventEntity(): SportEventEntity? {
             results.firstOrNull { it.fastestLap?.rank == "1" }?.let { fl ->
                 put("fastest_lap_driver", "${fl.driver?.givenName} ${fl.driver?.familyName}")
                 fl.fastestLap?.time?.time?.let { t -> put("fastest_lap_time", t) }
+                fl.fastestLap?.lap?.let { l -> put("fastest_lap_number", l) }
             }
-        }.toString()
-    } else null
+            put("finishers", results.count { it.status == "Finished" })
+            put("retirements", results.count { it.status != "Finished" && it.laps != "0" })
+        }
+        if (hasQualifying) {
+            val pole = qualifyingResults.firstOrNull()
+            pole?.let {
+                put("pole_driver", "${it.driver?.givenName} ${it.driver?.familyName}")
+                put("pole_team", it.constructor?.name ?: "")
+                it.q3?.let { t -> put("pole_time", t) }
+                    ?: it.q2?.let { t -> put("pole_time", t) }
+                    ?: it.q1?.let { t -> put("pole_time", t) }
+            }
+        }
+    }.toString()
 
     return SportEventEntity(
         id = "f1-$s-$r",
@@ -70,6 +91,18 @@ fun JolpicaRace.toVenueEntity(): VenueEntity? {
 
 fun JolpicaResult.toParticipantEntity(eventId: String): EventParticipantEntity? {
     val d = driver ?: return null
+    val detailJson = buildJsonObject {
+        grid?.let { put("grid", it) }
+        laps?.let { put("laps", it) }
+        points?.let { put("points", it) }
+        constructor?.name?.let { put("constructor", it) }
+        fastestLap?.let { fl ->
+            fl.time?.time?.let { put("fastest_lap_time", it) }
+            fl.rank?.let { put("fastest_lap_rank", it) }
+            fl.lap?.let { put("fastest_lap_number", it) }
+        }
+    }.toString()
+
     return EventParticipantEntity(
         id = "$eventId-${d.driverId ?: return null}",
         eventId = eventId,
@@ -78,6 +111,29 @@ fun JolpicaResult.toParticipantEntity(eventId: String): EventParticipantEntity? 
         score = time?.time ?: status,
         status = status,
         isWinner = position == "1",
+        detail = detailJson,
+    )
+}
+
+fun JolpicaQualifyingResult.toParticipantEntity(eventId: String): EventParticipantEntity? {
+    val d = driver ?: return null
+    val detailJson = buildJsonObject {
+        put("session", "qualifying")
+        constructor?.name?.let { put("constructor", it) }
+        q1?.let { put("q1", it) }
+        q2?.let { put("q2", it) }
+        q3?.let { put("q3", it) }
+    }.toString()
+
+    return EventParticipantEntity(
+        id = "$eventId-qual-${d.driverId ?: return null}",
+        eventId = eventId,
+        competitorId = "f1-driver-${d.driverId}",
+        position = position?.toIntOrNull(),
+        score = q3 ?: q2 ?: q1,
+        status = "qualifying",
+        isWinner = position == "1",
+        detail = detailJson,
     )
 }
 

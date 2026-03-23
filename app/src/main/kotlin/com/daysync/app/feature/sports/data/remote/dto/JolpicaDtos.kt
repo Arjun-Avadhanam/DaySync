@@ -31,6 +31,18 @@ data class JolpicaRace(
     val date: String? = null,
     val time: String? = null,
     @SerialName("Results") val results: List<JolpicaResult> = emptyList(),
+    @SerialName("QualifyingResults") val qualifyingResults: List<JolpicaQualifyingResult> = emptyList(),
+)
+
+@Serializable
+data class JolpicaQualifyingResult(
+    val number: String? = null,
+    val position: String? = null,
+    @SerialName("Driver") val driver: JolpicaDriver? = null,
+    @SerialName("Constructor") val constructor: JolpicaConstructor? = null,
+    @SerialName("Q1") val q1: String? = null,
+    @SerialName("Q2") val q2: String? = null,
+    @SerialName("Q3") val q3: String? = null,
 )
 
 @Serializable

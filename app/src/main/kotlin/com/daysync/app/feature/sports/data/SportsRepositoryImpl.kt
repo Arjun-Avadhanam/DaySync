@@ -310,25 +310,63 @@ class SportsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun refreshF1Schedule() {
-        val response = jolpicaApi.getCurrentSeasonRaces()
-        val races = response.mrData?.raceTable?.races ?: return
-        val events = races.mapNotNull { it.toSportEventEntity() }
-        if (events.isNotEmpty()) dao.insertEvents(events)
-        val venues = races.mapNotNull {
-            it.toVenueEntity()
-        }
+        // 1. Get season schedule
+        val scheduleResponse = jolpicaApi.getCurrentSeasonRaces()
+        val scheduleRaces = scheduleResponse.mrData?.raceTable?.races ?: return
+
+        // Insert venues from schedule
+        val venues = scheduleRaces.mapNotNull { it.toVenueEntity() }
         if (venues.isNotEmpty()) dao.insertVenues(venues)
-        // Insert drivers from results if available
-        val drivers = races.flatMap { race ->
-            race.results.map { it.driver }.filterNotNull().map { it.toCompetitorEntity() }
-        }.distinctBy { it.id }
-        if (drivers.isNotEmpty()) dao.insertCompetitors(drivers)
-        // Insert participants from results
-        val participants = races.flatMap { race ->
-            val eventId = "f1-${race.season}-${race.round}"
-            race.results.mapNotNull { it.toParticipantEntity(eventId) }
+
+        // 2. Get all results for completed races
+        val resultsResponse = jolpicaApi.getCurrentSeasonResults()
+        val resultRaces = resultsResponse.mrData?.raceTable?.races ?: emptyList()
+        val resultsByRound = resultRaces.associateBy { it.round }
+
+        // 3. Merge: use result data for completed races, schedule for upcoming
+        val allDrivers = mutableListOf<CompetitorEntity>()
+        val allParticipants = mutableListOf<EventParticipantEntity>()
+
+        val events = scheduleRaces.mapNotNull { scheduleRace ->
+            val raceWithResults = resultsByRound[scheduleRace.round]
+            val race = raceWithResults ?: scheduleRace
+
+            // For completed races, also fetch qualifying
+            if (raceWithResults != null && race.season != null && race.round != null) {
+                try {
+                    val qualResponse = jolpicaApi.getQualifyingResults(race.season, race.round)
+                    val qualRace = qualResponse.mrData?.raceTable?.races?.firstOrNull()
+                    if (qualRace != null) {
+                        // Create a merged race with both results and qualifying
+                        val mergedRace = race.copy(qualifyingResults = qualRace.qualifyingResults)
+
+                        // Collect drivers + participants
+                        val eventId = "f1-${mergedRace.season}-${mergedRace.round}"
+                        allDrivers += mergedRace.results.mapNotNull { it.driver?.toCompetitorEntity() }
+                        allDrivers += mergedRace.qualifyingResults.mapNotNull { it.driver?.toCompetitorEntity() }
+                        allParticipants += mergedRace.results.mapNotNull { it.toParticipantEntity(eventId) }
+                        allParticipants += mergedRace.qualifyingResults.mapNotNull { it.toParticipantEntity(eventId) }
+
+                        return@mapNotNull mergedRace.toSportEventEntity()
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to fetch qualifying for R${race.round}: ${e.message}")
+                }
+
+                // Fallback: results without qualifying
+                val eventId = "f1-${race.season}-${race.round}"
+                allDrivers += race.results.mapNotNull { it.driver?.toCompetitorEntity() }
+                allParticipants += race.results.mapNotNull { it.toParticipantEntity(eventId) }
+            }
+
+            race.toSportEventEntity()
         }
-        if (participants.isNotEmpty()) dao.insertParticipants(participants)
+
+        // Insert all: drivers before participants (FK), then events
+        val distinctDrivers = allDrivers.distinctBy { it.id }
+        if (distinctDrivers.isNotEmpty()) dao.insertCompetitors(distinctDrivers)
+        if (events.isNotEmpty()) dao.insertEvents(events)
+        if (allParticipants.isNotEmpty()) dao.insertParticipants(allParticipants)
     }
 
     private suspend fun refreshMmaEvents() {
