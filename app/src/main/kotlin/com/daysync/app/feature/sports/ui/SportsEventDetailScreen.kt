@@ -141,9 +141,13 @@ fun SportsEventDetailScreen(
                         val label = when (event.sportId) {
                             "mma" -> "Card"
                             "tennis" -> "Tournament"
+                            "f1" -> "Season"
                             else -> "Season"
                         }
                         InfoRow(label, it)
+                    }
+                    if (event.sportId == "f1") {
+                        event.round?.let { InfoRow("Round", it) }
                     }
                     event.dataSource?.let { InfoRow("Source", it) }
                 }

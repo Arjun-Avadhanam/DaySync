@@ -33,7 +33,8 @@ class JolpicaMappersTest {
         assertEquals("Monaco Grand Prix", entity.eventName)
         assertEquals("Round 5", entity.round)
         assertEquals("2026", entity.season)
-        assertNull(entity.resultDetail)
+        assertNotNull(entity.resultDetail) // Now includes circuit info even for scheduled races
+        assertTrue(entity.resultDetail!!.contains("\"circuit\":\"Circuit de Monaco\""))
         assertEquals("jolpica", entity.dataSource)
     }
 

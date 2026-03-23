@@ -74,22 +74,46 @@ private fun F1ResultDetail(detail: ResultDetail.F1, modifier: Modifier = Modifie
         )
         Spacer(modifier = Modifier.height(8.dp))
 
-        detail.winner?.let {
-            ScoreRow("Winner", it)
-        }
-        detail.winnerTeam?.takeIf { it.isNotBlank() }?.let {
-            ScoreRow("Team", it)
-        }
-        detail.winnerTime?.let {
-            ScoreRow("Time", it)
-        }
-        detail.totalLaps?.let {
-            ScoreRow("Laps", it)
+        // Circuit info
+        detail.circuit?.let {
+            val location = listOfNotNull(detail.circuitCity, detail.circuitCountry).joinToString(", ")
+            ScoreRow("Circuit", if (location.isNotEmpty()) "$it, $location" else it)
         }
 
+        detail.totalLaps?.let { ScoreRow("Laps", it) }
+
+        // Winner
+        if (detail.winner != null) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            ScoreRow("Winner", detail.winner)
+            detail.winnerTeam?.takeIf { it.isNotBlank() }?.let { ScoreRow("Team", it) }
+            detail.winnerTime?.let { ScoreRow("Time", it) }
+        }
+
+        // Pole position
+        if (detail.poleDriver != null) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            ScoreRow("Pole Position", detail.poleDriver)
+            detail.poleTeam?.takeIf { it.isNotBlank() }?.let { ScoreRow("Team", it) }
+            detail.poleTime?.let { ScoreRow("Qualifying Time", it) }
+        }
+
+        // Fastest lap
         if (detail.fastestLapDriver != null) {
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            ScoreRow("Fastest Lap", "${detail.fastestLapDriver} (${detail.fastestLapTime ?: ""})")
+            val lapInfo = buildString {
+                append(detail.fastestLapDriver)
+                if (detail.fastestLapTime != null) append(" (${detail.fastestLapTime})")
+                if (detail.fastestLapNumber != null) append(" Lap ${detail.fastestLapNumber}")
+            }
+            ScoreRow("Fastest Lap", lapInfo)
+        }
+
+        // Stats
+        if (detail.finishers != null || detail.retirements != null) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            detail.finishers?.let { ScoreRow("Finishers", "$it") }
+            detail.retirements?.let { ScoreRow("Retirements/DNF", "$it") }
         }
     }
 }
