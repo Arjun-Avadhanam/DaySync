@@ -195,9 +195,20 @@ private fun TeamMatchupDetail(event: SportEventWithDetails) {
                 )
             }
 
-            // Score
-            val scoreText = when (event.status) {
-                "COMPLETED", "LIVE" -> "${event.homeScore ?: 0}\n-\n${event.awayScore ?: 0}"
+            // Score — for MMA show W/L instead of numeric scores
+            val mmaDetail = if (event.sportId == "mma") {
+                ResultDetail.parse(event.resultDetail, "mma") as? ResultDetail.Mma
+            } else null
+
+            val scoreText = when {
+                mmaDetail != null && event.status == "COMPLETED" -> {
+                    when (mmaDetail.winner) {
+                        event.homeCompetitorName -> "W\n-\nL"
+                        event.awayCompetitorName -> "L\n-\nW"
+                        else -> "vs"
+                    }
+                }
+                event.status == "COMPLETED" || event.status == "LIVE" -> "${event.homeScore ?: 0}\n-\n${event.awayScore ?: 0}"
                 else -> "vs"
             }
             Text(
