@@ -33,18 +33,27 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.daysync.app.core.database.entity.EventParticipantEntity
 import com.daysync.app.core.ui.LoadingIndicator
 import com.daysync.app.feature.sports.data.model.ResultDetail
 import com.daysync.app.feature.sports.data.model.SportEventWithDetails
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import com.daysync.app.feature.sports.ui.components.SportsLiveBadge
 import com.daysync.app.feature.sports.ui.components.SportsScoreDisplay
+import androidx.compose.ui.text.style.TextOverflow
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+
+private val detailJson = Json { ignoreUnknownKeys = true }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SportsEventDetailScreen(
     event: SportEventWithDetails?,
+    participants: List<EventParticipantEntity> = emptyList(),
+    competitorNames: Map<String, String> = emptyMap(),
     onBack: () -> Unit,
     onWatchlistToggle: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -164,6 +173,92 @@ fun SportsEventDetailScreen(
                     SportsScoreDisplay(detail = resultDetail)
                 }
             }
+
+            // Participants grid (F1 drivers, etc.)
+            val raceParticipants = participants
+                .filter { it.status != "qualifying" }
+                .sortedBy { it.position ?: Int.MAX_VALUE }
+            if (raceParticipants.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = if (event.status == "COMPLETED") "Race Results" else "Grid",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        raceParticipants.forEach { p ->
+                            val detail = p.detail?.let {
+                                try { detailJson.decodeFromString<JsonObject>(it) } catch (_: Exception) { null }
+                            }
+                            val constructor = detail?.get("constructor")?.jsonPrimitive?.content ?: ""
+                            val grid = detail?.get("grid")?.jsonPrimitive?.content
+                            val laps = detail?.get("laps")?.jsonPrimitive?.content
+                            val points = detail?.get("points")?.jsonPrimitive?.content
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 3.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                // Position
+                                Text(
+                                    text = "P${p.position ?: "-"}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (p.isWinner) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (p.isWinner) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.width(36.dp),
+                                )
+                                // Driver + constructor
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = competitorNames[p.competitorId] ?: p.competitorId,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    if (constructor.isNotBlank()) {
+                                        Text(
+                                            text = constructor,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                                // Time/status + grid
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(
+                                        text = p.score ?: p.status ?: "",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Medium,
+                                    )
+                                    if (grid != null && event.status == "COMPLETED") {
+                                        Text(
+                                            text = "Grid: $grid",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                    if (points != null && points != "0") {
+                                        Text(
+                                            text = "${points}pts",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -216,11 +311,11 @@ private fun TeamMatchupDetail(event: SportEventWithDetails) {
                         else -> "vs"
                     }
                 }
-                detailForScore is ResultDetail.Tennis && event.status == "COMPLETED" -> {
+                detailForScore is ResultDetail.Tennis && (event.status == "COMPLETED" || event.status == "LIVE") -> {
                     if (detailForScore.player1Sets.isNotEmpty()) {
                         detailForScore.player1Sets.zip(detailForScore.player2Sets)
                             .joinToString("\n") { (s1, s2) -> "$s1-$s2" }
-                    } else "W"
+                    } else "vs"
                 }
                 event.status == "COMPLETED" || event.status == "LIVE" -> "${event.homeScore ?: 0}\n-\n${event.awayScore ?: 0}"
                 else -> "vs"

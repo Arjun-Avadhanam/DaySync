@@ -76,6 +76,10 @@ class SportsRepositoryImpl @Inject constructor(
         return dao.getParticipantsByEventList(eventId)
     }
 
+    override suspend fun getCompetitorName(competitorId: String): String? {
+        return dao.getCompetitorById(competitorId)?.name
+    }
+
     // Enrichment
     override suspend fun enrichEvent(
         event: SportEventEntity,

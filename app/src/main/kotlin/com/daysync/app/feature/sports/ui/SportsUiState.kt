@@ -1,6 +1,7 @@
 package com.daysync.app.feature.sports.ui
 
 import com.daysync.app.core.database.entity.CompetitionEntity
+import com.daysync.app.core.database.entity.EventParticipantEntity
 import com.daysync.app.feature.sports.data.StandingRow
 import com.daysync.app.feature.sports.data.model.SportEventWithDetails
 
@@ -24,6 +25,8 @@ data class SportsUiState(
     val watchlistedEvents: List<SportEventWithDetails> = emptyList(),
     val competitionEvents: List<SportEventWithDetails> = emptyList(),
     val selectedEvent: SportEventWithDetails? = null,
+    val eventParticipants: List<EventParticipantEntity> = emptyList(),
+    val competitorNames: Map<String, String> = emptyMap(),
     val standings: List<StandingRow> = emptyList(),
     val allCompetitions: List<CompetitionEntity> = emptyList(),
     val followedCompetitionIds: Set<String> = emptySet(),

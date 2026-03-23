@@ -178,7 +178,6 @@ private fun TennisMatchDetail(detail: ResultDetail.Tennis, modifier: Modifier = 
         }
         detail.draw?.let { ScoreRow("Draw", it) }
         detail.round?.let { ScoreRow("Round", it) }
-        detail.bestOf?.let { ScoreRow("Format", "Best of $it") }
         detail.court?.let { ScoreRow("Court", it) }
 
         // Player ranks

@@ -24,6 +24,7 @@ interface SportsRepository {
     fun getEventsByCompetition(competitionId: String): Flow<List<SportEventEntity>>
     suspend fun getEventById(eventId: String): SportEventEntity?
     suspend fun getParticipantsByEvent(eventId: String): List<EventParticipantEntity>
+    suspend fun getCompetitorName(competitorId: String): String?
 
     // Enrichment
     suspend fun enrichEvent(event: SportEventEntity, watchlistedIds: Set<String>): SportEventWithDetails

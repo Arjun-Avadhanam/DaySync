@@ -35,6 +35,8 @@ fun SportsScreen(
         is SportsDestination.EventDetail -> {
             SportsEventDetailScreen(
                 event = state.selectedEvent,
+                participants = state.eventParticipants,
+                competitorNames = state.competitorNames,
                 onBack = viewModel::navigateBack,
                 onWatchlistToggle = viewModel::toggleWatchlist,
                 modifier = modifier,

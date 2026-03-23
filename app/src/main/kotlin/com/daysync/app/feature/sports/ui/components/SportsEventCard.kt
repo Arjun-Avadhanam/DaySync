@@ -167,12 +167,11 @@ private fun TeamMatchupRow(event: SportEventWithDetails) {
                     else -> "vs"
                 }
             }
-            resultDetail is ResultDetail.Tennis && event.status == "COMPLETED" -> {
-                // Show set scores like "7-6 7-6"
+            resultDetail is ResultDetail.Tennis && (event.status == "COMPLETED" || event.status == "LIVE") -> {
                 if (resultDetail.player1Sets.isNotEmpty()) {
                     resultDetail.player1Sets.zip(resultDetail.player2Sets)
                         .joinToString(" ") { (s1, s2) -> "$s1-$s2" }
-                } else "W"
+                } else "vs"
             }
             event.status == "COMPLETED" || event.status == "LIVE" -> "${event.homeScore ?: 0} - ${event.awayScore ?: 0}"
             else -> "vs"

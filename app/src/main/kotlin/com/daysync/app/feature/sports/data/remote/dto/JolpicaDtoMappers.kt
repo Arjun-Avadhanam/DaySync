@@ -56,9 +56,8 @@ fun JolpicaRace.toSportEventEntity(): SportEventEntity? {
             pole?.let {
                 put("pole_driver", "${it.driver?.givenName} ${it.driver?.familyName}")
                 put("pole_team", it.constructor?.name ?: "")
-                it.q3?.let { t -> put("pole_time", t) }
-                    ?: it.q2?.let { t -> put("pole_time", t) }
-                    ?: it.q1?.let { t -> put("pole_time", t) }
+                val poleTime = it.q3 ?: it.q2 ?: it.q1
+                poleTime?.let { t -> put("pole_time", t) }
             }
         }
     }.toString()

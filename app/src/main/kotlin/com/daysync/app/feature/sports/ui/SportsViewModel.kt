@@ -164,12 +164,26 @@ class SportsViewModel @Inject constructor(
         viewModelScope.launch {
             val event = repository.getEventById(eventId) ?: return@launch
             val watchlistIds = repository.getWatchlistedEventIds()
-            // Collect once for the initial value
             watchlistIds.collect { ids ->
                 val enriched = repository.enrichEvent(event, ids.toSet())
                 _uiState.update { it.copy(selectedEvent = enriched) }
                 return@collect
             }
+        }
+        // Load participants (F1 drivers, etc.) with competitor names
+        viewModelScope.launch {
+            val participants = repository.getParticipantsByEvent(eventId)
+            _uiState.update { it.copy(eventParticipants = participants) }
+        }
+        // Load competitor name lookup
+        viewModelScope.launch {
+            val participants = repository.getParticipantsByEvent(eventId)
+            val competitorIds = participants.map { it.competitorId }.distinct()
+            val names = mutableMapOf<String, String>()
+            for (id in competitorIds) {
+                repository.getCompetitorName(id)?.let { names[id] = it }
+            }
+            _uiState.update { it.copy(competitorNames = names) }
         }
     }
 
