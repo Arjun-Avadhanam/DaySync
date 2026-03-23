@@ -113,7 +113,7 @@ class ResultDetailTest {
     @Test
     fun `unknown sportId with no type returns Unknown`() {
         val json = """{"score":100}"""
-        val result = ResultDetail.parse(json, "tennis")
+        val result = ResultDetail.parse(json, "cricket")
         assertTrue(result is ResultDetail.Unknown)
     }
 

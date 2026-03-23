@@ -170,7 +170,7 @@ class EspnMmaLiveDataTest {
     @Test
     fun `deserialize calendar entries`() {
         val response = json.decodeFromString<EspnScoreboardResponse>(completedCardJson)
-        val calendar = response.leagues[0].calendar
+        val calendar = response.leagues[0].getCalendarEntries()
         assertEquals(4, calendar.size)
         assertEquals("UFC 326: Holloway vs. Oliveira 2", calendar[0].label)
         assertEquals("2026-03-08T01:30Z", calendar[0].startDate)
