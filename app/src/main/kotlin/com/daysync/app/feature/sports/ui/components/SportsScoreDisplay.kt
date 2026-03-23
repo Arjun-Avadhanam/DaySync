@@ -26,7 +26,8 @@ fun SportsScoreDisplay(
         is ResultDetail.Football -> FootballScoreDetail(detail, modifier)
         is ResultDetail.F1 -> F1ResultDetail(detail, modifier)
         is ResultDetail.Mma -> MmaFightDetail(detail, modifier)
-        is ResultDetail.Unknown -> {} // Don't show raw JSON
+        is ResultDetail.Tennis -> TennisMatchDetail(detail, modifier)
+        is ResultDetail.Unknown -> {}
         null -> {}
     }
 }
@@ -133,6 +134,57 @@ private fun MmaFightDetail(detail: ResultDetail.Mma, modifier: Modifier = Modifi
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             val liveStr = "R${detail.currentRound}" + (detail.roundTime?.let { " $it" } ?: "")
             ScoreRow("Live", liveStr)
+        }
+    }
+}
+
+@Composable
+private fun TennisMatchDetail(detail: ResultDetail.Tennis, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.padding(16.dp)) {
+        Text(
+            text = "Match Details",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        detail.tournament?.let { ScoreRow("Tournament", it) }
+        if (detail.isGrandSlam) {
+            ScoreRow("Type", "Grand Slam")
+        }
+        detail.draw?.let { ScoreRow("Draw", it) }
+        detail.round?.let { ScoreRow("Round", it) }
+        detail.bestOf?.let { ScoreRow("Format", "Best of $it") }
+        detail.court?.let { ScoreRow("Court", it) }
+
+        // Player ranks
+        if (detail.player1Rank != null || detail.player2Rank != null) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            detail.player1Rank?.let { ScoreRow("Player 1 Rank", "#$it") }
+            detail.player2Rank?.let { ScoreRow("Player 2 Rank", "#$it") }
+        }
+
+        // Set scores
+        if (detail.player1Sets.isNotEmpty()) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            val setsDisplay = detail.player1Sets.zip(detail.player2Sets).mapIndexed { i, (s1, s2) ->
+                val tb = detail.tiebreaks.getOrNull(i)
+                if (tb != null) "$s1-$s2 (${tb[0]}-${tb[1]})"
+                else "$s1-$s2"
+            }.joinToString(", ")
+            ScoreRow("Score", setsDisplay)
+        }
+
+        // Winner
+        if (detail.winner != null) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            ScoreRow("Winner", detail.winner)
+        }
+
+        // Live set
+        detail.currentSet?.let {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            ScoreRow("Live", "Set $it")
         }
     }
 }

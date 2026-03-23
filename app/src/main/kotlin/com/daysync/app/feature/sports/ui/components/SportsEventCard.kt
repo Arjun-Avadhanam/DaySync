@@ -154,18 +154,25 @@ private fun TeamMatchupRow(event: SportEventWithDetails) {
             }
         }
 
-        // Score or "vs" — for MMA show winner indicator instead of numeric scores
-        val mmaDetail = if (event.sportId == "mma") {
-            ResultDetail.parse(event.resultDetail, "mma") as? ResultDetail.Mma
+        // Score display — individual sports show W/L or set scores instead of numeric scores
+        val resultDetail = if (event.sportId in listOf("mma", "tennis")) {
+            ResultDetail.parse(event.resultDetail, event.sportId)
         } else null
 
         val scoreText = when {
-            mmaDetail != null && event.status == "COMPLETED" -> {
-                when (mmaDetail.winner) {
+            resultDetail is ResultDetail.Mma && event.status == "COMPLETED" -> {
+                when (resultDetail.winner) {
                     event.homeCompetitorName -> "W - L"
                     event.awayCompetitorName -> "L - W"
                     else -> "vs"
                 }
+            }
+            resultDetail is ResultDetail.Tennis && event.status == "COMPLETED" -> {
+                // Show set scores like "7-6 7-6"
+                if (resultDetail.player1Sets.isNotEmpty()) {
+                    resultDetail.player1Sets.zip(resultDetail.player2Sets)
+                        .joinToString(" ") { (s1, s2) -> "$s1-$s2" }
+                } else "W"
             }
             event.status == "COMPLETED" || event.status == "LIVE" -> "${event.homeScore ?: 0} - ${event.awayScore ?: 0}"
             else -> "vs"

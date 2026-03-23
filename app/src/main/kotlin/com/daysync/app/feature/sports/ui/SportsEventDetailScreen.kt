@@ -138,7 +138,11 @@ fun SportsEventDetailScreen(
                     InfoRow("Date", "${local.date.day} ${local.month.name.take(3)} ${local.year}")
                     InfoRow("Time", "%02d:%02d IST".format(local.hour, local.minute))
                     event.season?.let {
-                        val label = if (event.sportId == "mma") "Card" else "Season"
+                        val label = when (event.sportId) {
+                            "mma" -> "Card"
+                            "tennis" -> "Tournament"
+                            else -> "Season"
+                        }
                         InfoRow(label, it)
                     }
                     event.dataSource?.let { InfoRow("Source", it) }
@@ -195,18 +199,24 @@ private fun TeamMatchupDetail(event: SportEventWithDetails) {
                 )
             }
 
-            // Score — for MMA show W/L instead of numeric scores
-            val mmaDetail = if (event.sportId == "mma") {
-                ResultDetail.parse(event.resultDetail, "mma") as? ResultDetail.Mma
+            // Score — individual sports show W/L or set scores
+            val detailForScore = if (event.sportId in listOf("mma", "tennis")) {
+                ResultDetail.parse(event.resultDetail, event.sportId)
             } else null
 
             val scoreText = when {
-                mmaDetail != null && event.status == "COMPLETED" -> {
-                    when (mmaDetail.winner) {
+                detailForScore is ResultDetail.Mma && event.status == "COMPLETED" -> {
+                    when (detailForScore.winner) {
                         event.homeCompetitorName -> "W\n-\nL"
                         event.awayCompetitorName -> "L\n-\nW"
                         else -> "vs"
                     }
+                }
+                detailForScore is ResultDetail.Tennis && event.status == "COMPLETED" -> {
+                    if (detailForScore.player1Sets.isNotEmpty()) {
+                        detailForScore.player1Sets.zip(detailForScore.player2Sets)
+                            .joinToString("\n") { (s1, s2) -> "$s1-$s2" }
+                    } else "W"
                 }
                 event.status == "COMPLETED" || event.status == "LIVE" -> "${event.homeScore ?: 0}\n-\n${event.awayScore ?: 0}"
                 else -> "vs"
