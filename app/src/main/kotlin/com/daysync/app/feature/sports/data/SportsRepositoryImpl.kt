@@ -16,10 +16,13 @@ import com.daysync.app.feature.sports.data.remote.BallDontLieApiService
 import com.daysync.app.feature.sports.data.remote.EspnApiService
 import com.daysync.app.feature.sports.data.remote.FootballDataApiService
 import com.daysync.app.feature.sports.data.remote.JolpicaApiService
+import com.daysync.app.feature.sports.data.remote.dto.EspnEvent
+import com.daysync.app.feature.sports.data.remote.dto.getCalendarEntries
 import com.daysync.app.feature.sports.data.remote.dto.toCompetitorEntity
 import com.daysync.app.feature.sports.data.remote.dto.toMmaFightEntities
 import com.daysync.app.feature.sports.data.remote.dto.toParticipantEntity
 import com.daysync.app.feature.sports.data.remote.dto.toSportEventEntity
+import com.daysync.app.feature.sports.data.remote.dto.toTennisMatchEntities
 import com.daysync.app.feature.sports.data.remote.dto.toVenueEntity
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
@@ -250,10 +253,10 @@ class SportsRepositoryImpl @Inject constructor(
             errors += "MMA: ${e.message}"
         }
 
-        // ESPN for Tennis (ATP)
-        try { refreshEspnScoreboard("tennis", "atp", "tennis-atp") } catch (e: Exception) {
-            Log.e(TAG, "Failed to refresh ESPN Tennis: ${e.message}", e)
-            errors += "ESPN Tennis: ${e.message}"
+        // Tennis via ESPN (match-per-event model, Men's + Women's Singles, R3+)
+        try { refreshTennisEvents() } catch (e: Exception) {
+            Log.e(TAG, "Failed to refresh Tennis: ${e.message}", e)
+            errors += "Tennis: ${e.message}"
         }
 
         if (errors.isNotEmpty()) {
@@ -331,7 +334,7 @@ class SportsRepositoryImpl @Inject constructor(
     private suspend fun refreshMmaEvents() {
         // Get calendar for past 3 + next 5 events
         val currentResponse = espnApi.getScoreboard("mma", "ufc")
-        val calendar = currentResponse.leagues.flatMap { it.calendar }
+        val calendar = currentResponse.leagues.flatMap { it.getCalendarEntries() }
 
         val now = Clock.System.now().toLocalDateTime(TimeZone.UTC)
         val nowIso = now.toString()
@@ -372,6 +375,44 @@ class SportsRepositoryImpl @Inject constructor(
             dao.insertCompetitors(fighters)
             dao.insertEvents(fights.map { it.event })
         }
+    }
+
+    private suspend fun refreshTennisEvents() {
+        // Get current scoreboard to find active/recent tournaments
+        val currentResponse = espnApi.getScoreboard("tennis", "atp")
+
+        // Process current events
+        for (event in currentResponse.events) {
+            insertTennisMatches(event, "tennis-atp")
+        }
+
+        // Tennis calendar is day-based strings — find tournament dates by checking
+        // a range of upcoming dates for events with match data
+        val today = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
+
+        // Check past 14 days for recent results and next 30 days for upcoming
+        val datesToCheck = (-14..30 step 7).map { offset ->
+            today.plus(offset.toLong(), DateTimeUnit.DAY).toString().replace("-", "")
+        }
+
+        for (dateStr in datesToCheck) {
+            try {
+                val response = espnApi.getScoreboard("tennis", "atp", dates = dateStr)
+                for (event in response.events) {
+                    insertTennisMatches(event, "tennis-atp")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to fetch tennis for date $dateStr: ${e.message}")
+            }
+        }
+    }
+
+    private suspend fun insertTennisMatches(event: EspnEvent, competitionId: String) {
+        val matches = event.toTennisMatchEntities(competitionId)
+        if (matches.isEmpty()) return
+        val players = matches.flatMap { listOf(it.player1, it.player2) }.distinctBy { it.id }
+        dao.insertCompetitors(players)
+        dao.insertEvents(matches.map { it.event })
     }
 
     private suspend fun refreshEspnScoreboard(sport: String, league: String, competitionId: String) {

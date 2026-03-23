@@ -1,6 +1,7 @@
 package com.daysync.app.feature.sports.data.remote.dto
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 // ESPN unofficial API response DTOs
 
@@ -14,18 +15,40 @@ data class EspnScoreboardResponse(
 data class EspnEvent(
     val id: String? = null,
     val date: String? = null,
+    val endDate: String? = null,
     val name: String? = null,
     val shortName: String? = null,
+    val major: Boolean? = null, // Grand Slam indicator for tennis
     val status: EspnEventStatus? = null,
     val competitions: List<EspnCompetition> = emptyList(),
+    val groupings: List<EspnGrouping> = emptyList(), // Tennis: matches grouped by draw
     val season: EspnSeason? = null,
+    val venue: EspnSimpleVenue? = null, // Tennis tournament venue
+)
+
+@Serializable
+data class EspnSimpleVenue(
+    val displayName: String? = null,
+)
+
+@Serializable
+data class EspnGrouping(
+    val grouping: EspnGroupingType? = null,
+    val competitions: List<EspnCompetition> = emptyList(),
+)
+
+@Serializable
+data class EspnGroupingType(
+    val id: String? = null,
+    val slug: String? = null, // "mens-singles", "womens-singles"
+    val displayName: String? = null,
 )
 
 @Serializable
 data class EspnEventStatus(
-    val clock: Double? = null, // Seconds remaining in current round
-    val displayClock: String? = null, // e.g. "1:17", "5:00"
-    val period: Int? = null, // Current/ended round number
+    val clock: Double? = null,
+    val displayClock: String? = null,
+    val period: Int? = null,
     val type: EspnStatusType? = null,
 )
 
@@ -43,13 +66,27 @@ data class EspnStatusType(
 @Serializable
 data class EspnCompetition(
     val id: String? = null,
-    val date: String? = null, // Individual fight time
+    val date: String? = null,
     val venue: EspnVenue? = null,
     val competitors: List<EspnCompetitor> = emptyList(),
     val status: EspnEventStatus? = null,
     val type: EspnCompetitionType? = null,
     val format: EspnFormat? = null,
     val details: List<EspnDetail> = emptyList(),
+    val notes: List<EspnNote> = emptyList(),
+    val round: EspnRound? = null, // Tennis: round info (Final, SF, QF, etc.)
+)
+
+@Serializable
+data class EspnRound(
+    val id: Int? = null,
+    val displayName: String? = null, // "Final", "Semifinal", "Round 3", etc.
+)
+
+@Serializable
+data class EspnNote(
+    val text: String? = null,
+    val type: String? = null,
 )
 
 @Serializable
@@ -64,7 +101,7 @@ data class EspnFormat(
 
 @Serializable
 data class EspnRegulation(
-    val periods: Int? = null, // 5 = championship/main event, 3 = regular
+    val periods: Int? = null,
 )
 
 @Serializable
@@ -75,7 +112,7 @@ data class EspnDetail(
 @Serializable
 data class EspnDetailType(
     val id: String? = null,
-    val text: String? = null, // "Unofficial Winner Decision", "Unofficial Winner Kotko", etc.
+    val text: String? = null,
 )
 
 @Serializable
@@ -84,9 +121,24 @@ data class EspnCompetitor(
     val homeAway: String? = null,
     val winner: Boolean? = null,
     val team: EspnTeam? = null,
-    val athlete: EspnAthlete? = null, // For individual sports (MMA, Tennis)
+    val athlete: EspnAthlete? = null,
     val score: String? = null,
     val records: List<EspnRecord> = emptyList(),
+    val curatedRank: EspnRank? = null,
+    val seed: String? = null,
+    val linescores: List<EspnLinescore> = emptyList(),
+)
+
+@Serializable
+data class EspnRank(
+    val current: Int? = null,
+)
+
+@Serializable
+data class EspnLinescore(
+    val value: Double? = null,
+    val tiebreak: Int? = null,
+    val winner: Boolean? = null,
 )
 
 @Serializable
@@ -99,14 +151,14 @@ data class EspnAthlete(
 
 @Serializable
 data class EspnFlag(
-    val href: String? = null, // Country flag image URL
-    val alt: String? = null, // Country name
+    val href: String? = null,
+    val alt: String? = null,
 )
 
 @Serializable
 data class EspnRecord(
     val name: String? = null,
-    val summary: String? = null, // e.g. "20-0-0"
+    val summary: String? = null,
 )
 
 @Serializable
@@ -126,6 +178,7 @@ data class EspnVenue(
     val fullName: String? = null,
     val address: EspnAddress? = null,
     val capacity: Int? = null,
+    val court: String? = null, // Tennis court name
 )
 
 @Serializable
@@ -147,7 +200,9 @@ data class EspnLeague(
     val id: String? = null,
     val name: String? = null,
     val abbreviation: String? = null,
-    val calendar: List<EspnCalendarEntry> = emptyList(),
+    // Calendar can be List<EspnCalendarEntry> (MMA) or List<String> (Tennis)
+    // Use JsonElement to handle both polymorphic formats
+    val calendar: List<JsonElement> = emptyList(),
 )
 
 @Serializable

@@ -5,6 +5,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 
 private val json = Json { ignoreUnknownKeys = true }
@@ -50,6 +51,23 @@ sealed interface ResultDetail {
         val roundTime: String?,
     ) : ResultDetail
 
+    data class Tennis(
+        val tournament: String?,
+        val isGrandSlam: Boolean,
+        val draw: String?,
+        val round: String?,
+        val bestOf: Int?,
+        val court: String?,
+        val player1Rank: Int?,
+        val player2Rank: Int?,
+        val player1Sets: List<Int>,
+        val player2Sets: List<Int>,
+        val tiebreaks: List<List<Int>?>,
+        val winner: String?,
+        val resultNote: String?,
+        val currentSet: Int?,
+    ) : ResultDetail
+
     data class Unknown(val raw: String) : ResultDetail
 
     companion object {
@@ -77,6 +95,25 @@ sealed interface ResultDetail {
                         winnerTime = obj["winner_time"]?.jsonPrimitive?.content,
                         fastestLapDriver = obj["fastest_lap_driver"]?.jsonPrimitive?.content,
                         fastestLapTime = obj["fastest_lap_time"]?.jsonPrimitive?.content,
+                    )
+                    "tennis" -> Tennis(
+                        tournament = obj["tournament"]?.jsonPrimitive?.content,
+                        isGrandSlam = obj["is_grand_slam"]?.jsonPrimitive?.content == "true",
+                        draw = obj["draw"]?.jsonPrimitive?.content,
+                        round = obj["round"]?.jsonPrimitive?.content,
+                        bestOf = obj["best_of"]?.jsonPrimitive?.intOrNull,
+                        court = obj["court"]?.jsonPrimitive?.content,
+                        player1Rank = obj["player1_rank"]?.jsonPrimitive?.intOrNull,
+                        player2Rank = obj["player2_rank"]?.jsonPrimitive?.intOrNull,
+                        player1Sets = obj["player1_sets"]?.jsonArray?.map { it.jsonPrimitive.int } ?: emptyList(),
+                        player2Sets = obj["player2_sets"]?.jsonArray?.map { it.jsonPrimitive.int } ?: emptyList(),
+                        tiebreaks = obj["tiebreaks"]?.jsonArray?.map { elem ->
+                            if (elem is kotlinx.serialization.json.JsonNull) null
+                            else elem.jsonArray.map { it.jsonPrimitive.int }
+                        } ?: emptyList(),
+                        winner = obj["winner"]?.jsonPrimitive?.content,
+                        resultNote = obj["result_note"]?.jsonPrimitive?.content,
+                        currentSet = obj["current_set"]?.jsonPrimitive?.intOrNull,
                     )
                     "mma" -> Mma(
                         cardName = obj["card_name"]?.jsonPrimitive?.content,
