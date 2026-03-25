@@ -30,7 +30,8 @@ class ResultDetailTest {
         assertEquals(5, result.penaltiesHome)
         assertEquals(4, result.penaltiesAway)
         assertEquals("HOME_TEAM", result.winner)
-        assertEquals(90, result.elapsed)
+        assertEquals("90", result.elapsed)
+        assertTrue(result.goals.isEmpty()) // No goals in this JSON
     }
 
     @Test
