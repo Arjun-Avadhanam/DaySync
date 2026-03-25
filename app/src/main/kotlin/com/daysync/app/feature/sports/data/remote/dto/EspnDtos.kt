@@ -117,6 +117,28 @@ data class EspnRegulation(
 @Serializable
 data class EspnDetail(
     val type: EspnDetailType? = null,
+    val clock: EspnClock? = null,
+    val team: EspnTeamRef? = null,
+    val scoringPlay: Boolean? = null,
+    val athletesInvolved: List<EspnAthleteRef> = emptyList(),
+    val penaltyKick: Boolean? = null,
+    val ownGoal: Boolean? = null,
+)
+
+@Serializable
+data class EspnClock(
+    val value: Double? = null,
+    val displayValue: String? = null,
+)
+
+@Serializable
+data class EspnTeamRef(
+    val id: String? = null,
+)
+
+@Serializable
+data class EspnAthleteRef(
+    val displayName: String? = null,
 )
 
 @Serializable
@@ -137,6 +159,14 @@ data class EspnCompetitor(
     val curatedRank: EspnRank? = null,
     val seed: String? = null,
     val linescores: List<EspnLinescore> = emptyList(),
+    val form: String? = null, // Football: "WLDWW"
+    val statistics: List<EspnStatistic> = emptyList(), // Football: possession, fouls, etc.
+)
+
+@Serializable
+data class EspnStatistic(
+    val name: String? = null,
+    val displayValue: String? = null,
 )
 
 @Serializable

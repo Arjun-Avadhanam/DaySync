@@ -20,6 +20,8 @@ import com.daysync.app.feature.sports.data.remote.dto.EspnEvent
 import com.daysync.app.feature.sports.data.remote.dto.getCalendarEntries
 import com.daysync.app.feature.sports.data.remote.dto.toCompetitorEntity
 import com.daysync.app.feature.sports.data.remote.dto.toMmaFightEntities
+import com.daysync.app.feature.sports.data.remote.dto.toFootballMatchEntity
+import com.daysync.app.feature.sports.data.remote.dto.toFootballTeamEntity
 import com.daysync.app.feature.sports.data.remote.dto.toNbaGameEntity
 import com.daysync.app.feature.sports.data.remote.dto.toNbaTeamEntity
 import com.daysync.app.feature.sports.data.remote.dto.toParticipantEntity
@@ -219,26 +221,10 @@ class SportsRepositoryImpl @Inject constructor(
     override suspend fun refreshAllSports() {
         val errors = mutableListOf<String>()
 
-        // Football-Data.org competitions (free tier)
-        val fdCompetitions = mapOf(
-            "PL" to "football-pl",
-            "CL" to "football-cl",
-            "SA" to "football-sa",
-            "PD" to "football-laliga",
-        )
-        for ((code, id) in fdCompetitions) {
-            try {
-                refreshFootballFixtures(code, id)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to refresh FD fixtures for $code: ${e.message}", e)
-                errors += "Football ($code): ${e.message}"
-            }
-        }
-
-        // API-Football for gap competitions (Europa, EFL, etc.)
-        try { refreshApiFootballCompetitions() } catch (e: Exception) {
-            Log.e(TAG, "Failed to refresh API-Football: ${e.message}", e)
-            errors += "API-Football: ${e.message}"
+        // Football via ESPN (all 16 competitions with goal scorers)
+        try { refreshFootballEspn() } catch (e: Exception) {
+            Log.e(TAG, "Failed to refresh Football: ${e.message}", e)
+            errors += "Football: ${e.message}"
         }
 
         // NBA via ESPN (quarter scores, records, playoff series)
@@ -299,6 +285,50 @@ class SportsRepositoryImpl @Inject constructor(
                 Log.e(TAG, "Failed to refresh API-Football league $leagueId: ${e.message}", e)
             }
         }
+    }
+
+    private suspend fun refreshFootballEspn() {
+        // All 16 competitions with ESPN slugs
+        val footballComps = mapOf(
+            "eng.1" to "football-pl",
+            "esp.1" to "football-laliga",
+            "ita.1" to "football-sa",
+            "ger.1" to "football-bl1",
+            "fra.1" to "football-fl1",
+            "uefa.champions" to "football-cl",
+            "uefa.europa" to "football-el",
+            "eng.fa" to "football-fa",
+            "eng.league_cup" to "football-efl",
+            "ger.dfb_pokal" to "football-dfb",
+            "esp.copa_del_rey" to "football-cdr",
+            "ita.coppa_italia" to "football-ci",
+            "fifa.world" to "football-wc",
+            "uefa.euro" to "football-euro",
+            "uefa.nations" to "football-unl",
+            "conmebol.america" to "football-copa",
+        )
+
+        val allTeams = mutableListOf<CompetitorEntity>()
+        val allEvents = mutableListOf<SportEventEntity>()
+
+        for ((slug, compId) in footballComps) {
+            try {
+                val response = espnApi.getScoreboard("soccer", slug)
+                for (event in response.events) {
+                    val comp = event.competitions.firstOrNull() ?: continue
+                    comp.competitors.forEach { competitor ->
+                        competitor.toFootballTeamEntity()?.let { allTeams += it }
+                    }
+                    event.toFootballMatchEntity(compId)?.let { allEvents += it }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to fetch football $slug: ${e.message}")
+            }
+        }
+
+        val distinctTeams = allTeams.distinctBy { it.id }
+        if (distinctTeams.isNotEmpty()) dao.insertCompetitors(distinctTeams)
+        if (allEvents.isNotEmpty()) dao.insertEvents(allEvents)
     }
 
     private suspend fun refreshNbaGamesEspn() {

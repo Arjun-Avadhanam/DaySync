@@ -52,14 +52,59 @@ object SeedData {
             apiFootballId = 48, espnSlug = "eng.league_cup",
         ),
         CompetitionEntity(
-            id = "football-cwc", sportId = "football", name = "Club World Cup",
-            shortName = "CWC", country = "International",
-            apiFootballId = 15, espnSlug = "fifa.cwc",
+            id = "football-bl1", sportId = "football", name = "Bundesliga",
+            shortName = "BL", country = "Germany",
+            footballDataId = "BL1", espnSlug = "ger.1",
+        ),
+        CompetitionEntity(
+            id = "football-fl1", sportId = "football", name = "Ligue 1",
+            shortName = "L1", country = "France",
+            footballDataId = "FL1", espnSlug = "fra.1",
+        ),
+        CompetitionEntity(
+            id = "football-fa", sportId = "football", name = "FA Cup",
+            shortName = "FA", country = "England",
+            espnSlug = "eng.fa",
+        ),
+        CompetitionEntity(
+            id = "football-efl", sportId = "football", name = "Carabao Cup",
+            shortName = "EFL", country = "England",
+            espnSlug = "eng.league_cup",
+        ),
+        CompetitionEntity(
+            id = "football-dfb", sportId = "football", name = "DFB Pokal",
+            shortName = "DFB", country = "Germany",
+            espnSlug = "ger.dfb_pokal",
+        ),
+        CompetitionEntity(
+            id = "football-cdr", sportId = "football", name = "Copa Del Rey",
+            shortName = "CDR", country = "Spain",
+            espnSlug = "esp.copa_del_rey",
+        ),
+        CompetitionEntity(
+            id = "football-ci", sportId = "football", name = "Coppa Italia",
+            shortName = "CI", country = "Italy",
+            espnSlug = "ita.coppa_italia",
+        ),
+        CompetitionEntity(
+            id = "football-wc", sportId = "football", name = "World Cup",
+            shortName = "WC", country = "International",
+            footballDataId = "WC", espnSlug = "fifa.world",
+        ),
+        CompetitionEntity(
+            id = "football-euro", sportId = "football", name = "UEFA Euros",
+            shortName = "EUR", country = "Europe",
+            footballDataId = "EC", espnSlug = "uefa.euro",
         ),
         CompetitionEntity(
             id = "football-unl", sportId = "football", name = "Nations League",
             shortName = "UNL", country = "Europe",
-            apiFootballId = 5, espnSlug = "uefa.nations",
+            espnSlug = "uefa.nations",
+        ),
+        CompetitionEntity(
+            id = "football-copa", sportId = "football", name = "Copa America",
+            shortName = "CA", country = "South America",
+            espnSlug = "conmebol.america",
         ),
         // Basketball
         CompetitionEntity(

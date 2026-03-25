@@ -3,14 +3,25 @@ package com.daysync.app.feature.sports.data.model
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 private val json = Json { ignoreUnknownKeys = true }
 
 sealed interface ResultDetail {
+
+    data class FootballGoal(
+        val minute: String,
+        val scorer: String,
+        val isHome: Boolean,
+        val penalty: Boolean,
+        val ownGoal: Boolean,
+    )
 
     data class Football(
         val halftimeHome: Int?,
@@ -22,7 +33,16 @@ sealed interface ResultDetail {
         val penaltiesHome: Int?,
         val penaltiesAway: Int?,
         val winner: String?,
-        val elapsed: Int?,
+        val elapsed: String?, // Changed to String for "45'+2'" format
+        val goals: List<FootballGoal>,
+        val note: String?,
+        val venue: String?,
+        val homeForm: String?,
+        val awayForm: String?,
+        val homeRecord: String?,
+        val awayRecord: String?,
+        val possessionHome: String?,
+        val possessionAway: String?,
     ) : ResultDetail
 
     data class F1(
@@ -109,7 +129,25 @@ sealed interface ResultDetail {
                         penaltiesHome = obj["penalties_home"]?.jsonPrimitive?.intOrNull,
                         penaltiesAway = obj["penalties_away"]?.jsonPrimitive?.intOrNull,
                         winner = obj["winner"]?.jsonPrimitive?.content,
-                        elapsed = obj["elapsed"]?.jsonPrimitive?.intOrNull,
+                        elapsed = obj["elapsed"]?.jsonPrimitive?.content,
+                        goals = obj["goals"]?.jsonArray?.map { elem ->
+                            val g = elem.jsonObject
+                            FootballGoal(
+                                minute = g["minute"]?.jsonPrimitive?.content ?: "?",
+                                scorer = g["scorer"]?.jsonPrimitive?.content ?: "?",
+                                isHome = g["home"]?.jsonPrimitive?.booleanOrNull ?: true,
+                                penalty = g["penalty"]?.jsonPrimitive?.booleanOrNull ?: false,
+                                ownGoal = g["own_goal"]?.jsonPrimitive?.booleanOrNull ?: false,
+                            )
+                        } ?: emptyList(),
+                        note = obj["note"]?.jsonPrimitive?.content,
+                        venue = obj["venue"]?.jsonPrimitive?.content,
+                        homeForm = obj["home_form"]?.jsonPrimitive?.content,
+                        awayForm = obj["away_form"]?.jsonPrimitive?.content,
+                        homeRecord = obj["home_record"]?.jsonPrimitive?.content,
+                        awayRecord = obj["away_record"]?.jsonPrimitive?.content,
+                        possessionHome = obj["possession_home"]?.jsonPrimitive?.content,
+                        possessionAway = obj["possession_away"]?.jsonPrimitive?.content,
                     )
                     "f1" -> F1(
                         circuit = obj["circuit"]?.jsonPrimitive?.content,

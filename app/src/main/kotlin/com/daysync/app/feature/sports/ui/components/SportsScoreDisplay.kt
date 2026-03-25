@@ -43,6 +43,7 @@ private fun FootballScoreDetail(detail: ResultDetail.Football, modifier: Modifie
         )
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Scores
         if (detail.halftimeHome != null) {
             ScoreRow("Half Time", "${detail.halftimeHome} - ${detail.halftimeAway}")
         }
@@ -53,14 +54,74 @@ private fun FootballScoreDetail(detail: ResultDetail.Football, modifier: Modifie
         if (detail.penaltiesHome != null) {
             ScoreRow("Penalties", "${detail.penaltiesHome} - ${detail.penaltiesAway}")
         }
+
+        // Live elapsed time
         detail.elapsed?.let {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "$it'",
+                text = it,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
                 fontWeight = FontWeight.Bold,
             )
+        }
+
+        // Goal scorers
+        if (detail.goals.isNotEmpty()) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            Text(
+                text = "Goals",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            detail.goals.forEach { goal ->
+                val tag = buildString {
+                    if (goal.penalty) append(" (pen)")
+                    if (goal.ownGoal) append(" (og)")
+                }
+                val side = if (goal.isHome) "" else "     "
+                Text(
+                    text = "${goal.minute} ${goal.scorer}$tag",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = if (goal.isHome) FontWeight.Medium else FontWeight.Normal,
+                    color = if (goal.isHome) MaterialTheme.colorScheme.onSurface
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(
+                        start = if (goal.isHome) 0.dp else 16.dp,
+                        bottom = 2.dp,
+                    ),
+                )
+            }
+        }
+
+        // Knockout/aggregate note
+        detail.note?.let {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+
+        // Form + records + possession + venue
+        val hasExtra = detail.homeForm != null || detail.venue != null || detail.possessionHome != null
+        if (hasExtra) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            if (detail.homeForm != null || detail.awayForm != null) {
+                detail.homeForm?.let { ScoreRow("Home Form", it) }
+                detail.awayForm?.let { ScoreRow("Away Form", it) }
+            }
+            if (detail.homeRecord != null || detail.awayRecord != null) {
+                detail.homeRecord?.let { ScoreRow("Home Record", it) }
+                detail.awayRecord?.let { ScoreRow("Away Record", it) }
+            }
+            if (detail.possessionHome != null) {
+                ScoreRow("Possession", "${detail.possessionHome}% - ${detail.possessionAway}%")
+            }
+            detail.venue?.let { ScoreRow("Venue", it) }
         }
     }
 }

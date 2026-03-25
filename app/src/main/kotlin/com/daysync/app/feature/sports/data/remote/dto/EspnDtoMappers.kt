@@ -94,6 +94,139 @@ fun EspnEvent.toSportEventEntity(
     )
 }
 
+// ── Football/Soccer (team sport with goal scorers + knockout rounds) ──
+
+data class EspnGoal(
+    val minute: String,
+    val scorer: String,
+    val isHome: Boolean,
+    val penalty: Boolean,
+    val ownGoal: Boolean,
+)
+
+fun EspnEvent.toFootballMatchEntity(
+    competitionId: String,
+): SportEventEntity? {
+    val scheduledInstant = normalizeEspnDate(date) ?: return null
+    val comp = competitions.firstOrNull() ?: return null
+    val home = comp.competitors.firstOrNull { it.homeAway == "home" }
+    val away = comp.competitors.firstOrNull { it.homeAway == "away" }
+
+    val statusStr = mapEspnStatus(
+        comp.status?.type?.state ?: status?.type?.state,
+        comp.status?.type?.completed ?: status?.type?.completed,
+    )
+
+    val homeTeamId = home?.team?.id
+    val homeScore = home?.score?.toIntOrNull()
+    val awayScore = away?.score?.toIntOrNull()
+
+    // Extract goals from details
+    val goals = comp.details.filter { it.scoringPlay == true }.mapNotNull { detail ->
+        val minute = detail.clock?.displayValue ?: return@mapNotNull null
+        val scorer = detail.athletesInvolved?.firstOrNull()?.displayName ?: return@mapNotNull null
+        val isHome = detail.team?.id == homeTeamId
+        EspnGoal(
+            minute = minute,
+            scorer = scorer,
+            isHome = isHome,
+            penalty = detail.penaltyKick == true,
+            ownGoal = detail.ownGoal == true,
+        )
+    }
+
+    // Derive HT score from goals (clock.value <= 2700 = first half)
+    val htGoals = comp.details.filter {
+        it.scoringPlay == true && (it.clock?.value ?: 0.0) <= 2700.0
+    }
+    val htHome = htGoals.count { it.team?.id == homeTeamId }
+    val htAway = htGoals.size - htHome
+
+    val noteHeadline = comp.notes.firstOrNull()?.let { it.headline ?: it.text }
+    val venue = comp.venue
+    val homeForm = home?.form
+    val awayForm = away?.form
+    val homeRecord = home?.records?.firstOrNull { it.name == "All Splits" || it.name == "overall" }?.summary
+    val awayRecord = away?.records?.firstOrNull { it.name == "All Splits" || it.name == "overall" }?.summary
+
+    // Possession from statistics
+    val homePossession = home?.statistics?.firstOrNull { it.name == "possessionPct" }?.displayValue
+    val awayPossession = away?.statistics?.firstOrNull { it.name == "possessionPct" }?.displayValue
+
+    val resultJson = buildJsonObject {
+        put("type", "football")
+        if (statusStr == "COMPLETED" || statusStr == "LIVE") {
+            put("fulltime_home", homeScore ?: 0)
+            put("fulltime_away", awayScore ?: 0)
+            if (htGoals.isNotEmpty() || statusStr == "COMPLETED") {
+                put("halftime_home", htHome)
+                put("halftime_away", htAway)
+            }
+        }
+        if (goals.isNotEmpty()) {
+            put("goals", buildJsonArray {
+                goals.forEach { g ->
+                    add(buildJsonObject {
+                        put("minute", g.minute)
+                        put("scorer", g.scorer)
+                        put("home", g.isHome)
+                        if (g.penalty) put("penalty", true)
+                        if (g.ownGoal) put("own_goal", true)
+                    })
+                }
+            })
+        }
+        noteHeadline?.let { put("note", it) }
+        venue?.let {
+            val venueName = buildString {
+                append(it.fullName ?: "")
+                it.address?.city?.let { city -> append(", $city") }
+            }
+            if (venueName.isNotBlank()) put("venue", venueName)
+        }
+        homeForm?.let { put("home_form", it) }
+        awayForm?.let { put("away_form", it) }
+        homeRecord?.let { put("home_record", it) }
+        awayRecord?.let { put("away_record", it) }
+        homePossession?.let { put("possession_home", it) }
+        awayPossession?.let { put("possession_away", it) }
+        if (statusStr == "LIVE") {
+            comp.status?.displayClock?.let { put("elapsed", it) }
+        }
+    }.toString()
+
+    return SportEventEntity(
+        id = "espn-football-${comp.id ?: id ?: return null}",
+        sportId = "football",
+        competitionId = competitionId,
+        scheduledAt = scheduledInstant,
+        status = statusStr,
+        homeCompetitorId = home?.team?.id?.let { "espn-team-$it" },
+        awayCompetitorId = away?.team?.id?.let { "espn-team-$it" },
+        homeScore = homeScore,
+        awayScore = awayScore,
+        eventName = shortName ?: name,
+        round = noteHeadline,
+        season = season?.year?.toString(),
+        resultDetail = resultJson,
+        lastUpdated = Clock.System.now(),
+        dataSource = "espn",
+        syncStatus = SyncStatus.SYNCED,
+    )
+}
+
+fun EspnCompetitor.toFootballTeamEntity(): CompetitorEntity? {
+    val t = team ?: return null
+    return CompetitorEntity(
+        id = "espn-team-${t.id ?: return null}",
+        sportId = "football",
+        name = t.displayName ?: t.name ?: "Unknown",
+        shortName = t.abbreviation ?: t.shortDisplayName,
+        logoUrl = t.logo,
+        espnId = t.id,
+    )
+}
+
 // ── Basketball (team sport with quarter scores + playoff series) ──
 
 fun EspnEvent.toNbaGameEntity(
