@@ -18,7 +18,7 @@ interface SportsRepository {
 
     // Events
     fun getUpcomingEvents(sportId: String? = null): Flow<List<SportEventEntity>>
-    fun getLiveEvents(): Flow<List<SportEventEntity>>
+    fun getLiveEvents(sportId: String? = null): Flow<List<SportEventEntity>>
     fun getRecentResults(sportId: String? = null): Flow<List<SportEventEntity>>
     fun getWatchlistedEvents(): Flow<List<SportEventEntity>>
     fun getEventsByCompetition(competitionId: String): Flow<List<SportEventEntity>>

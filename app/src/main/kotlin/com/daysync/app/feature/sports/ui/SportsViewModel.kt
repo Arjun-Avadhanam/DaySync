@@ -115,7 +115,7 @@ class SportsViewModel @Inject constructor(
 
     fun selectSport(sportId: String?) {
         _uiState.update { it.copy(selectedSportId = sportId) }
-        // Re-collect filtered events
+        // Re-collect filtered events for all tabs
         viewModelScope.launch {
             combine(
                 repository.getUpcomingEvents(sportId),
@@ -125,6 +125,17 @@ class SportsViewModel @Inject constructor(
             }.collect { (events, watchlistIds) ->
                 val enriched = events.map { repository.enrichEvent(it, watchlistIds) }
                 _uiState.update { it.copy(upcomingEvents = enriched) }
+            }
+        }
+        viewModelScope.launch {
+            combine(
+                repository.getLiveEvents(sportId),
+                repository.getWatchlistedEventIds(),
+            ) { events, watchlistIds ->
+                events to watchlistIds.toSet()
+            }.collect { (events, watchlistIds) ->
+                val enriched = events.map { repository.enrichEvent(it, watchlistIds) }
+                _uiState.update { it.copy(liveEvents = enriched, liveCount = enriched.size) }
             }
         }
         viewModelScope.launch {

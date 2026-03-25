@@ -124,6 +124,9 @@ interface SportEventDao {
     @Query("SELECT * FROM sport_events WHERE status = 'LIVE' AND isDeleted = 0")
     fun getLiveEvents(): Flow<List<SportEventEntity>>
 
+    @Query("SELECT * FROM sport_events WHERE status = 'LIVE' AND isDeleted = 0 AND sportId = :sportId")
+    fun getLiveEventsBySport(sportId: String): Flow<List<SportEventEntity>>
+
     @Query(
         """SELECT * FROM sport_events
            WHERE competitionId = :competitionId AND isDeleted = 0

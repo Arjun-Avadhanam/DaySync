@@ -62,7 +62,9 @@ class SportsRepositoryImpl @Inject constructor(
         return if (sportId != null) dao.getUpcomingEventsBySport(sportId) else dao.getUpcomingEvents()
     }
 
-    override fun getLiveEvents(): Flow<List<SportEventEntity>> = dao.getLiveEvents()
+    override fun getLiveEvents(sportId: String?): Flow<List<SportEventEntity>> {
+        return if (sportId != null) dao.getLiveEventsBySport(sportId) else dao.getLiveEvents()
+    }
 
     override fun getRecentResults(sportId: String?): Flow<List<SportEventEntity>> {
         return if (sportId != null) dao.getRecentResultsBySport(sportId) else dao.getRecentResults()
