@@ -74,7 +74,16 @@ data class EspnCompetition(
     val format: EspnFormat? = null,
     val details: List<EspnDetail> = emptyList(),
     val notes: List<EspnNote> = emptyList(),
-    val round: EspnRound? = null, // Tennis: round info (Final, SF, QF, etc.)
+    val round: EspnRound? = null, // Tennis: round info
+    val series: EspnSeries? = null, // Basketball: playoff series info
+)
+
+@Serializable
+data class EspnSeries(
+    val type: String? = null, // "playoff"
+    val summary: String? = null, // "OKC leads series 1-0"
+    val completed: Boolean? = null,
+    val totalCompetitions: Int? = null, // Best of 4, 5, or 7
 )
 
 @Serializable
@@ -86,6 +95,7 @@ data class EspnRound(
 @Serializable
 data class EspnNote(
     val text: String? = null,
+    val headline: String? = null, // NBA playoffs use headline, MMA uses text
     val type: String? = null,
 )
 

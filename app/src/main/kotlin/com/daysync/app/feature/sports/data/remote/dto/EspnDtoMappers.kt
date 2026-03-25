@@ -94,6 +94,100 @@ fun EspnEvent.toSportEventEntity(
     )
 }
 
+// ── Basketball (team sport with quarter scores + playoff series) ──
+
+fun EspnEvent.toNbaGameEntity(
+    competitionId: String,
+): SportEventEntity? {
+    val scheduledInstant = normalizeEspnDate(date) ?: return null
+    val comp = competitions.firstOrNull() ?: return null
+    val home = comp.competitors.firstOrNull { it.homeAway == "home" }
+    val away = comp.competitors.firstOrNull { it.homeAway == "away" }
+
+    val statusStr = mapEspnStatus(
+        comp.status?.type?.state ?: status?.type?.state,
+        comp.status?.type?.completed ?: status?.type?.completed,
+    )
+
+    val homeQuarters = home?.linescores?.map { it.value?.toInt() ?: 0 } ?: emptyList()
+    val awayQuarters = away?.linescores?.map { it.value?.toInt() ?: 0 } ?: emptyList()
+    val homeRecord = home?.records?.firstOrNull { it.name == "overall" }?.summary
+    val awayRecord = away?.records?.firstOrNull { it.name == "overall" }?.summary
+
+    // Playoff info
+    val series = comp.series
+    val playoffRound = comp.type?.abbreviation // STD, RD16, SEMI, FINAL
+    val noteHeadline = comp.notes.firstOrNull()?.let { it.headline ?: it.text } // "West 1st Round - Game 1"
+
+    val isPostseason = playoffRound != null && playoffRound != "STD"
+
+    val resultJson = buildJsonObject {
+        put("type", "basketball")
+        if (homeQuarters.isNotEmpty()) {
+            put("home_quarters", buildJsonArray { homeQuarters.forEach { add(JsonPrimitive(it)) } })
+            put("away_quarters", buildJsonArray { awayQuarters.forEach { add(JsonPrimitive(it)) } })
+        }
+        homeRecord?.let { put("home_record", it) }
+        awayRecord?.let { put("away_record", it) }
+        put("is_postseason", isPostseason)
+        if (isPostseason) {
+            noteHeadline?.let { put("playoff_label", it) }
+            series?.summary?.let { put("series_summary", it) }
+            series?.totalCompetitions?.let { put("series_total_games", it) }
+        }
+        if (statusStr == "LIVE") {
+            comp.status?.period?.let { put("current_period", it) }
+            comp.status?.displayClock?.let { put("game_clock", it) }
+        }
+        // Venue
+        comp.venue?.fullName?.let { put("venue", it) }
+    }.toString()
+
+    // Determine round label for display
+    val roundLabel = when {
+        isPostseason && noteHeadline != null -> noteHeadline
+        isPostseason -> when (playoffRound) {
+            "RD16" -> "1st Round"
+            "QTR" -> "Conference Semifinals"
+            "SEMI" -> "Conference Finals"
+            "FINAL" -> "NBA Finals"
+            else -> "Playoffs"
+        }
+        else -> null
+    }
+
+    return SportEventEntity(
+        id = "espn-nba-${comp.id ?: id ?: return null}",
+        sportId = "basketball",
+        competitionId = competitionId,
+        scheduledAt = scheduledInstant,
+        status = statusStr,
+        homeCompetitorId = home?.team?.id?.let { "espn-team-$it" },
+        awayCompetitorId = away?.team?.id?.let { "espn-team-$it" },
+        homeScore = home?.score?.toIntOrNull(),
+        awayScore = away?.score?.toIntOrNull(),
+        eventName = shortName ?: name,
+        round = roundLabel,
+        season = season?.year?.toString(),
+        resultDetail = resultJson,
+        lastUpdated = Clock.System.now(),
+        dataSource = "espn",
+        syncStatus = SyncStatus.SYNCED,
+    )
+}
+
+fun EspnCompetitor.toNbaTeamEntity(): CompetitorEntity? {
+    val t = team ?: return null
+    return CompetitorEntity(
+        id = "espn-team-${t.id ?: return null}",
+        sportId = "basketball",
+        name = t.displayName ?: t.name ?: "Unknown",
+        shortName = t.abbreviation ?: t.shortDisplayName,
+        logoUrl = t.logo,
+        espnId = t.id,
+    )
+}
+
 fun EspnCompetitor.toCompetitorEntity(sportId: String): CompetitorEntity? {
     val t = team ?: return null
     return CompetitorEntity(

@@ -77,6 +77,20 @@ sealed interface ResultDetail {
         val currentSet: Int?,
     ) : ResultDetail
 
+    data class Basketball(
+        val homeQuarters: List<Int>,
+        val awayQuarters: List<Int>,
+        val homeRecord: String?,
+        val awayRecord: String?,
+        val isPostseason: Boolean,
+        val playoffLabel: String?,
+        val seriesSummary: String?,
+        val seriesTotalGames: Int?,
+        val currentPeriod: Int?,
+        val gameClock: String?,
+        val venue: String?,
+    ) : ResultDetail
+
     data class Unknown(val raw: String) : ResultDetail
 
     companion object {
@@ -132,6 +146,19 @@ sealed interface ResultDetail {
                         winner = obj["winner"]?.jsonPrimitive?.content,
                         resultNote = obj["result_note"]?.jsonPrimitive?.content,
                         currentSet = obj["current_set"]?.jsonPrimitive?.intOrNull,
+                    )
+                    "basketball" -> Basketball(
+                        homeQuarters = obj["home_quarters"]?.jsonArray?.map { it.jsonPrimitive.int } ?: emptyList(),
+                        awayQuarters = obj["away_quarters"]?.jsonArray?.map { it.jsonPrimitive.int } ?: emptyList(),
+                        homeRecord = obj["home_record"]?.jsonPrimitive?.content,
+                        awayRecord = obj["away_record"]?.jsonPrimitive?.content,
+                        isPostseason = obj["is_postseason"]?.jsonPrimitive?.content == "true",
+                        playoffLabel = obj["playoff_label"]?.jsonPrimitive?.content,
+                        seriesSummary = obj["series_summary"]?.jsonPrimitive?.content,
+                        seriesTotalGames = obj["series_total_games"]?.jsonPrimitive?.intOrNull,
+                        currentPeriod = obj["current_period"]?.jsonPrimitive?.intOrNull,
+                        gameClock = obj["game_clock"]?.jsonPrimitive?.content,
+                        venue = obj["venue"]?.jsonPrimitive?.content,
                     )
                     "mma" -> Mma(
                         cardName = obj["card_name"]?.jsonPrimitive?.content,

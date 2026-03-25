@@ -20,6 +20,8 @@ import com.daysync.app.feature.sports.data.remote.dto.EspnEvent
 import com.daysync.app.feature.sports.data.remote.dto.getCalendarEntries
 import com.daysync.app.feature.sports.data.remote.dto.toCompetitorEntity
 import com.daysync.app.feature.sports.data.remote.dto.toMmaFightEntities
+import com.daysync.app.feature.sports.data.remote.dto.toNbaGameEntity
+import com.daysync.app.feature.sports.data.remote.dto.toNbaTeamEntity
 import com.daysync.app.feature.sports.data.remote.dto.toParticipantEntity
 import com.daysync.app.feature.sports.data.remote.dto.toSportEventEntity
 import com.daysync.app.feature.sports.data.remote.dto.toTennisMatchEntities
@@ -239,8 +241,8 @@ class SportsRepositoryImpl @Inject constructor(
             errors += "API-Football: ${e.message}"
         }
 
-        // NBA via BallDontLie
-        try { refreshNbaGames() } catch (e: Exception) {
+        // NBA via ESPN (quarter scores, records, playoff series)
+        try { refreshNbaGamesEspn() } catch (e: Exception) {
             Log.e(TAG, "Failed to refresh NBA: ${e.message}", e)
             errors += "NBA: ${e.message}"
         }
@@ -299,18 +301,37 @@ class SportsRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun refreshNbaGames() {
-        val today = Clock.System.now()
-            .toLocalDateTime(TimeZone.UTC).date
-        val dates = (-3..7).map { today.plus(it, DateTimeUnit.DAY).toString() }
-        val response = ballDontLieApi.getGames(dates = dates, perPage = 100)
-        // Insert competitors BEFORE events (FK dependency)
-        val competitors = response.data.flatMap { game ->
-            listOfNotNull(game.homeTeam?.toCompetitorEntity(), game.visitorTeam?.toCompetitorEntity())
-        }.distinctBy { it.id }
-        if (competitors.isNotEmpty()) dao.insertCompetitors(competitors)
-        val events = response.data.mapNotNull { it.toSportEventEntity() }
-        if (events.isNotEmpty()) dao.insertEvents(events)
+    private suspend fun refreshNbaGamesEspn() {
+        val today = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
+
+        // Fetch past 3 days + next 7 days
+        val datesToFetch = (-3..7).map { offset ->
+            today.plus(offset.toLong(), DateTimeUnit.DAY).toString().replace("-", "")
+        }
+
+        val allTeams = mutableListOf<CompetitorEntity>()
+        val allEvents = mutableListOf<SportEventEntity>()
+
+        for (dateStr in datesToFetch) {
+            try {
+                val response = espnApi.getScoreboard("basketball", "nba", dates = dateStr)
+                for (event in response.events) {
+                    val comp = event.competitions.firstOrNull() ?: continue
+                    // Insert teams
+                    comp.competitors.forEach { competitor ->
+                        competitor.toNbaTeamEntity()?.let { allTeams += it }
+                    }
+                    // Create game entity
+                    event.toNbaGameEntity("basketball-nba")?.let { allEvents += it }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to fetch NBA for date $dateStr: ${e.message}")
+            }
+        }
+
+        val distinctTeams = allTeams.distinctBy { it.id }
+        if (distinctTeams.isNotEmpty()) dao.insertCompetitors(distinctTeams)
+        if (allEvents.isNotEmpty()) dao.insertEvents(allEvents)
     }
 
     private suspend fun refreshF1Schedule() {

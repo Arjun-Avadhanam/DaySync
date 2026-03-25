@@ -27,6 +27,7 @@ fun SportsScoreDisplay(
         is ResultDetail.F1 -> F1ResultDetail(detail, modifier)
         is ResultDetail.Mma -> MmaFightDetail(detail, modifier)
         is ResultDetail.Tennis -> TennisMatchDetail(detail, modifier)
+        is ResultDetail.Basketball -> BasketballGameDetail(detail, modifier)
         is ResultDetail.Unknown -> {}
         null -> {}
     }
@@ -208,6 +209,58 @@ private fun TennisMatchDetail(detail: ResultDetail.Tennis, modifier: Modifier = 
         detail.currentSet?.let {
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             ScoreRow("Live", "Set $it")
+        }
+    }
+}
+
+@Composable
+private fun BasketballGameDetail(detail: ResultDetail.Basketball, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.padding(16.dp)) {
+        Text(
+            text = "Game Details",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Playoff info
+        if (detail.isPostseason) {
+            detail.playoffLabel?.let { ScoreRow("Round", it) }
+            detail.seriesSummary?.let { ScoreRow("Series", it) }
+        }
+
+        // Records
+        if (detail.homeRecord != null || detail.awayRecord != null) {
+            detail.homeRecord?.let { ScoreRow("Home Record", it) }
+            detail.awayRecord?.let { ScoreRow("Away Record", it) }
+        }
+
+        // Quarter breakdown
+        if (detail.homeQuarters.isNotEmpty()) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            val labels = detail.homeQuarters.mapIndexed { i, _ ->
+                if (i < 4) "Q${i + 1}" else "OT${i - 3}"
+            }
+            ScoreRow("", labels.joinToString("  "))
+            ScoreRow("Home", detail.homeQuarters.joinToString("  ") { "$it".padStart(3) })
+            ScoreRow("Away", detail.awayQuarters.joinToString("  ") { "$it".padStart(3) })
+        }
+
+        // Live info
+        if (detail.currentPeriod != null) {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            val periodName = when {
+                detail.currentPeriod <= 4 -> "Q${detail.currentPeriod}"
+                else -> "OT${detail.currentPeriod - 4}"
+            }
+            val liveStr = periodName + (detail.gameClock?.let { " - $it" } ?: "")
+            ScoreRow("Live", liveStr)
+        }
+
+        // Venue
+        detail.venue?.let {
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            ScoreRow("Venue", it)
         }
     }
 }
