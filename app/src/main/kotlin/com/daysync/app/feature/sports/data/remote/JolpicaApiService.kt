@@ -27,7 +27,8 @@ class JolpicaApiService @Inject constructor(
     }
 
     suspend fun getCurrentSeasonResults(): JolpicaResponse {
-        val response = httpClient.get("$baseUrl/current/results.json")
+        // Default limit is 30 which truncates multi-race results (22 drivers × N races)
+        val response = httpClient.get("$baseUrl/current/results.json?limit=1000")
         return json.decodeFromString(response.bodyAsText())
     }
 
