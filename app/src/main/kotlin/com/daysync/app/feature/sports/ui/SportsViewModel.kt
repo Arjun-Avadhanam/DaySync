@@ -6,6 +6,7 @@ import com.daysync.app.feature.sports.data.SportsRefreshManager
 import com.daysync.app.feature.sports.data.SportsRepository
 import com.daysync.app.feature.sports.data.model.SportEventWithDetails
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,19 +25,29 @@ class SportsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SportsUiState(isLoading = true))
     val uiState: StateFlow<SportsUiState> = _uiState
 
+    // Track collector jobs so we can cancel them when sport filter changes
+    private var upcomingJob: Job? = null
+    private var liveJob: Job? = null
+    private var resultsJob: Job? = null
+
     init {
         viewModelScope.launch {
             repository.ensureSeedData()
-            collectEvents()
+            collectEvents(sportId = null)
             refreshData()
         }
     }
 
-    private fun collectEvents() {
+    private fun collectEvents(sportId: String?) {
+        // Cancel previous collectors
+        upcomingJob?.cancel()
+        liveJob?.cancel()
+        resultsJob?.cancel()
+
         // Collect upcoming events
-        viewModelScope.launch {
+        upcomingJob = viewModelScope.launch {
             combine(
-                repository.getUpcomingEvents(),
+                repository.getUpcomingEvents(sportId),
                 repository.getWatchlistedEventIds(),
             ) { events, watchlistIds ->
                 events to watchlistIds.toSet()
@@ -47,9 +58,9 @@ class SportsViewModel @Inject constructor(
         }
 
         // Collect live events
-        viewModelScope.launch {
+        liveJob = viewModelScope.launch {
             combine(
-                repository.getLiveEvents(),
+                repository.getLiveEvents(sportId),
                 repository.getWatchlistedEventIds(),
             ) { events, watchlistIds ->
                 events to watchlistIds.toSet()
@@ -60,9 +71,9 @@ class SportsViewModel @Inject constructor(
         }
 
         // Collect results
-        viewModelScope.launch {
+        resultsJob = viewModelScope.launch {
             combine(
-                repository.getRecentResults(),
+                repository.getRecentResults(sportId),
                 repository.getWatchlistedEventIds(),
             ) { events, watchlistIds ->
                 events to watchlistIds.toSet()
@@ -72,7 +83,7 @@ class SportsViewModel @Inject constructor(
             }
         }
 
-        // Collect watchlisted events
+        // Collect watchlisted events (not sport-filtered)
         viewModelScope.launch {
             combine(
                 repository.getWatchlistedEvents(),
@@ -115,40 +126,7 @@ class SportsViewModel @Inject constructor(
 
     fun selectSport(sportId: String?) {
         _uiState.update { it.copy(selectedSportId = sportId) }
-        // Re-collect filtered events for all tabs
-        viewModelScope.launch {
-            combine(
-                repository.getUpcomingEvents(sportId),
-                repository.getWatchlistedEventIds(),
-            ) { events, watchlistIds ->
-                events to watchlistIds.toSet()
-            }.collect { (events, watchlistIds) ->
-                val enriched = events.map { repository.enrichEvent(it, watchlistIds) }
-                _uiState.update { it.copy(upcomingEvents = enriched) }
-            }
-        }
-        viewModelScope.launch {
-            combine(
-                repository.getLiveEvents(sportId),
-                repository.getWatchlistedEventIds(),
-            ) { events, watchlistIds ->
-                events to watchlistIds.toSet()
-            }.collect { (events, watchlistIds) ->
-                val enriched = events.map { repository.enrichEvent(it, watchlistIds) }
-                _uiState.update { it.copy(liveEvents = enriched, liveCount = enriched.size) }
-            }
-        }
-        viewModelScope.launch {
-            combine(
-                repository.getRecentResults(sportId),
-                repository.getWatchlistedEventIds(),
-            ) { events, watchlistIds ->
-                events to watchlistIds.toSet()
-            }.collect { (events, watchlistIds) ->
-                val enriched = events.map { repository.enrichEvent(it, watchlistIds) }
-                _uiState.update { it.copy(resultEvents = enriched) }
-            }
-        }
+        collectEvents(sportId)
     }
 
     fun toggleWatchlist(eventId: String) {
@@ -186,7 +164,6 @@ class SportsViewModel @Inject constructor(
             val participants = repository.getParticipantsByEvent(eventId)
             _uiState.update { it.copy(eventParticipants = participants) }
         }
-        // Load competitor name lookup
         viewModelScope.launch {
             val participants = repository.getParticipantsByEvent(eventId)
             val competitorIds = participants.map { it.competitorId }.distinct()

@@ -96,6 +96,11 @@ class SportsRepositoryImpl @Inject constructor(
         val home = event.homeCompetitorId?.let { dao.getCompetitorById(it) }
         val away = event.awayCompetitorId?.let { dao.getCompetitorById(it) }
 
+        // Fallback: extract team names from eventName when competitor not in DB
+        val eventNameParts = event.eventName?.split(" vs ", " at ", " @ ", ignoreCase = true)
+        val homeName = home?.name ?: eventNameParts?.getOrNull(0)?.trim()
+        val awayName = away?.name ?: eventNameParts?.getOrNull(1)?.trim()
+
         return SportEventWithDetails(
             id = event.id,
             sportId = event.sportId,
@@ -107,8 +112,8 @@ class SportsRepositoryImpl @Inject constructor(
             status = event.status,
             homeCompetitorId = event.homeCompetitorId,
             awayCompetitorId = event.awayCompetitorId,
-            homeCompetitorName = home?.name,
-            awayCompetitorName = away?.name,
+            homeCompetitorName = homeName,
+            awayCompetitorName = awayName,
             homeCompetitorLogo = home?.logoUrl,
             awayCompetitorLogo = away?.logoUrl,
             homeScore = event.homeScore,

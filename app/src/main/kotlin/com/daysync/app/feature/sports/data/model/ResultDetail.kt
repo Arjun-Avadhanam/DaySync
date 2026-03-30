@@ -61,6 +61,7 @@ sealed interface ResultDetail {
         val poleTime: String?,
         val finishers: Int?,
         val retirements: Int?,
+        val dns: Int?,
     ) : ResultDetail
 
     data class Mma(
@@ -165,6 +166,7 @@ sealed interface ResultDetail {
                         poleTime = obj["pole_time"]?.jsonPrimitive?.content,
                         finishers = obj["finishers"]?.jsonPrimitive?.intOrNull,
                         retirements = obj["retirements"]?.jsonPrimitive?.intOrNull,
+                        dns = obj["dns"]?.jsonPrimitive?.intOrNull,
                     )
                     "tennis" -> Tennis(
                         tournament = obj["tournament"]?.jsonPrimitive?.content,

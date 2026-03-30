@@ -47,7 +47,9 @@ private fun FootballScoreDetail(detail: ResultDetail.Football, modifier: Modifie
         if (detail.halftimeHome != null) {
             ScoreRow("Half Time", "${detail.halftimeHome} - ${detail.halftimeAway}")
         }
-        ScoreRow("Full Time", "${detail.fulltimeHome} - ${detail.fulltimeAway}")
+        if (detail.fulltimeHome > 0 || detail.fulltimeAway > 0 || detail.halftimeHome != null || detail.elapsed != null) {
+            ScoreRow("Full Time", "${detail.fulltimeHome} - ${detail.fulltimeAway}")
+        }
         if (detail.extratimeHome != null) {
             ScoreRow("Extra Time", "${detail.extratimeHome} - ${detail.extratimeAway}")
         }
@@ -172,10 +174,11 @@ private fun F1ResultDetail(detail: ResultDetail.F1, modifier: Modifier = Modifie
         }
 
         // Stats
-        if (detail.finishers != null || detail.retirements != null) {
+        if (detail.finishers != null || detail.retirements != null || detail.dns != null) {
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             detail.finishers?.let { ScoreRow("Finishers", "$it") }
-            detail.retirements?.let { ScoreRow("Retirements/DNF", "$it") }
+            detail.retirements?.let { if (it > 0) ScoreRow("Retirements", "$it") }
+            detail.dns?.let { if (it > 0) ScoreRow("Did Not Start", "$it") }
         }
     }
 }

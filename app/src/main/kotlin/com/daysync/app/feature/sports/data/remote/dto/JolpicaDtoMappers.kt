@@ -48,8 +48,10 @@ fun JolpicaRace.toSportEventEntity(): SportEventEntity? {
                 fl.fastestLap?.time?.time?.let { t -> put("fastest_lap_time", t) }
                 fl.fastestLap?.lap?.let { l -> put("fastest_lap_number", l) }
             }
-            put("finishers", results.count { it.status == "Finished" })
-            put("retirements", results.count { it.status != "Finished" && it.laps != "0" })
+            // "Finished" + "Lapped" = completed the race; "Retired" = DNF; "Did not start" = DNS
+            put("finishers", results.count { it.status == "Finished" || it.status?.contains("Lap") == true })
+            put("retirements", results.count { it.status == "Retired" })
+            put("dns", results.count { it.status == "Did not start" })
         }
         if (hasQualifying) {
             val pole = qualifyingResults.firstOrNull()
