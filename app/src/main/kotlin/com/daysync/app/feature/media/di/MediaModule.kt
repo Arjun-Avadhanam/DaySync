@@ -4,9 +4,12 @@ import com.daysync.app.BuildConfig
 import com.daysync.app.feature.media.data.MediaRepository
 import com.daysync.app.feature.media.data.MediaRepositoryImpl
 import com.daysync.app.feature.media.data.remote.GoogleBooksApiClient
+import com.daysync.app.feature.media.data.remote.ItunesApiClient
+import com.daysync.app.feature.media.data.remote.JikanApiClient
 import com.daysync.app.feature.media.data.remote.MediaMetadataService
-import com.daysync.app.feature.media.data.remote.RawgApiClient
-import com.daysync.app.feature.media.data.remote.TmdbApiClient
+import com.daysync.app.feature.media.data.remote.OmdbApiClient
+import com.daysync.app.feature.media.data.remote.OpenLibraryApiClient
+import com.daysync.app.feature.media.data.remote.SteamApiClient
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -44,8 +47,8 @@ object MediaNetworkModule {
 
     @Provides
     @Singleton
-    fun provideTmdbApiClient(@MediaHttpClient httpClient: HttpClient): TmdbApiClient {
-        return TmdbApiClient(httpClient, BuildConfig.TMDB_API_KEY)
+    fun provideOmdbApiClient(@MediaHttpClient httpClient: HttpClient): OmdbApiClient {
+        return OmdbApiClient(httpClient, BuildConfig.OMDB_API_KEY)
     }
 
     @Provides
@@ -56,18 +59,39 @@ object MediaNetworkModule {
 
     @Provides
     @Singleton
-    fun provideRawgApiClient(@MediaHttpClient httpClient: HttpClient): RawgApiClient {
-        return RawgApiClient(httpClient, BuildConfig.RAWG_API_KEY)
+    fun provideJikanApiClient(@MediaHttpClient httpClient: HttpClient): JikanApiClient {
+        return JikanApiClient(httpClient)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSteamApiClient(@MediaHttpClient httpClient: HttpClient): SteamApiClient {
+        return SteamApiClient(httpClient)
+    }
+
+    @Provides
+    @Singleton
+    fun provideItunesApiClient(@MediaHttpClient httpClient: HttpClient): ItunesApiClient {
+        return ItunesApiClient(httpClient)
+    }
+
+    @Provides
+    @Singleton
+    fun provideOpenLibraryApiClient(@MediaHttpClient httpClient: HttpClient): OpenLibraryApiClient {
+        return OpenLibraryApiClient(httpClient)
     }
 
     @Provides
     @Singleton
     fun provideMediaMetadataService(
-        tmdbClient: TmdbApiClient,
+        omdbClient: OmdbApiClient,
         googleBooksClient: GoogleBooksApiClient,
-        rawgClient: RawgApiClient,
+        jikanClient: JikanApiClient,
+        steamClient: SteamApiClient,
+        itunesClient: ItunesApiClient,
+        openLibraryClient: OpenLibraryApiClient,
     ): MediaMetadataService {
-        return MediaMetadataService(tmdbClient, googleBooksClient, rawgClient)
+        return MediaMetadataService(omdbClient, googleBooksClient, jikanClient, steamClient, itunesClient, openLibraryClient)
     }
 }
 

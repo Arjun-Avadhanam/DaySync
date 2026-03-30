@@ -20,6 +20,11 @@ class MediaEnumsTest {
     }
 
     @Test
+    fun `fromString FILM maps to MOVIE for backward compat`() {
+        assertEquals(MediaType.MOVIE, MediaType.fromString("FILM"))
+    }
+
+    @Test
     fun `fromString TV_SERIES`() {
         assertEquals(MediaType.TV_SERIES, MediaType.fromString("TV_SERIES"))
     }
@@ -55,7 +60,6 @@ class MediaEnumsTest {
 
     @Test
     fun `FILM_AND_TV contains correct types`() {
-        assertTrue(MediaType.FILM_AND_TV.contains(MediaType.FILM))
         assertTrue(MediaType.FILM_AND_TV.contains(MediaType.MOVIE))
         assertTrue(MediaType.FILM_AND_TV.contains(MediaType.TV_SERIES))
         assertFalse(MediaType.FILM_AND_TV.contains(MediaType.BOOK))
@@ -75,7 +79,6 @@ class MediaEnumsTest {
     @Test
     fun `visual heavy types`() {
         assertTrue(MediaType.BOOK.isVisualHeavy)
-        assertTrue(MediaType.FILM.isVisualHeavy)
         assertTrue(MediaType.MOVIE.isVisualHeavy)
         assertTrue(MediaType.TV_SERIES.isVisualHeavy)
         assertTrue(MediaType.ANIME.isVisualHeavy)
@@ -95,7 +98,6 @@ class MediaEnumsTest {
     fun `displayName formatting`() {
         assertEquals("Book", MediaType.BOOK.displayName)
         assertEquals("TV Series", MediaType.TV_SERIES.displayName)
-        assertEquals("Film", MediaType.FILM.displayName)
         assertEquals("Movie", MediaType.MOVIE.displayName)
         assertEquals("Podcast", MediaType.PODCAST.displayName)
     }

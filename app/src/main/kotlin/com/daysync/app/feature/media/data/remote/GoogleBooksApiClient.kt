@@ -14,8 +14,9 @@ class GoogleBooksApiClient @Inject constructor(
 
     suspend fun searchBooks(query: String): List<MediaMetadataResult> = try {
         val response: GoogleBooksResponse = httpClient.get("$baseUrl/volumes") {
-            parameter("q", query)
+            parameter("q", "intitle:$query")
             parameter("maxResults", 10)
+            parameter("orderBy", "relevance")
         }.body()
         response.items?.map { it.toResult() } ?: emptyList()
     } catch (_: Exception) {
