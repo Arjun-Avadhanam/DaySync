@@ -121,7 +121,7 @@ fun NutritionHistoryScreen(
                             AverageItem("Protein", "${avgProtein.fmtNutrition()}g")
                             AverageItem("Carbs", "${avgCarbs.fmtNutrition()}g")
                             AverageItem("Fat", "${avgFat.fmtNutrition()}g")
-                            AverageItem("Water", String.format("%.1fL", avgWater))
+                            AverageItem("Water", String.format("%.2fL", avgWater))
                         }
                     }
                 }

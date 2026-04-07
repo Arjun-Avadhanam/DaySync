@@ -44,7 +44,7 @@ fun WaterTracker(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = String.format("%.1f L", waterLiters),
+                    text = String.format("%.2f L", waterLiters),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,

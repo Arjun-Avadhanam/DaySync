@@ -155,7 +155,13 @@ fun NutritionDailySummaryScreen(
                                 "Lethargic" to Color(0xFF78909C),  // Blue-gray — heaviness
                             )
 
-                            // Two rows for better spacing
+                            // Multi-select: stored as comma-separated string
+                            val selectedMoods = s.summary?.mood
+                                ?.split(",")
+                                ?.map { it.trim() }
+                                ?.filter { it.isNotBlank() }
+                                ?.toSet() ?: emptySet()
+
                             @OptIn(ExperimentalLayoutApi::class)
                             FlowRow(
                                 modifier = Modifier.fillMaxWidth(),
@@ -163,10 +169,19 @@ fun NutritionDailySummaryScreen(
                                 verticalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
                                 moodOptions.forEach { (mood, moodColor) ->
-                                    val isSelected = s.summary?.mood == mood
+                                    val isSelected = mood in selectedMoods
                                     FilterChip(
                                         selected = isSelected,
-                                        onClick = { viewModel.updateMood(mood) },
+                                        onClick = {
+                                            val newSet = if (isSelected) {
+                                                selectedMoods - mood
+                                            } else {
+                                                selectedMoods + mood
+                                            }
+                                            viewModel.updateMood(
+                                                newSet.joinToString(",").ifBlank { null } ?: ""
+                                            )
+                                        },
                                         label = {
                                             Text(
                                                 mood,
