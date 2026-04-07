@@ -2,6 +2,7 @@ package com.daysync.app.feature.nutrition.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.daysync.app.feature.nutrition.data.NotionMealImporter
 import com.daysync.app.feature.nutrition.data.repository.NutritionRepository
 import com.daysync.app.feature.nutrition.domain.model.FoodItem
 import com.daysync.app.feature.nutrition.domain.model.FoodItemInput
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
 sealed interface FoodLibraryEvent {
     data object FoodSaved : FoodLibraryEvent
     data object FoodDeleted : FoodLibraryEvent
+    data class ImportComplete(val count: Int) : FoodLibraryEvent
     data class Error(val message: String) : FoodLibraryEvent
 }
 
@@ -28,7 +30,11 @@ sealed interface FoodLibraryEvent {
 @HiltViewModel
 class FoodLibraryViewModel @Inject constructor(
     private val repository: NutritionRepository,
+    private val notionImporter: NotionMealImporter,
 ) : ViewModel() {
+
+    private val _isImporting = MutableStateFlow(false)
+    val isImporting: StateFlow<Boolean> = _isImporting
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -94,6 +100,20 @@ class FoodLibraryViewModel @Inject constructor(
                 _events.emit(FoodLibraryEvent.FoodDeleted)
             } catch (e: Exception) {
                 _events.emit(FoodLibraryEvent.Error(e.message ?: "Failed to delete"))
+            }
+        }
+    }
+
+    fun importFromNotion() {
+        viewModelScope.launch {
+            _isImporting.value = true
+            try {
+                val count = notionImporter.forceImport()
+                _events.emit(FoodLibraryEvent.ImportComplete(count))
+            } catch (e: Exception) {
+                _events.emit(FoodLibraryEvent.Error(e.message ?: "Import failed"))
+            } finally {
+                _isImporting.value = false
             }
         }
     }

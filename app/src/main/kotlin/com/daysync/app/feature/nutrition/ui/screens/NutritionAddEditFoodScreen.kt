@@ -82,6 +82,7 @@ fun NutritionAddEditFoodScreen(
             when (event) {
                 is FoodLibraryEvent.FoodSaved -> onNavigateBack()
                 is FoodLibraryEvent.FoodDeleted -> onNavigateBack()
+                is FoodLibraryEvent.ImportComplete -> { /* Handled in library screen */ }
                 is FoodLibraryEvent.Error -> { /* Could show snackbar */ }
             }
         }
