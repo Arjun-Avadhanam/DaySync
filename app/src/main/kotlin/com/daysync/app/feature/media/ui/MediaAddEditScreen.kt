@@ -25,8 +25,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -172,60 +172,70 @@ fun MediaAddEditScreen(
                         }
                     },
                 )
-                DropdownMenu(
-                    expanded = showMetadataDropdown && metadataResults.isNotEmpty(),
-                    onDismissRequest = { showMetadataDropdown = false },
-                ) {
-                    metadataResults.forEach { result ->
-                        DropdownMenuItem(
-                            text = {
-                                Column {
-                                    Text(result.title, style = MaterialTheme.typography.bodyMedium)
-                                    if (result.year != null) {
-                                        Text(
-                                            result.year,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                }
-                            },
-                            leadingIcon = {
-                                if (result.coverImageUrl != null) {
-                                    AsyncImage(
-                                        model = result.coverImageUrl,
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(MaterialTheme.shapes.extraSmall),
-                                        contentScale = ContentScale.Crop,
-                                    )
-                                }
-                            },
-                            onClick = {
-                                title = result.title
-                                coverImageUrl = result.coverImageUrl ?: ""
-                                selectedExternalId = result.externalId
-                                if (result.creators.isNotEmpty()) {
-                                    creators = result.creators
-                                }
-                                showMetadataDropdown = false
-                                viewModel.clearMetadataResults()
+                // Suggestion list rendered below text field (doesn't steal focus)
+                if (showMetadataDropdown && metadataResults.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        ),
+                        shape = MaterialTheme.shapes.small,
+                    ) {
+                        Column {
+                            metadataResults.forEach { result ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            title = result.title
+                                            coverImageUrl = result.coverImageUrl ?: ""
+                                            selectedExternalId = result.externalId
+                                            if (result.creators.isNotEmpty()) {
+                                                creators = result.creators
+                                            }
+                                            showMetadataDropdown = false
+                                            viewModel.clearMetadataResults()
 
-                                // Fetch creators if not already provided
-                                if (result.creators.isEmpty() && result.externalId != null) {
-                                    scope.launch {
-                                        val fetched = viewModel.fetchCreators(
-                                            result.externalId,
-                                            mediaType,
+                                            // Fetch creators if not already provided
+                                            if (result.creators.isEmpty() && result.externalId != null) {
+                                                scope.launch {
+                                                    val fetched = viewModel.fetchCreators(
+                                                        result.externalId,
+                                                        mediaType,
+                                                    )
+                                                    if (fetched.isNotEmpty()) {
+                                                        creators = fetched
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    if (result.coverImageUrl != null) {
+                                        AsyncImage(
+                                            model = result.coverImageUrl,
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .size(40.dp)
+                                                .clip(MaterialTheme.shapes.extraSmall),
+                                            contentScale = ContentScale.Crop,
                                         )
-                                        if (fetched.isNotEmpty()) {
-                                            creators = fetched
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                    }
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(result.title, style = MaterialTheme.typography.bodyMedium)
+                                        if (result.year != null) {
+                                            Text(
+                                                result.year,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
                                         }
                                     }
                                 }
-                            },
-                        )
+                            }
+                        }
                     }
                 }
             }

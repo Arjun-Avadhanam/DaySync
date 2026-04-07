@@ -9,6 +9,8 @@ import com.daysync.app.feature.media.domain.MediaItem
 import com.daysync.app.feature.media.domain.MediaStatus
 import com.daysync.app.feature.media.domain.MediaType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -165,8 +167,12 @@ class MediaViewModel @Inject constructor(
 
     suspend fun getItemById(id: String): MediaItem? = repository.getItemById(id)
 
+    private var searchJob: Job? = null
+
     fun searchMetadata(query: String, mediaType: MediaType) {
-        viewModelScope.launch {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            delay(500) // Debounce: wait 500ms after last keystroke
             _isSearchingMetadata.value = true
             _metadataResults.value = metadataService.search(query, mediaType)
             _isSearchingMetadata.value = false

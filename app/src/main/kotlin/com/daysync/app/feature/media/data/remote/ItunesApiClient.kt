@@ -1,35 +1,38 @@
 package com.daysync.app.feature.media.data.remote
 
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.statement.bodyAsText
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 class ItunesApiClient(
     private val httpClient: HttpClient,
 ) {
     private val baseUrl = "https://itunes.apple.com/search"
+    // iTunes returns text/javascript, not application/json, so we parse manually
+    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     suspend fun searchMusic(query: String): List<MediaMetadataResult> = try {
-        val response: ItunesResponse = httpClient.get(baseUrl) {
+        val text = httpClient.get(baseUrl) {
             parameter("term", query)
             parameter("media", "music")
             parameter("entity", "album")
             parameter("limit", 10)
-        }.body()
-        response.results.map { it.toMusicResult() }
+        }.bodyAsText()
+        json.decodeFromString<ItunesResponse>(text).results.map { it.toMusicResult() }
     } catch (_: Exception) {
         emptyList()
     }
 
     suspend fun searchPodcasts(query: String): List<MediaMetadataResult> = try {
-        val response: ItunesResponse = httpClient.get(baseUrl) {
+        val text = httpClient.get(baseUrl) {
             parameter("term", query)
             parameter("media", "podcast")
             parameter("limit", 10)
-        }.body()
-        response.results.map { it.toPodcastResult() }
+        }.bodyAsText()
+        json.decodeFromString<ItunesResponse>(text).results.map { it.toPodcastResult() }
     } catch (_: Exception) {
         emptyList()
     }
