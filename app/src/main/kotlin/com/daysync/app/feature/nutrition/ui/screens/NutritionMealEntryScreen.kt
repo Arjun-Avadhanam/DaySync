@@ -44,7 +44,7 @@ import com.daysync.app.feature.nutrition.ui.components.FoodSearchBar
 import com.daysync.app.feature.nutrition.ui.components.QuantityInput
 import com.daysync.app.feature.nutrition.ui.viewmodel.MealEntryEvent
 import com.daysync.app.feature.nutrition.ui.viewmodel.MealEntryViewModel
-import kotlin.math.roundToInt
+import com.daysync.app.feature.nutrition.ui.util.fmtNutrition
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -171,10 +171,10 @@ fun NutritionMealEntryScreen(
                                 .padding(12.dp),
                             horizontalArrangement = Arrangement.SpaceEvenly,
                         ) {
-                            NutritionPreviewItem("Cal", (amount * food.caloriesPerUnit).roundToInt().toString())
-                            NutritionPreviewItem("Protein", "${(amount * food.proteinPerUnit).roundToInt()}g")
-                            NutritionPreviewItem("Carbs", "${(amount * food.carbsPerUnit).roundToInt()}g")
-                            NutritionPreviewItem("Fat", "${(amount * food.fatPerUnit).roundToInt()}g")
+                            NutritionPreviewItem("Cal", (amount * food.caloriesPerUnit).fmtNutrition().toString())
+                            NutritionPreviewItem("Protein", "${(amount * food.proteinPerUnit).fmtNutrition()}g")
+                            NutritionPreviewItem("Carbs", "${(amount * food.carbsPerUnit).fmtNutrition()}g")
+                            NutritionPreviewItem("Fat", "${(amount * food.fatPerUnit).fmtNutrition()}g")
                         }
                     }
 

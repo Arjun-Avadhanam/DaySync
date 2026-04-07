@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.daysync.app.feature.nutrition.domain.model.FoodItem
-import kotlin.math.roundToInt
+import com.daysync.app.feature.nutrition.ui.util.fmtNutrition
 
 @Composable
 fun FoodItemCard(
@@ -65,7 +65,7 @@ fun FoodItemCard(
             }
 
             Text(
-                text = "${food.caloriesPerUnit.roundToInt()} cal",
+                text = "${food.caloriesPerUnit.fmtNutrition()} cal",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary,

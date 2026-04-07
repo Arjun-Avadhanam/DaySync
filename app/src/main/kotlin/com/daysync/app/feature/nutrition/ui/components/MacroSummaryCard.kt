@@ -18,7 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import kotlin.math.roundToInt
+import com.daysync.app.feature.nutrition.ui.util.fmtNutrition
 
 @Composable
 fun MacroSummaryCard(
@@ -44,7 +44,7 @@ fun MacroSummaryCard(
             ) {
                 Column {
                     Text(
-                        text = "${totalCalories.roundToInt()}",
+                        text = "${totalCalories.fmtNutrition()}",
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -91,7 +91,7 @@ private fun MacroChip(
     ) {
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
-                text = "${value.roundToInt()}",
+                text = "${value.fmtNutrition()}",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,

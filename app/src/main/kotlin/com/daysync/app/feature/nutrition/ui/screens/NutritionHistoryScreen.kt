@@ -32,7 +32,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.daysync.app.feature.nutrition.ui.viewmodel.HistoryRange
 import com.daysync.app.feature.nutrition.ui.viewmodel.NutritionHistoryViewModel
-import kotlin.math.roundToInt
+import com.daysync.app.feature.nutrition.ui.util.fmtNutrition
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -117,10 +117,10 @@ fun NutritionHistoryScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly,
                         ) {
-                            AverageItem("Calories", "${avgCalories.roundToInt()}")
-                            AverageItem("Protein", "${avgProtein.roundToInt()}g")
-                            AverageItem("Carbs", "${avgCarbs.roundToInt()}g")
-                            AverageItem("Fat", "${avgFat.roundToInt()}g")
+                            AverageItem("Calories", "${avgCalories.fmtNutrition()}")
+                            AverageItem("Protein", "${avgProtein.fmtNutrition()}g")
+                            AverageItem("Carbs", "${avgCarbs.fmtNutrition()}g")
+                            AverageItem("Fat", "${avgFat.fmtNutrition()}g")
                             AverageItem("Water", String.format("%.1fL", avgWater))
                         }
                     }
@@ -153,13 +153,13 @@ fun NutritionHistoryScreen(
                                     fontWeight = FontWeight.Medium,
                                 )
                                 Text(
-                                    text = "P: ${summary.totalProtein.roundToInt()}g  C: ${summary.totalCarbs.roundToInt()}g  F: ${summary.totalFat.roundToInt()}g",
+                                    text = "P: ${summary.totalProtein.fmtNutrition()}g  C: ${summary.totalCarbs.fmtNutrition()}g  F: ${summary.totalFat.fmtNutrition()}g",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 )
                             }
                             Text(
-                                text = "${summary.totalCalories.roundToInt()} cal",
+                                text = "${summary.totalCalories.fmtNutrition()} cal",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.primary,

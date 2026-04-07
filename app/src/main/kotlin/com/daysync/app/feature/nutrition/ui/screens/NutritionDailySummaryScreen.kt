@@ -25,6 +25,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,7 +41,7 @@ import com.daysync.app.feature.nutrition.ui.components.MacroBreakdownChart
 import com.daysync.app.feature.nutrition.ui.components.WaterTracker
 import com.daysync.app.feature.nutrition.ui.viewmodel.NutritionDailyTrackerState
 import com.daysync.app.feature.nutrition.ui.viewmodel.NutritionDailyTrackerViewModel
-import kotlin.math.roundToInt
+import com.daysync.app.feature.nutrition.ui.util.fmtNutrition
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +50,14 @@ fun NutritionDailySummaryScreen(
     onNavigateBack: () -> Unit,
     viewModel: NutritionDailyTrackerViewModel = hiltViewModel(),
 ) {
+    // Navigate to the requested date on first composition
+    LaunchedEffect(date) {
+        try {
+            val targetDate = kotlinx.datetime.LocalDate.parse(date)
+            viewModel.navigateToDate(targetDate)
+        } catch (_: Exception) { /* Invalid date, stay on today */ }
+    }
+
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -93,7 +102,7 @@ fun NutritionDailySummaryScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "${s.totalCalories.roundToInt()} calories",
+                                text = "${s.totalCalories.fmtNutrition()} calories",
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -184,7 +193,7 @@ private fun MacroProgressBar(
                 fontWeight = FontWeight.Medium,
             )
             Text(
-                text = "${value.roundToInt()}g",
+                text = "${value.fmtNutrition()}g",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
             )

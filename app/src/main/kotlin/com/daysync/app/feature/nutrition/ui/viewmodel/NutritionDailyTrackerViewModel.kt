@@ -89,6 +89,10 @@ class NutritionDailyTrackerViewModel @Inject constructor(
         _currentDate.value = Clock.System.todayIn(TimeZone.currentSystemDefault())
     }
 
+    fun navigateToDate(date: kotlinx.datetime.LocalDate) {
+        _currentDate.value = date
+    }
+
     fun deleteMealEntry(id: String) {
         viewModelScope.launch {
             repository.deleteMealEntry(id)

@@ -47,23 +47,25 @@ fun DateNavigator(
             )
         }
 
+        // Center: date label + optional "Today" chip
+        if (!isToday) {
+            TextButton(onClick = onToday) {
+                Text("Today")
+            }
+        }
+
         Text(
             text = formatDate(date),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
 
-        if (!isToday) {
-            TextButton(onClick = onToday) {
-                Text("Today")
-            }
-        } else {
-            IconButton(onClick = onNextDay) {
-                Icon(
-                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "Next day",
-                )
-            }
+        // Right: always show next arrow
+        IconButton(onClick = onNextDay) {
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = "Next day",
+            )
         }
     }
 }
