@@ -2,6 +2,8 @@ package com.daysync.app.feature.nutrition.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +18,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -122,30 +126,59 @@ fun NutritionDailySummaryScreen(
                         onUpdateWater = viewModel::updateWater,
                     )
 
-                    // Mood
+                    // Mood / Energy Level
                     Card(
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                         ),
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = "Mood",
+                                text = "Mood / Energy Level",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.SemiBold,
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            Row(
+
+                            // Color psychology: positive = cool/bright, negative = warm/dark
+                            val moodOptions = listOf(
+                                "Energetic" to Color(0xFF4CAF50),  // Bright green — vitality
+                                "Focused" to Color(0xFF1565C0),    // Deep blue — concentration
+                                "Balanced" to Color(0xFF00897B),   // Teal — harmony
+                                "Calm" to Color(0xFF64B5F6),       // Sky blue — serenity
+                                "Tired" to Color(0xFFFFB300),      // Amber — depleted warmth
+                                "Lazy" to Color(0xFFA1887F),       // Warm brown — low energy
+                                "Distracted" to Color(0xFFB39DDB), // Light purple — scattered
+                                "Anxious" to Color(0xFFFF7043),    // Coral — nervous tension
+                                "Irritable" to Color(0xFFE53935),  // Dark red — frustration
+                                "Exhausted" to Color(0xFFBF360C),  // Deep orange — burnt out
+                                "Lethargic" to Color(0xFF78909C),  // Blue-gray — heaviness
+                            )
+
+                            // Two rows for better spacing
+                            @OptIn(ExperimentalLayoutApi::class)
+                            FlowRow(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
-                                val moods = listOf("Great", "Good", "Okay", "Low", "Bad")
-                                moods.forEach { mood ->
+                                moodOptions.forEach { (mood, moodColor) ->
                                     val isSelected = s.summary?.mood == mood
-                                    androidx.compose.material3.FilterChip(
+                                    FilterChip(
                                         selected = isSelected,
                                         onClick = { viewModel.updateMood(mood) },
-                                        label = { Text(mood, style = MaterialTheme.typography.labelSmall) },
+                                        label = {
+                                            Text(
+                                                mood,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = if (isSelected) Color.White
+                                                else MaterialTheme.colorScheme.onSurface,
+                                            )
+                                        },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = moodColor,
+                                            selectedLabelColor = Color.White,
+                                        ),
                                     )
                                 }
                             }
