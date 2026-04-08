@@ -195,112 +195,16 @@ class NotificationParserTest {
         assertEquals("Amit", result.merchantName)
     }
 
-    // ── HDFC ─────────────────────────────────────────────
+    // ── HDFC Bank app (now routes through bank SMS parser) ──
 
     @Test
-    fun `HDFC - card spent at merchant`() {
+    fun `HDFC app - credited should return null`() {
         val result = NotificationParser.parse(
             "com.snapwork.hdfc",
             null,
-            "INR 2,500.00 spent on HDFC Bank Card xx1234 at Croma Electronics on 15-03-26"
-        )
-        assertNotNull(result)
-        assertEquals(2500.0, result!!.amount, 0.01)
-        assertEquals("Croma Electronics", result.merchantName)
-        assertTrue(result.isDebit)
-        assertFalse(result.isP2P)
-    }
-
-    @Test
-    fun `HDFC - amount debited`() {
-        val result = NotificationParser.parse(
-            "com.snapwork.hdfc",
-            null,
-            "Rs 1,000.00 debited from a/c **1234 on 15-03-26. Info: AMAZON PAY Ref No: 987654321"
-        )
-        assertNotNull(result)
-        assertEquals(1000.0, result!!.amount, 0.01)
-        assertEquals("AMAZON PAY", result.merchantName)
-        assertEquals("987654321", result.referenceId)
-    }
-
-    @Test
-    fun `HDFC - debited with VPA`() {
-        val result = NotificationParser.parse(
-            "com.snapwork.hdfc",
-            null,
-            "Rs 500.00 debited from a/c **5678 to VPA merchant@okaxis"
-        )
-        assertNotNull(result)
-        assertEquals(500.0, result!!.amount, 0.01)
-        assertEquals("merchant@okaxis", result.merchantName)
-    }
-
-    @Test
-    fun `HDFC - credited should return null`() {
-        val result = NotificationParser.parse(
-            "com.snapwork.hdfc",
-            null,
-            "Rs 50,000.00 credited to a/c **1234"
+            "Rs 50,000.00 credited to HDFC Bank a/c **1234"
         )
         assertNull(result)
-    }
-
-    // ── Swiggy ───────────────────────────────────────────
-
-    @Test
-    fun `Swiggy - order amount`() {
-        val result = NotificationParser.parse(
-            "in.swiggy.android",
-            null,
-            "Your order of ₹350 has been placed!"
-        )
-        assertNotNull(result)
-        assertEquals(350.0, result!!.amount, 0.01)
-        assertEquals("Swiggy", result.merchantName)
-        assertFalse(result.isP2P)
-    }
-
-    // ── Blinkit ──────────────────────────────────────────
-
-    @Test
-    fun `Blinkit - order amount`() {
-        val result = NotificationParser.parse(
-            "com.grofers.customerapp",
-            null,
-            "Order confirmed! ₹580 for your groceries"
-        )
-        assertNotNull(result)
-        assertEquals(580.0, result!!.amount, 0.01)
-        assertEquals("Blinkit", result.merchantName)
-    }
-
-    // ── CRED ─────────────────────────────────────────────
-
-    @Test
-    fun `CRED - payment amount`() {
-        val result = NotificationParser.parse(
-            "com.dreamplug.androidapp",
-            null,
-            "₹5,000 credit card bill paid via CRED"
-        )
-        assertNotNull(result)
-        assertEquals(5000.0, result!!.amount, 0.01)
-        assertEquals("CRED", result.merchantName)
-    }
-
-    // ── Amazon ───────────────────────────────────────────
-
-    @Test
-    fun `Amazon - order amount`() {
-        val result = NotificationParser.parse(
-            "in.amazon.mShop.android.shopping",
-            null,
-            "Your order of Rs.1,299 has been placed"
-        )
-        assertNotNull(result)
-        assertEquals(1299.0, result!!.amount, 0.01)
-        assertEquals("Amazon", result.merchantName)
     }
 
     // ── BHIM ─────────────────────────────────────────────
@@ -362,7 +266,8 @@ class NotificationParserTest {
 
     @Test
     fun `MONITORED_PACKAGES contains all expected packages`() {
-        assertEquals(9, NotificationParser.MONITORED_PACKAGES.size)
+        assertEquals(6, NotificationParser.MONITORED_PACKAGES.size)
+        assertTrue(NotificationParser.MONITORED_PACKAGES.contains("com.google.android.apps.messaging"))
         assertTrue(NotificationParser.MONITORED_PACKAGES.contains("com.google.android.apps.nbu.paisa.user"))
         assertTrue(NotificationParser.MONITORED_PACKAGES.contains("com.phonepe.app"))
         assertTrue(NotificationParser.MONITORED_PACKAGES.contains("net.one97.paytm"))

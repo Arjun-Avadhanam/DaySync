@@ -80,6 +80,9 @@ interface ExpenseDao {
         windowEnd: Long,
     ): ExpenseEntity?
 
+    @Query("SELECT * FROM expenses WHERE notes LIKE :notesPattern AND isDeleted = 0 LIMIT 1")
+    suspend fun findByNotes(notesPattern: String): ExpenseEntity?
+
     @Query(
         "SELECT DISTINCT merchantName FROM expenses " +
             "WHERE merchantName IS NOT NULL AND isDeleted = 0 ORDER BY merchantName ASC"

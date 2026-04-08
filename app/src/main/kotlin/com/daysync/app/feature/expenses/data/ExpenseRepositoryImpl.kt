@@ -91,6 +91,7 @@ class ExpenseRepositoryImpl(
             amount = parsed.amount,
             date = today,
             timestampMillis = now.toEpochMilliseconds(),
+            referenceId = parsed.referenceId,
         )
         if (existing != null) {
             if (deduplicator.shouldUpdateExisting(existing, parsed.merchantName)) {
@@ -242,6 +243,14 @@ class ExpenseRepositoryImpl(
         category: String?,
         title: String?,
     ): ExpenseEntity {
+        val notes = buildString {
+            parsed.referenceId?.let { append("Ref: $it") }
+            if (parsed.currency != "INR") {
+                if (isNotEmpty()) append(" | ")
+                append("Currency: ${parsed.currency}")
+            }
+        }.ifBlank { null }
+
         return ExpenseEntity(
             id = generateExpenseId(),
             title = title ?: parsed.payeeName,
@@ -249,6 +258,7 @@ class ExpenseRepositoryImpl(
             category = category,
             unitCost = parsed.amount,
             totalAmount = parsed.amount,
+            notes = notes,
             source = "NOTIFICATION",
             merchantName = parsed.merchantName ?: parsed.payeeName,
             syncStatus = SyncStatus.PENDING,
