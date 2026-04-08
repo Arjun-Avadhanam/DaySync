@@ -89,6 +89,27 @@ fun NutritionCreateTemplateScreen(
                 },
             )
         },
+        bottomBar = {
+            // Sticky "Create Template" button always visible at bottom
+            Button(
+                onClick = {
+                    val items = selectedItems.map { item ->
+                        MealTemplateItemInput(foodId = item.food.id, defaultAmount = item.amount)
+                    }
+                    viewModel.createTemplate(
+                        name = name.trim(),
+                        description = description.trim().ifEmpty { null },
+                        items = items,
+                    )
+                },
+                enabled = name.isNotBlank() && selectedItems.isNotEmpty(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            ) {
+                Text("Create Template (${selectedItems.size} items)")
+            }
+        },
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -223,23 +244,6 @@ fun NutritionCreateTemplateScreen(
             }
 
             item {
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = {
-                        val items = selectedItems.map { item ->
-                            MealTemplateItemInput(foodId = item.food.id, defaultAmount = item.amount)
-                        }
-                        viewModel.createTemplate(
-                            name = name.trim(),
-                            description = description.trim().ifEmpty { null },
-                            items = items,
-                        )
-                    },
-                    enabled = name.isNotBlank() && selectedItems.isNotEmpty(),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("Create Template")
-                }
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
