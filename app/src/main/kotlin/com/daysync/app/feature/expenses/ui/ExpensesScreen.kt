@@ -139,7 +139,7 @@ fun ExpensesScreen(
                     ),
                 ) {
                     Text(
-                        text = "Enable notification access to auto-track expenses from payment apps",
+                        text = "Enable notification access to auto-track expenses from bank SMS",
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(12.dp),
                     )
