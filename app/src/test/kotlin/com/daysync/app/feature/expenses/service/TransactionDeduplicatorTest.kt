@@ -49,24 +49,35 @@ class TransactionDeduplicatorTest {
     // ── findDuplicate ────────────────────────────────────
 
     @Test
-    fun `findDuplicate returns match within 2-minute window`() = runTest {
-        val timestamp = 1000000L
+    fun `findDuplicate returns match when reference ID exists in notes`() = runTest {
         coEvery {
-            expenseDao.findDuplicate(500.0, testDate, any(), any())
+            expenseDao.findByNotes("%Ref: 121280823461%")
         } returns testEntity
 
-        val result = deduplicator.findDuplicate(500.0, testDate, timestamp)
+        val result = deduplicator.findDuplicate("121280823461")
         assertNotNull(result)
         assertEquals("existing-1", result!!.id)
     }
 
     @Test
-    fun `findDuplicate returns null when no match`() = runTest {
+    fun `findDuplicate returns null when reference ID not found`() = runTest {
         coEvery {
-            expenseDao.findDuplicate(any(), any(), any(), any())
+            expenseDao.findByNotes(any())
         } returns null
 
-        val result = deduplicator.findDuplicate(999.0, testDate, 1000000L)
+        val result = deduplicator.findDuplicate("175809912454")
+        assertNull(result)
+    }
+
+    @Test
+    fun `findDuplicate returns null when reference ID is null`() = runTest {
+        val result = deduplicator.findDuplicate(null)
+        assertNull(result)
+    }
+
+    @Test
+    fun `findDuplicate returns null when reference ID is blank`() = runTest {
+        val result = deduplicator.findDuplicate("")
         assertNull(result)
     }
 

@@ -86,13 +86,8 @@ class ExpenseRepositoryImpl(
         val now = Clock.System.now()
         val today = now.toLocalDateTime(TimeZone.of("Asia/Kolkata")).date
 
-        // 1. Dedup check
-        val existing = deduplicator.findDuplicate(
-            amount = parsed.amount,
-            date = today,
-            timestampMillis = now.toEpochMilliseconds(),
-            referenceId = parsed.referenceId,
-        )
+        // 1. Dedup check — strictly by reference ID
+        val existing = deduplicator.findDuplicate(parsed.referenceId)
         if (existing != null) {
             if (deduplicator.shouldUpdateExisting(existing, parsed.merchantName)) {
                 expenseDao.update(
