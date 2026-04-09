@@ -21,7 +21,6 @@ class NotificationParserTest {
         assertNotNull(result)
         assertEquals(500.0, result!!.amount, 0.01)
         assertEquals("Chai Point", result.merchantName)
-        assertFalse(result.isP2P)
         assertTrue(result.isDebit)
     }
 
@@ -35,7 +34,6 @@ class NotificationParserTest {
         assertNotNull(result)
         assertEquals(1250.50, result!!.amount, 0.01)
         assertEquals("Reliance Retail Store", result.merchantName)
-        assertFalse(result.isP2P)
     }
 
     @Test
@@ -78,10 +76,7 @@ class NotificationParserTest {
         )
         assertNotNull(result)
         assertEquals(200.0, result!!.amount, 0.01)
-        // All payments default to merchant — user can manually reclassify P2P
-        assertFalse(result.isP2P)
         assertEquals("Rahul Kumar", result.merchantName)
-        assertNull(result.payeeName)
     }
 
     @Test
@@ -142,7 +137,6 @@ class NotificationParserTest {
         )
         assertNotNull(result)
         assertEquals(320.0, result!!.amount, 0.01)
-        assertFalse(result.isP2P)
         assertEquals("Dominos Restaurant", result.merchantName)
     }
 
@@ -155,7 +149,6 @@ class NotificationParserTest {
         )
         assertNotNull(result)
         assertEquals(500.0, result!!.amount, 0.01)
-        assertFalse(result.isP2P)
         assertEquals("Priya", result.merchantName)
     }
 
@@ -191,7 +184,6 @@ class NotificationParserTest {
         )
         assertNotNull(result)
         assertEquals(200.0, result!!.amount, 0.01)
-        assertFalse(result.isP2P)
         assertEquals("Amit", result.merchantName)
     }
 
@@ -218,7 +210,6 @@ class NotificationParserTest {
         )
         assertNotNull(result)
         assertEquals(150.0, result!!.amount, 0.01)
-        assertFalse(result.isP2P)
     }
 
     @Test
@@ -282,9 +273,7 @@ class NotificationParserTest {
             "Paid ₹1000 to ABC Technologies Pvt Ltd"
         )
         assertNotNull(result)
-        assertFalse(result!!.isP2P)
-        assertEquals("ABC Technologies Pvt Ltd", result.merchantName)
-        assertNull(result.payeeName)
+        assertEquals("ABC Technologies Pvt Ltd", result!!.merchantName)
     }
 
     @Test
@@ -295,8 +284,7 @@ class NotificationParserTest {
             "Paid ₹200 to merchant@ybl"
         )
         assertNotNull(result)
-        assertFalse(result!!.isP2P)
-        assertEquals("merchant@ybl", result.merchantName)
+        assertEquals("merchant@ybl", result!!.merchantName)
     }
 
     @Test
@@ -307,7 +295,6 @@ class NotificationParserTest {
             "Paid ₹500 to Amit Sharma"
         )
         assertNotNull(result)
-        assertFalse(result!!.isP2P)
-        assertEquals("Amit Sharma", result.merchantName)
+        assertEquals("Amit Sharma", result!!.merchantName)
     }
 }

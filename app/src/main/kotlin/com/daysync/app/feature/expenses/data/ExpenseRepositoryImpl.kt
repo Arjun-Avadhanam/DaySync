@@ -100,34 +100,20 @@ class ExpenseRepositoryImpl(
             return ProcessResult.Deduplicated(existing.id)
         }
 
-        // 2. Determine category
-        val category: String?
-        val title: String?
+        // 2. Determine category — payee rule wins, else built-in merchant rules
+        val rule = parsed.merchantName?.let { payeeRuleDao.getByPayeeName(it) }
+        val category: String? = rule?.category
+            ?: ExpenseCategory.suggestFromMerchant(parsed.merchantName, parsed.packageName)
+        val title: String? = rule?.defaultTitle ?: parsed.merchantName
 
-        if (parsed.isP2P && parsed.payeeName != null) {
-            // Check payee rules
-            val rule = payeeRuleDao.getByPayeeName(parsed.payeeName)
-            if (rule != null) {
-                category = rule.category
-                title = rule.defaultTitle
-            } else {
-                // No rule for this P2P payee — needs classification
-                val expense = createExpenseFromParsed(parsed, today, null, null)
-                expenseDao.insert(expense)
-                return ProcessResult.NeedsClassification(expense.toDomain())
-            }
-        } else {
-            category = ExpenseCategory.suggestFromMerchant(
-                parsed.merchantName,
-                parsed.packageName,
-            )
-            title = parsed.merchantName
-        }
-
-        // 3. Save
+        // 3. Save (or prompt for classification if we still don't know the category)
         val expense = createExpenseFromParsed(parsed, today, category, title)
         expenseDao.insert(expense)
-        return ProcessResult.Saved(expense.toDomain())
+        return if (category == null) {
+            ProcessResult.NeedsClassification(expense.toDomain())
+        } else {
+            ProcessResult.Saved(expense.toDomain())
+        }
     }
 
     override suspend fun importFromCsv(entries: List<CsvExpenseEntry>): ImportResult {
@@ -248,14 +234,14 @@ class ExpenseRepositoryImpl(
 
         return ExpenseEntity(
             id = generateExpenseId(),
-            title = title ?: parsed.payeeName,
+            title = title,
             date = date,
             category = category,
             unitCost = parsed.amount,
             totalAmount = parsed.amount,
             notes = notes,
             source = "NOTIFICATION",
-            merchantName = parsed.merchantName ?: parsed.payeeName,
+            merchantName = parsed.merchantName,
             syncStatus = SyncStatus.PENDING,
             lastModified = Clock.System.now(),
         )

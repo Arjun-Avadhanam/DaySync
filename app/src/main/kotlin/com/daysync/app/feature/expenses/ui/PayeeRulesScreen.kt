@@ -86,7 +86,7 @@ fun PayeeRulesScreen(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    "Rules auto-categorize P2P payments to known payees",
+                    "Rules auto-categorize future payments to known payees",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

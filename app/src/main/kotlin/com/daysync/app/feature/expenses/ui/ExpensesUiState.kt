@@ -1,6 +1,7 @@
 package com.daysync.app.feature.expenses.ui
 
 import com.daysync.app.core.database.dao.CategoryTotal
+import com.daysync.app.core.database.entity.PayeeRuleEntity
 import com.daysync.app.feature.expenses.data.CsvExpenseEntry
 import com.daysync.app.feature.expenses.data.ImportResult
 import com.daysync.app.feature.expenses.model.Expense
@@ -30,6 +31,7 @@ data class ExpenseFormState(
     val isEditing: Boolean = false,
     val isSaving: Boolean = false,
     val saveAsPayeeRule: Boolean = false,
+    val existingPayeeRule: PayeeRuleEntity? = null,
     val merchantSuggestions: List<String> = emptyList(),
 )
 

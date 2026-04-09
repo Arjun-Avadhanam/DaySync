@@ -35,15 +35,19 @@ class ExpenseFormViewModel @Inject constructor(
         if (expenseId != null) {
             viewModelScope.launch {
                 val expense = repository.getExpenseById(expenseId) ?: return@launch
+                val merchantName = expense.merchantName ?: ""
                 _formState.value = ExpenseFormState(
                     id = expense.id,
                     amount = expense.totalAmount.toBigDecimal().stripTrailingZeros().toPlainString(),
                     category = expense.category,
-                    merchantName = expense.merchantName ?: "",
+                    merchantName = merchantName,
                     title = expense.title ?: "",
                     notes = expense.notes ?: "",
                     date = expense.date,
                     isEditing = true,
+                    existingPayeeRule = merchantName
+                        .takeIf { it.isNotBlank() }
+                        ?.let { repository.getPayeeRule(it) },
                 )
             }
         }
@@ -59,6 +63,13 @@ class ExpenseFormViewModel @Inject constructor(
 
     fun updateMerchantName(value: String) {
         _formState.value = _formState.value.copy(merchantName = value)
+        viewModelScope.launch {
+            val rule = value.takeIf { it.isNotBlank() }?.let { repository.getPayeeRule(it) }
+            // Only apply if the merchant hasn't changed again while we were looking up
+            if (_formState.value.merchantName == value) {
+                _formState.value = _formState.value.copy(existingPayeeRule = rule)
+            }
+        }
     }
 
     fun updateTitle(value: String) {
@@ -104,7 +115,11 @@ class ExpenseFormViewModel @Inject constructor(
                 repository.addExpense(expense)
             }
 
-            if (state.saveAsPayeeRule && state.merchantName.isNotBlank() && state.category != null) {
+            if (state.saveAsPayeeRule &&
+                state.existingPayeeRule == null &&
+                state.merchantName.isNotBlank() &&
+                state.category != null
+            ) {
                 repository.addPayeeRule(
                     payeeName = state.merchantName,
                     category = state.category,
