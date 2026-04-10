@@ -74,6 +74,7 @@ fun MediaAddEditScreen(
     val scope = rememberCoroutineScope()
     val metadataResults by viewModel.metadataResults.collectAsState()
     val isSearchingMetadata by viewModel.isSearchingMetadata.collectAsState()
+    val creatorSuggestions by viewModel.creatorSuggestions.collectAsState()
 
     var title by remember { mutableStateOf("") }
     var mediaType by remember { mutableStateOf(MediaType.BOOK) }
@@ -117,6 +118,7 @@ fun MediaAddEditScreen(
             navigationIcon = {
                 IconButton(onClick = {
                     viewModel.clearMetadataResults()
+                    viewModel.clearCreatorQuery()
                     onBack()
                 }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -260,26 +262,66 @@ fun MediaAddEditScreen(
                     )
                 }
             }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                OutlinedTextField(
-                    value = newCreator,
-                    onValueChange = { newCreator = it },
-                    label = { Text("Add creator") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                TextButton(
-                    onClick = {
-                        if (newCreator.isNotBlank()) {
-                            creators = creators + newCreator.trim()
+            Column {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    OutlinedTextField(
+                        value = newCreator,
+                        onValueChange = {
+                            newCreator = it
+                            viewModel.setCreatorQuery(it)
+                        },
+                        label = { Text("Add creator") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        onClick = {
+                            val value = newCreator.trim()
+                            if (value.isNotBlank() && creators.none { it.equals(value, ignoreCase = true) }) {
+                                creators = creators + value
+                            }
                             newCreator = ""
+                            viewModel.clearCreatorQuery()
+                        },
+                    ) { Text("Add") }
+                }
+                // Suggestion list rendered below text field (doesn't steal focus).
+                // Matches the title metadata suggestions pattern so the keyboard
+                // stays up and the user can keep typing while picking a match.
+                val visibleSuggestions = creatorSuggestions.filter { suggestion ->
+                    creators.none { it.equals(suggestion, ignoreCase = true) }
+                }
+                if (visibleSuggestions.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        ),
+                        shape = MaterialTheme.shapes.small,
+                    ) {
+                        Column {
+                            visibleSuggestions.forEach { suggestion ->
+                                Text(
+                                    text = suggestion,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            creators = creators + suggestion
+                                            newCreator = ""
+                                            viewModel.clearCreatorQuery()
+                                        }
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                )
+                            }
                         }
-                    },
-                ) { Text("Add") }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

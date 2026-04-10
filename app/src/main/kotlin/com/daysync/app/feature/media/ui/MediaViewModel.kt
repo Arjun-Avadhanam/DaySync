@@ -9,6 +9,7 @@ import com.daysync.app.feature.media.domain.MediaItem
 import com.daysync.app.feature.media.domain.MediaStatus
 import com.daysync.app.feature.media.domain.MediaType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -49,6 +52,7 @@ sealed interface MediaScreenState {
     data class AddEdit(val itemId: String? = null) : MediaScreenState
 }
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class MediaViewModel @Inject constructor(
     private val repository: MediaRepository,
@@ -68,6 +72,48 @@ class MediaViewModel @Inject constructor(
 
     private val _isSearchingMetadata = MutableStateFlow(false)
     val isSearchingMetadata: StateFlow<Boolean> = _isSearchingMetadata.asStateFlow()
+
+    // Unique creators that have been used across all existing media items.
+    // Used to power the "type-ahead" suggestions in the Add/Edit form so the
+    // user doesn't have to retype names of authors/directors/etc. they've
+    // already recorded.
+    private val allKnownCreators: StateFlow<List<String>> = repository.getAllItems()
+        .map { items ->
+            items.asSequence()
+                .flatMap { it.creators.asSequence() }
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .distinctBy { it.lowercase() }
+                .sortedBy { it.lowercase() }
+                .toList()
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _creatorQuery = MutableStateFlow("")
+
+    val creatorSuggestions: StateFlow<List<String>> = _creatorQuery
+        .debounce(250)
+        .combine(allKnownCreators) { query, all ->
+            val trimmed = query.trim()
+            if (trimmed.isBlank()) {
+                emptyList()
+            } else {
+                all.asSequence()
+                    .filter { it.contains(trimmed, ignoreCase = true) }
+                    .filter { !it.equals(trimmed, ignoreCase = true) }
+                    .take(6)
+                    .toList()
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun setCreatorQuery(query: String) {
+        _creatorQuery.value = query
+    }
+
+    fun clearCreatorQuery() {
+        _creatorQuery.value = ""
+    }
 
     val uiState: StateFlow<MediaUiState> = combine(
         repository.getAllItems(),
