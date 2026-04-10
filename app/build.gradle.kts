@@ -50,6 +50,8 @@ android {
         buildConfigField("String", "TMDB_API_KEY", "\"${localProperties.getProperty("TMDB_API_KEY", "")}\"")
         buildConfigField("String", "OMDB_API_KEY", "\"${localProperties.getProperty("OMDB_API_KEY", "")}\"")
         buildConfigField("String", "RAWG_API_KEY", "\"${localProperties.getProperty("RAWG_API_KEY", "")}\"")
+        buildConfigField("String", "NOTION_API_KEY", "\"${localProperties.getProperty("NOTION_API_KEY", "")}\"")
+        buildConfigField("String", "NOTION_MEAL_DATABASE_ID", "\"${localProperties.getProperty("NOTION_MEAL_DATABASE_ID", "")}\"")
     }
 
     buildTypes {

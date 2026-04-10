@@ -22,7 +22,8 @@ import kotlinx.coroutines.launch
 sealed interface FoodLibraryEvent {
     data object FoodSaved : FoodLibraryEvent
     data object FoodDeleted : FoodLibraryEvent
-    data class ImportComplete(val count: Int) : FoodLibraryEvent
+    data class ImportComplete(val upserted: Int, val softDeleted: Int) : FoodLibraryEvent
+    data class ImportFailed(val message: String) : FoodLibraryEvent
     data class Error(val message: String) : FoodLibraryEvent
 }
 
@@ -108,10 +109,15 @@ class FoodLibraryViewModel @Inject constructor(
         viewModelScope.launch {
             _isImporting.value = true
             try {
-                val count = notionImporter.forceImport()
-                _events.emit(FoodLibraryEvent.ImportComplete(count))
+                val result = notionImporter.forceImport()
+                _events.emit(
+                    FoodLibraryEvent.ImportComplete(
+                        upserted = result.upserted,
+                        softDeleted = result.softDeleted,
+                    )
+                )
             } catch (e: Exception) {
-                _events.emit(FoodLibraryEvent.Error(e.message ?: "Import failed"))
+                _events.emit(FoodLibraryEvent.ImportFailed(e.message ?: e::class.simpleName ?: "unknown error"))
             } finally {
                 _isImporting.value = false
             }

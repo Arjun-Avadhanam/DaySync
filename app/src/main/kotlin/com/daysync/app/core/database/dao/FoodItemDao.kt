@@ -35,6 +35,9 @@ interface FoodItemDao {
     @Query("SELECT * FROM food_items WHERE isDeleted = 0 AND name LIKE '%' || :query || '%' ORDER BY name ASC")
     fun searchByName(query: String): Flow<List<FoodItemEntity>>
 
+    @Query("SELECT id FROM food_items WHERE id LIKE 'notion-%' AND isDeleted = 0")
+    suspend fun getActiveNotionIds(): List<String>
+
     @Query("SELECT * FROM food_items WHERE isDeleted = 0 AND category = :category ORDER BY name ASC")
     fun getByCategory(category: String): Flow<List<FoodItemEntity>>
 

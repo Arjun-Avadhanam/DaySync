@@ -64,7 +64,14 @@ fun NutritionFoodLibraryScreen(
         viewModel.events.collect { event ->
             when (event) {
                 is FoodLibraryEvent.ImportComplete -> {
-                    snackbarHostState.showSnackbar("Imported ${event.count} meals from Notion")
+                    val message = buildString {
+                        append("Imported ${event.upserted} meals from Notion")
+                        if (event.softDeleted > 0) append(" (${event.softDeleted} removed)")
+                    }
+                    snackbarHostState.showSnackbar(message)
+                }
+                is FoodLibraryEvent.ImportFailed -> {
+                    snackbarHostState.showSnackbar("Import failed: ${event.message}")
                 }
                 is FoodLibraryEvent.Error -> {
                     snackbarHostState.showSnackbar("Error: ${event.message}")
