@@ -62,6 +62,19 @@ fun SportsScreen(
                 modifier = modifier,
             )
         }
+        is SportsDestination.Search -> {
+            SportsSearchScreen(
+                state = state,
+                onQueryChange = viewModel::setSearchQuery,
+                onSportFilterChange = viewModel::setSearchSportFilter,
+                onTeamSelected = viewModel::selectSearchTeam,
+                onClearSelectedTeam = viewModel::clearSearchTeam,
+                onEventClick = { viewModel.navigateTo(SportsDestination.EventDetail(it)) },
+                onWatchlistToggle = viewModel::toggleWatchlist,
+                onBack = viewModel::navigateBack,
+                modifier = modifier,
+            )
+        }
         is SportsDestination.Standings -> {
             SportsStandingsScreen(
                 standings = state.standings,

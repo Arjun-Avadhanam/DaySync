@@ -138,6 +138,12 @@ class SportsRepositoryImpl @Inject constructor(
     override suspend fun getCompetitorById(competitorId: String): CompetitorEntity? =
         dao.getCompetitorById(competitorId)
 
+    override fun searchCompetitors(query: String, sportId: String?): Flow<List<CompetitorEntity>> =
+        dao.searchCompetitors(query, sportId)
+
+    override fun getEventsByCompetitor(competitorId: String): Flow<List<SportEventEntity>> =
+        dao.getEventsByCompetitor(competitorId)
+
     // Watchlist
     override fun getWatchlistedEventIds(): Flow<List<String>> = dao.getWatchlistedEventIds()
 

@@ -1,6 +1,7 @@
 package com.daysync.app.feature.sports.ui
 
 import com.daysync.app.core.database.entity.CompetitionEntity
+import com.daysync.app.core.database.entity.CompetitorEntity
 import com.daysync.app.core.database.entity.EventParticipantEntity
 import com.daysync.app.feature.sports.data.StandingRow
 import com.daysync.app.feature.sports.data.model.SportEventWithDetails
@@ -12,6 +13,7 @@ sealed interface SportsDestination {
     data class EventDetail(val eventId: String) : SportsDestination
     data class CompetitionFixtures(val competitionId: String) : SportsDestination
     data object ManageFollowing : SportsDestination
+    data object Search : SportsDestination
     data class Standings(val competitionId: String, val competitionCode: String) : SportsDestination
 }
 
@@ -30,6 +32,11 @@ data class SportsUiState(
     val standings: List<StandingRow> = emptyList(),
     val allCompetitions: List<CompetitionEntity> = emptyList(),
     val followedCompetitionIds: Set<String> = emptySet(),
+    val searchQuery: String = "",
+    val searchSportFilter: String? = null,
+    val searchResults: List<CompetitorEntity> = emptyList(),
+    val selectedSearchTeam: CompetitorEntity? = null,
+    val selectedSearchTeamEvents: List<SportEventWithDetails> = emptyList(),
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val error: String? = null,

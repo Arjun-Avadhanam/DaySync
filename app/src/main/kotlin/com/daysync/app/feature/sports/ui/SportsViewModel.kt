@@ -2,20 +2,26 @@ package com.daysync.app.feature.sports.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.daysync.app.core.database.entity.CompetitorEntity
 import com.daysync.app.feature.sports.data.SportsRefreshManager
 import com.daysync.app.feature.sports.data.SportsRepository
 import com.daysync.app.feature.sports.data.model.SportEventWithDetails
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@OptIn(FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class SportsViewModel @Inject constructor(
     private val repository: SportsRepository,
@@ -30,11 +36,54 @@ class SportsViewModel @Inject constructor(
     private var liveJob: Job? = null
     private var resultsJob: Job? = null
 
+    // Search state — kept as separate flows to allow debounced + flatMapLatest behaviour
+    private val searchQueryFlow = MutableStateFlow("")
+    private val searchSportFilterFlow = MutableStateFlow<String?>(null)
+    private val selectedSearchTeamFlow = MutableStateFlow<CompetitorEntity?>(null)
+
     init {
         viewModelScope.launch {
             repository.ensureSeedData()
             collectEvents(sportId = null)
+            collectSearch()
             refreshData()
+        }
+    }
+
+    private fun collectSearch() {
+        // Team list driven by debounced query + sport filter
+        viewModelScope.launch {
+            combine(
+                searchQueryFlow.debounce(250),
+                searchSportFilterFlow,
+            ) { q, sport -> q.trim() to sport }
+                .flatMapLatest { (q, sport) ->
+                    if (q.length < 2) flowOf(emptyList())
+                    else repository.searchCompetitors(q, sport)
+                }
+                .collect { results ->
+                    _uiState.update { it.copy(searchResults = results) }
+                }
+        }
+
+        // Events for the currently-selected team
+        viewModelScope.launch {
+            selectedSearchTeamFlow
+                .flatMapLatest { team ->
+                    if (team == null) {
+                        flowOf(emptyList<SportEventWithDetails>())
+                    } else {
+                        combine(
+                            repository.getEventsByCompetitor(team.id),
+                            repository.getWatchlistedEventIds(),
+                        ) { events, ids ->
+                            events.map { repository.enrichEvent(it, ids.toSet()) }
+                        }
+                    }
+                }
+                .collect { enriched ->
+                    _uiState.update { it.copy(selectedSearchTeamEvents = enriched) }
+                }
         }
     }
 
@@ -223,5 +272,26 @@ class SportsViewModel @Inject constructor(
 
     fun toggleFollowCompetitor(competitorId: String) {
         viewModelScope.launch { repository.toggleFollowCompetitor(competitorId) }
+    }
+
+    // Search
+    fun setSearchQuery(query: String) {
+        searchQueryFlow.value = query
+        _uiState.update { it.copy(searchQuery = query) }
+    }
+
+    fun setSearchSportFilter(sportId: String?) {
+        searchSportFilterFlow.value = sportId
+        _uiState.update { it.copy(searchSportFilter = sportId) }
+    }
+
+    fun selectSearchTeam(team: CompetitorEntity) {
+        selectedSearchTeamFlow.value = team
+        _uiState.update { it.copy(selectedSearchTeam = team) }
+    }
+
+    fun clearSearchTeam() {
+        selectedSearchTeamFlow.value = null
+        _uiState.update { it.copy(selectedSearchTeam = null, selectedSearchTeamEvents = emptyList()) }
     }
 }

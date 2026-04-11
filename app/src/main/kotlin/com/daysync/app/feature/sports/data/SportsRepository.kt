@@ -36,6 +36,10 @@ interface SportsRepository {
     suspend fun getCompetitionById(competitionId: String): CompetitionEntity?
     suspend fun getCompetitorById(competitorId: String): CompetitorEntity?
 
+    // Search
+    fun searchCompetitors(query: String, sportId: String?): Flow<List<CompetitorEntity>>
+    fun getEventsByCompetitor(competitorId: String): Flow<List<SportEventEntity>>
+
     // Watchlist
     fun getWatchlistedEventIds(): Flow<List<String>>
     suspend fun toggleWatchlist(eventId: String)

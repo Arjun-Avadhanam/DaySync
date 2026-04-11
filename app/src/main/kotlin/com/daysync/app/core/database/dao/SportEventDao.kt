@@ -61,6 +61,21 @@ interface SportEventDao {
     @Query("SELECT * FROM competitors WHERE sportId = :sportId")
     fun getCompetitorsBySport(sportId: String): Flow<List<CompetitorEntity>>
 
+    @Query(
+        "SELECT * FROM competitors " +
+            "WHERE name LIKE '%' || :query || '%' " +
+            "AND (:sportId IS NULL OR sportId = :sportId) " +
+            "ORDER BY name COLLATE NOCASE ASC LIMIT 30"
+    )
+    fun searchCompetitors(query: String, sportId: String?): Flow<List<CompetitorEntity>>
+
+    @Query(
+        "SELECT * FROM sport_events " +
+            "WHERE (homeCompetitorId = :competitorId OR awayCompetitorId = :competitorId) " +
+            "AND isDeleted = 0 ORDER BY scheduledAt DESC"
+    )
+    fun getEventsByCompetitor(competitorId: String): Flow<List<SportEventEntity>>
+
     @Query("SELECT * FROM competitors WHERE id = :id")
     suspend fun getCompetitorById(id: String): CompetitorEntity?
 
