@@ -3,6 +3,7 @@ package com.daysync.app.core.database
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.daysync.app.core.database.dao.DailyHealthOverrideDao
 import com.daysync.app.core.database.dao.DailyMealEntryDao
 import com.daysync.app.core.database.dao.DailyNutritionSummaryDao
 import com.daysync.app.core.database.dao.ExerciseSessionDao
@@ -19,6 +20,7 @@ import com.daysync.app.core.database.dao.SportEventDao
 import com.daysync.app.core.database.dao.SyncLogDao
 import com.daysync.app.core.database.entity.CompetitionEntity
 import com.daysync.app.core.database.entity.CompetitorEntity
+import com.daysync.app.core.database.entity.DailyHealthOverrideEntity
 import com.daysync.app.core.database.entity.DailyMealEntryEntity
 import com.daysync.app.core.database.entity.DailyNutritionSummaryEntity
 import com.daysync.app.core.database.entity.EventParticipantEntity
@@ -42,10 +44,11 @@ import com.daysync.app.core.database.entity.WatchlistEntryEntity
 
 @Database(
     entities = [
-        // Health (3)
+        // Health (4)
         HealthMetricEntity::class,
         SleepSessionEntity::class,
         ExerciseSessionEntity::class,
+        DailyHealthOverrideEntity::class,
         // Nutrition (5)
         FoodItemEntity::class,
         MealTemplateEntity::class,
@@ -71,7 +74,7 @@ import com.daysync.app.core.database.entity.WatchlistEntryEntity
         // Media (1)
         MediaItemEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -80,6 +83,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun healthMetricDao(): HealthMetricDao
     abstract fun sleepSessionDao(): SleepSessionDao
     abstract fun exerciseSessionDao(): ExerciseSessionDao
+    abstract fun dailyHealthOverrideDao(): DailyHealthOverrideDao
 
     // Nutrition
     abstract fun foodItemDao(): FoodItemDao

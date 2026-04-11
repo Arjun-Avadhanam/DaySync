@@ -18,11 +18,14 @@ import java.time.LocalTime
 import java.time.ZoneId
 import javax.inject.Inject
 import kotlin.time.Instant
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate as KLocalDate
 
 @HiltViewModel
 class HealthViewModel @Inject constructor(
@@ -40,6 +43,10 @@ class HealthViewModel @Inject constructor(
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    // Reactively mirror the daily calorie override so edits appear instantly
+    // without a full reload. Re-started on each loadData in case the date rolls.
+    private var overrideJob: Job? = null
 
     fun checkAvailabilityAndLoad() {
         viewModelScope.launch {
@@ -89,10 +96,12 @@ class HealthViewModel @Inject constructor(
             val period = _selectedPeriod.value
             val (periodStart, periodEnd) = periodRange(period)
             val (todayStart, todayEnd) = todayRange()
+            val today = todayLocalDate()
 
-            // Today's summary from metrics
+            // Today's summary from metrics, with any manual override applied
             val todayMetrics = healthRepository.getMetricsByDateRange(todayStart, todayEnd).first()
-            val dailySummary = buildDailySummary(todayMetrics)
+            val currentOverride = healthRepository.observeDailyOverride(today).first()
+            val dailySummary = buildDailySummary(todayMetrics, currentOverride?.totalCalories)
 
             // Latest sleep
             val latestSleep = healthRepository.getLatestSleep().first()
@@ -115,18 +124,54 @@ class HealthViewModel @Inject constructor(
                 heartRateTrend = heartRateTrend,
                 sleepTrend = sleepTrend,
             )
+
+            // Keep the override reactive so dialog edits update the summary immediately
+            overrideJob?.cancel()
+            overrideJob = viewModelScope.launch {
+                healthRepository.observeDailyOverride(today).collect { override ->
+                    applyCalorieOverride(override?.totalCalories)
+                }
+            }
         } catch (e: Exception) {
             _uiState.value = HealthUiState.Error(e.message ?: "Failed to load health data")
         }
     }
 
+    private suspend fun applyCalorieOverride(overrideValue: Double?) {
+        val current = _uiState.value as? HealthUiState.Success ?: return
+        val (todayStart, todayEnd) = todayRange()
+        val rawMetrics = healthRepository.getMetricsByDateRange(todayStart, todayEnd).first()
+        val rawTotal = rawMetrics.firstOrNull { it.type == "TOTAL_CALORIES" }?.value
+        val resolved = overrideValue ?: rawTotal
+        if (resolved == current.dailySummary.totalCalories &&
+            (overrideValue != null) == current.dailySummary.totalCaloriesOverridden
+        ) return
+        _uiState.update {
+            (it as? HealthUiState.Success)?.copy(
+                dailySummary = current.dailySummary.copy(
+                    totalCalories = resolved,
+                    totalCaloriesOverridden = overrideValue != null,
+                ),
+            ) ?: it
+        }
+    }
+
+    fun setCalorieOverride(totalCalories: Double?) {
+        viewModelScope.launch {
+            healthRepository.setCalorieOverride(todayLocalDate(), totalCalories)
+        }
+    }
+
     private fun buildDailySummary(
         metrics: List<com.daysync.app.core.database.entity.HealthMetricEntity>,
+        caloriesOverride: Double?,
     ): HealthDailySummary {
         val byType = metrics.associateBy { it.type }
+        val rawTotal = byType["TOTAL_CALORIES"]?.value
         return HealthDailySummary(
             steps = byType["STEPS"]?.value?.toLong(),
-            totalCalories = byType["TOTAL_CALORIES"]?.value,
+            totalCalories = caloriesOverride ?: rawTotal,
+            totalCaloriesOverridden = caloriesOverride != null,
             activeCalories = byType["ACTIVE_CALORIES"]?.value,
             avgHeartRate = byType["HR_AVG"]?.value?.toLong(),
             minHeartRate = byType["HR_MIN"]?.value?.toLong(),
@@ -209,6 +254,11 @@ class HealthViewModel @Inject constructor(
         val todayEnd = LocalDate.now(zone).atTime(LocalTime.MAX).atZone(zone).toInstant()
         return Instant.fromEpochMilliseconds(todayStart.toEpochMilli()) to
             Instant.fromEpochMilliseconds(todayEnd.toEpochMilli())
+    }
+
+    private fun todayLocalDate(): KLocalDate {
+        val today = LocalDate.now(ZoneId.of("Asia/Kolkata"))
+        return KLocalDate(today.year, today.monthValue, today.dayOfMonth)
     }
 
     private fun periodRange(period: HealthPeriod): Pair<Instant, Instant> {

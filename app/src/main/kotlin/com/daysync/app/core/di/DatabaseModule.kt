@@ -3,6 +3,7 @@ package com.daysync.app.core.di
 import android.content.Context
 import androidx.room.Room
 import com.daysync.app.core.database.AppDatabase
+import com.daysync.app.core.database.dao.DailyHealthOverrideDao
 import com.daysync.app.core.database.dao.DailyMealEntryDao
 import com.daysync.app.core.database.dao.DailyNutritionSummaryDao
 import com.daysync.app.core.database.dao.ExerciseSessionDao
@@ -44,6 +45,7 @@ object DatabaseModule {
     @Provides fun provideHealthMetricDao(db: AppDatabase): HealthMetricDao = db.healthMetricDao()
     @Provides fun provideSleepSessionDao(db: AppDatabase): SleepSessionDao = db.sleepSessionDao()
     @Provides fun provideExerciseSessionDao(db: AppDatabase): ExerciseSessionDao = db.exerciseSessionDao()
+    @Provides fun provideDailyHealthOverrideDao(db: AppDatabase): DailyHealthOverrideDao = db.dailyHealthOverrideDao()
 
     // Nutrition DAOs
     @Provides fun provideFoodItemDao(db: AppDatabase): FoodItemDao = db.foodItemDao()

@@ -112,6 +112,7 @@ fun HealthScreen(
                     state = state,
                     selectedPeriod = selectedPeriod,
                     onPeriodSelected = viewModel::onPeriodSelected,
+                    onCaloriesOverride = viewModel::setCalorieOverride,
                 )
             }
         }
@@ -123,6 +124,7 @@ private fun HealthDashboard(
     state: HealthUiState.Success,
     selectedPeriod: HealthPeriod,
     onPeriodSelected: (HealthPeriod) -> Unit,
+    onCaloriesOverride: (Double?) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -132,7 +134,10 @@ private fun HealthDashboard(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         // Today's summary
-        HealthSummaryCard(summary = state.dailySummary)
+        HealthSummaryCard(
+            summary = state.dailySummary,
+            onCaloriesOverride = onCaloriesOverride,
+        )
 
         // Sleep card
         state.sleepSummary?.let { SleepCard(sleep = it) }

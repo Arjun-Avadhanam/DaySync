@@ -1,22 +1,28 @@
 package com.daysync.app.feature.health.data
 
+import com.daysync.app.core.database.dao.DailyHealthOverrideDao
 import com.daysync.app.core.database.dao.ExerciseSessionDao
 import com.daysync.app.core.database.dao.HealthMetricDao
 import com.daysync.app.core.database.dao.SleepSessionDao
+import com.daysync.app.core.database.entity.DailyHealthOverrideEntity
 import com.daysync.app.core.database.entity.ExerciseSessionEntity
 import com.daysync.app.core.database.entity.HealthMetricEntity
 import com.daysync.app.core.database.entity.SleepSessionEntity
+import com.daysync.app.core.sync.SyncStatus
 import com.daysync.app.feature.health.model.HeartRateZoneConfig
 import java.time.Instant as JavaInstant
 import javax.inject.Inject
+import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.LocalDate
 
 class HealthRepositoryImpl @Inject constructor(
     private val healthConnectManager: HealthConnectManager,
     private val healthMetricDao: HealthMetricDao,
     private val sleepSessionDao: SleepSessionDao,
     private val exerciseSessionDao: ExerciseSessionDao,
+    private val dailyHealthOverrideDao: DailyHealthOverrideDao,
     private val zoneConfig: HeartRateZoneConfig,
 ) : HealthRepository {
 
@@ -75,4 +81,24 @@ class HealthRepositoryImpl @Inject constructor(
 
     override fun getRecentWorkouts(limit: Int): Flow<List<ExerciseSessionEntity>> =
         exerciseSessionDao.getRecent(limit)
+
+    override fun observeDailyOverride(date: LocalDate): Flow<DailyHealthOverrideEntity?> =
+        dailyHealthOverrideDao.observe(date)
+
+    override suspend fun setCalorieOverride(date: LocalDate, totalCalories: Double?) {
+        val existing = dailyHealthOverrideDao.get(date)
+        if (totalCalories == null && existing == null) return
+        if (totalCalories == null) {
+            dailyHealthOverrideDao.deleteByDate(date)
+            return
+        }
+        dailyHealthOverrideDao.upsert(
+            DailyHealthOverrideEntity(
+                date = date,
+                totalCalories = totalCalories,
+                syncStatus = SyncStatus.PENDING,
+                lastModified = Clock.System.now(),
+            )
+        )
+    }
 }

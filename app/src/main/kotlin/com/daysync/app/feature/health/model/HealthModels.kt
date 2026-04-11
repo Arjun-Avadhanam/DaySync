@@ -25,6 +25,7 @@ data class HeartRateZoneConfig(
 data class HealthDailySummary(
     val steps: Long? = null,
     val totalCalories: Double? = null,
+    val totalCaloriesOverridden: Boolean = false,
     val activeCalories: Double? = null,
     val avgHeartRate: Long? = null,
     val minHeartRate: Long? = null,
