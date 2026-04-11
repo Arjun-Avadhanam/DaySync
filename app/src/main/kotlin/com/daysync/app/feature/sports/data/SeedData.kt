@@ -2,7 +2,9 @@ package com.daysync.app.feature.sports.data
 
 import com.daysync.app.core.database.dao.SportEventDao
 import com.daysync.app.core.database.entity.CompetitionEntity
+import com.daysync.app.core.database.entity.FollowedCompetitionEntity
 import com.daysync.app.core.database.entity.SportEntity
+import java.util.UUID
 
 object SeedData {
 
@@ -156,5 +158,20 @@ object SeedData {
     suspend fun ensureSeedData(dao: SportEventDao) {
         dao.insertSports(sports)
         dao.insertCompetitions(competitions)
+
+        // Default every competition to followed. Only inserts rows that aren't
+        // already present, so users who explicitly unfollowed something keep
+        // that state across upgrades — and any new competitions added in
+        // future SeedData updates auto-follow.
+        val alreadyFollowed = dao.getFollowedCompetitionIds().toSet()
+        val newFollowed = competitions
+            .filter { it.id !in alreadyFollowed }
+            .map { competition ->
+                FollowedCompetitionEntity(
+                    id = UUID.randomUUID().toString(),
+                    competitionId = competition.id,
+                )
+            }
+        newFollowed.forEach { dao.insertFollowedCompetition(it) }
     }
 }

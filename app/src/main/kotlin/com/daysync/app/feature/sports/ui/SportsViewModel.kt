@@ -49,10 +49,12 @@ class SportsViewModel @Inject constructor(
             combine(
                 repository.getUpcomingEvents(sportId),
                 repository.getWatchlistedEventIds(),
-            ) { events, watchlistIds ->
-                events to watchlistIds.toSet()
-            }.collect { (events, watchlistIds) ->
-                val enriched = events.map { repository.enrichEvent(it, watchlistIds) }
+                repository.getFollowedCompetitions(),
+            ) { events, watchlistIds, followed ->
+                Triple(events, watchlistIds.toSet(), followed.map { it.competitionId }.toSet())
+            }.collect { (events, watchlistIds, followedIds) ->
+                val filtered = events.filter { it.competitionId in followedIds }
+                val enriched = filtered.map { repository.enrichEvent(it, watchlistIds) }
                 _uiState.update { it.copy(upcomingEvents = enriched, isLoading = false) }
             }
         }
@@ -62,10 +64,12 @@ class SportsViewModel @Inject constructor(
             combine(
                 repository.getLiveEvents(sportId),
                 repository.getWatchlistedEventIds(),
-            ) { events, watchlistIds ->
-                events to watchlistIds.toSet()
-            }.collect { (events, watchlistIds) ->
-                val enriched = events.map { repository.enrichEvent(it, watchlistIds) }
+                repository.getFollowedCompetitions(),
+            ) { events, watchlistIds, followed ->
+                Triple(events, watchlistIds.toSet(), followed.map { it.competitionId }.toSet())
+            }.collect { (events, watchlistIds, followedIds) ->
+                val filtered = events.filter { it.competitionId in followedIds }
+                val enriched = filtered.map { repository.enrichEvent(it, watchlistIds) }
                 _uiState.update { it.copy(liveEvents = enriched, liveCount = enriched.size) }
             }
         }
@@ -75,10 +79,12 @@ class SportsViewModel @Inject constructor(
             combine(
                 repository.getRecentResults(sportId),
                 repository.getWatchlistedEventIds(),
-            ) { events, watchlistIds ->
-                events to watchlistIds.toSet()
-            }.collect { (events, watchlistIds) ->
-                val enriched = events.map { repository.enrichEvent(it, watchlistIds) }
+                repository.getFollowedCompetitions(),
+            ) { events, watchlistIds, followed ->
+                Triple(events, watchlistIds.toSet(), followed.map { it.competitionId }.toSet())
+            }.collect { (events, watchlistIds, followedIds) ->
+                val filtered = events.filter { it.competitionId in followedIds }
+                val enriched = filtered.map { repository.enrichEvent(it, watchlistIds) }
                 _uiState.update { it.copy(resultEvents = enriched) }
             }
         }

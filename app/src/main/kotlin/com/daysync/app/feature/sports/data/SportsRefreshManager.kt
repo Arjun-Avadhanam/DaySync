@@ -52,6 +52,8 @@ class SportsRefreshManager @Inject constructor(
     }
 
     private suspend fun pollLiveScores() {
+        val followed = dao.getFollowedCompetitionIds().toSet()
+
         // Poll API-Football for live football (1 request = all live matches)
         if (!apiFootballService.isBudgetExhausted) {
             try {
@@ -62,6 +64,7 @@ class SportsRefreshManager @Inject constructor(
                 response.response.forEach { fixture ->
                     val leagueId = fixture.league?.id ?: return@forEach
                     val competitionId = apifIdToCompId[leagueId] ?: return@forEach
+                    if (competitionId !in followed) return@forEach
                     val event = fixture.toSportEventEntity(competitionId) ?: return@forEach
                     dao.insertEvent(event)
                     listOfNotNull(
@@ -78,6 +81,7 @@ class SportsRefreshManager @Inject constructor(
             Triple("mma", "ufc", "mma-ufc"),
         )
         for ((sport, league, compId) in espnSports) {
+            if (compId !in followed) continue
             try {
                 val response = espnApi.getScoreboard(sport, league)
                 val sportId = when (sport) {

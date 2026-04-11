@@ -198,35 +198,44 @@ class SportsRepositoryImpl @Inject constructor(
     // Refresh
     override suspend fun refreshAllSports() {
         val errors = mutableListOf<String>()
+        val followed = dao.getFollowedCompetitionIds().toSet()
 
         // Football via ESPN (all 16 competitions with goal scorers)
-        try { refreshFootballEspn() } catch (e: Exception) {
+        try { refreshFootballEspn(followed) } catch (e: Exception) {
             Log.e(TAG, "Failed to refresh Football: ${e.message}", e)
             errors += "Football: ${e.message}"
         }
 
         // NBA via ESPN (quarter scores, records, playoff series)
-        try { refreshNbaGamesEspn() } catch (e: Exception) {
-            Log.e(TAG, "Failed to refresh NBA: ${e.message}", e)
-            errors += "NBA: ${e.message}"
+        if ("basketball-nba" in followed) {
+            try { refreshNbaGamesEspn() } catch (e: Exception) {
+                Log.e(TAG, "Failed to refresh NBA: ${e.message}", e)
+                errors += "NBA: ${e.message}"
+            }
         }
 
         // F1 via Jolpica
-        try { refreshF1Schedule() } catch (e: Exception) {
-            Log.e(TAG, "Failed to refresh F1: ${e.message}", e)
-            errors += "F1: ${e.message}"
+        if ("f1-championship" in followed) {
+            try { refreshF1Schedule() } catch (e: Exception) {
+                Log.e(TAG, "Failed to refresh F1: ${e.message}", e)
+                errors += "F1: ${e.message}"
+            }
         }
 
         // UFC via ESPN (MMA-specific: each fight = separate event)
-        try { refreshMmaEvents() } catch (e: Exception) {
-            Log.e(TAG, "Failed to refresh MMA: ${e.message}", e)
-            errors += "MMA: ${e.message}"
+        if ("mma-ufc" in followed) {
+            try { refreshMmaEvents() } catch (e: Exception) {
+                Log.e(TAG, "Failed to refresh MMA: ${e.message}", e)
+                errors += "MMA: ${e.message}"
+            }
         }
 
         // Tennis via ESPN (match-per-event model, Men's + Women's Singles, R3+)
-        try { refreshTennisEvents() } catch (e: Exception) {
-            Log.e(TAG, "Failed to refresh Tennis: ${e.message}", e)
-            errors += "Tennis: ${e.message}"
+        if ("tennis-atp" in followed) {
+            try { refreshTennisEvents() } catch (e: Exception) {
+                Log.e(TAG, "Failed to refresh Tennis: ${e.message}", e)
+                errors += "Tennis: ${e.message}"
+            }
         }
 
         if (errors.isNotEmpty()) {
@@ -234,7 +243,7 @@ class SportsRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun refreshFootballEspn() {
+    private suspend fun refreshFootballEspn(followedCompetitionIds: Set<String>) {
         // All 16 competitions with ESPN slugs
         val footballComps = mapOf(
             "eng.1" to "football-pl",
@@ -253,7 +262,9 @@ class SportsRepositoryImpl @Inject constructor(
             "uefa.euro" to "football-euro",
             "uefa.nations" to "football-unl",
             "conmebol.america" to "football-copa",
-        )
+        ).filterValues { it in followedCompetitionIds }
+
+        if (footballComps.isEmpty()) return
 
         // ESPN's no-dates default returns only "today" for active competitions and
         // the last final for dormant ones. Always pass an explicit window and drop
