@@ -7,6 +7,7 @@ import com.daysync.app.core.database.dao.DailyHealthOverrideDao
 import com.daysync.app.core.database.dao.DailyMealEntryDao
 import com.daysync.app.core.database.dao.DailyNutritionSummaryDao
 import com.daysync.app.core.database.dao.ExerciseSessionDao
+import com.daysync.app.core.database.dao.WorkoutMetadataDao
 import com.daysync.app.core.database.dao.ExpenseDao
 import com.daysync.app.core.database.dao.FoodItemDao
 import com.daysync.app.core.database.dao.PayeeRuleDao
@@ -46,6 +47,7 @@ object DatabaseModule {
     @Provides fun provideSleepSessionDao(db: AppDatabase): SleepSessionDao = db.sleepSessionDao()
     @Provides fun provideExerciseSessionDao(db: AppDatabase): ExerciseSessionDao = db.exerciseSessionDao()
     @Provides fun provideDailyHealthOverrideDao(db: AppDatabase): DailyHealthOverrideDao = db.dailyHealthOverrideDao()
+    @Provides fun provideWorkoutMetadataDao(db: AppDatabase): WorkoutMetadataDao = db.workoutMetadataDao()
 
     // Nutrition DAOs
     @Provides fun provideFoodItemDao(db: AppDatabase): FoodItemDao = db.foodItemDao()

@@ -5,6 +5,7 @@ import com.daysync.app.core.database.dao.DailyHealthOverrideDao
 import com.daysync.app.core.database.dao.ExerciseSessionDao
 import com.daysync.app.core.database.dao.HealthMetricDao
 import com.daysync.app.core.database.dao.SleepSessionDao
+import com.daysync.app.core.database.dao.WorkoutMetadataDao
 import com.daysync.app.feature.health.data.HealthConnectManager
 import com.daysync.app.feature.health.data.HealthRepository
 import com.daysync.app.feature.health.data.HealthRepositoryImpl
@@ -44,6 +45,7 @@ object HealthModule {
         sleepSessionDao: SleepSessionDao,
         exerciseSessionDao: ExerciseSessionDao,
         dailyHealthOverrideDao: DailyHealthOverrideDao,
+        workoutMetadataDao: WorkoutMetadataDao,
         zoneConfig: HeartRateZoneConfig,
     ): HealthRepository = HealthRepositoryImpl(
         healthConnectManager,
@@ -51,6 +53,7 @@ object HealthModule {
         sleepSessionDao,
         exerciseSessionDao,
         dailyHealthOverrideDao,
+        workoutMetadataDao,
         zoneConfig,
     )
 }

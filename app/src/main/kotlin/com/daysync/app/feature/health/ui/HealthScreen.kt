@@ -113,6 +113,7 @@ fun HealthScreen(
                     selectedPeriod = selectedPeriod,
                     onPeriodSelected = viewModel::onPeriodSelected,
                     onCaloriesOverride = viewModel::setCalorieOverride,
+                    onWorkoutSubTypeChange = viewModel::setWorkoutSubType,
                 )
             }
         }
@@ -125,6 +126,7 @@ private fun HealthDashboard(
     selectedPeriod: HealthPeriod,
     onPeriodSelected: (HealthPeriod) -> Unit,
     onCaloriesOverride: (Double?) -> Unit,
+    onWorkoutSubTypeChange: (String, String?) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -143,7 +145,10 @@ private fun HealthDashboard(
         state.sleepSummary?.let { SleepCard(sleep = it) }
 
         // Recent workouts
-        WorkoutList(workouts = state.recentWorkouts)
+        WorkoutList(
+            workouts = state.recentWorkouts,
+            onSubTypeChange = onWorkoutSubTypeChange,
+        )
 
         // Period selector
         Row(

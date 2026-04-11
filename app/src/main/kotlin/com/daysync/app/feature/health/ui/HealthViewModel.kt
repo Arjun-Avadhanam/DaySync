@@ -44,9 +44,10 @@ class HealthViewModel @Inject constructor(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
-    // Reactively mirror the daily calorie override so edits appear instantly
-    // without a full reload. Re-started on each loadData in case the date rolls.
+    // Reactive observers so dialog edits update the UI without requiring
+    // a full reload. Cancelled and restarted each loadData.
     private var overrideJob: Job? = null
+    private var subTypeJob: Job? = null
 
     fun checkAvailabilityAndLoad() {
         viewModelScope.launch {
@@ -107,9 +108,16 @@ class HealthViewModel @Inject constructor(
             val latestSleep = healthRepository.getLatestSleep().first()
             val sleepSummary = latestSleep?.let { SleepSummary(it) }
 
-            // Recent workouts
-            val recentWorkouts = healthRepository.getRecentWorkouts(5).first()
-                .map { WorkoutSummary(it) }
+            // Recent workouts with their stored sub-type metadata applied
+            val recentSessions = healthRepository.getRecentWorkouts(5).first()
+            val subTypes = if (recentSessions.isEmpty()) {
+                emptyMap()
+            } else {
+                healthRepository.observeWorkoutMetadata(recentSessions.map { it.id }).first()
+            }
+            val recentWorkouts = recentSessions.map { session ->
+                WorkoutSummary(session = session, subType = subTypes[session.id])
+            }
 
             // Trend data for selected period
             val stepsTrend = buildStepsTrend(periodStart, periodEnd, period)
@@ -125,15 +133,42 @@ class HealthViewModel @Inject constructor(
                 sleepTrend = sleepTrend,
             )
 
-            // Keep the override reactive so dialog edits update the summary immediately
+            // Keep the override and sub-type streams reactive so dialog edits
+            // update the UI immediately without requiring a full reload.
             overrideJob?.cancel()
             overrideJob = viewModelScope.launch {
                 healthRepository.observeDailyOverride(today).collect { override ->
                     applyCalorieOverride(override?.totalCalories)
                 }
             }
+            subTypeJob?.cancel()
+            if (recentSessions.isNotEmpty()) {
+                subTypeJob = viewModelScope.launch {
+                    healthRepository.observeWorkoutMetadata(recentSessions.map { it.id })
+                        .collect { applySubTypes(it) }
+                }
+            }
         } catch (e: Exception) {
             _uiState.value = HealthUiState.Error(e.message ?: "Failed to load health data")
+        }
+    }
+
+    private fun applySubTypes(subTypes: Map<String, String?>) {
+        val current = _uiState.value as? HealthUiState.Success ?: return
+        val updated = current.recentWorkouts.map { summary ->
+            val newSubType = subTypes[summary.session.id]
+            if (newSubType == summary.subType) summary
+            else summary.copy(subType = newSubType)
+        }
+        if (updated == current.recentWorkouts) return
+        _uiState.update {
+            (it as? HealthUiState.Success)?.copy(recentWorkouts = updated) ?: it
+        }
+    }
+
+    fun setWorkoutSubType(sessionId: String, subType: String?) {
+        viewModelScope.launch {
+            healthRepository.setWorkoutSubType(sessionId, subType)
         }
     }
 

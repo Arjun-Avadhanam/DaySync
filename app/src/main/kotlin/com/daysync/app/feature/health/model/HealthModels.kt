@@ -50,6 +50,7 @@ data class SleepSummary(
 
 data class WorkoutSummary(
     val session: ExerciseSessionEntity,
+    val subType: String? = null,
 ) {
     val durationMinutes: Long
         get() {
@@ -58,7 +59,19 @@ data class WorkoutSummary(
             return durationMs / 60_000
         }
 
-    val displayType: String get() = formatExerciseType(session.exerciseType)
+    // Strength training + a sub-type renders as "Strength training • Push".
+    // Generic Other workouts use the sub-type as the whole label since that
+    // *is* what the workout was (e.g. "Leg exercises"). Everything else is
+    // the straight friendly name.
+    val displayType: String
+        get() {
+            val base = formatExerciseType(session.exerciseType)
+            return when {
+                subType == null -> base
+                session.exerciseType == "EXERCISE_TYPE_OTHER_WORKOUT" -> formatSubType(subType)
+                else -> "$base • ${formatSubType(subType)}"
+            }
+        }
 
     val paceMinPerKm: Double?
         get() {
@@ -67,6 +80,34 @@ data class WorkoutSummary(
             val mins = durationMinutes.toDouble()
             return mins / (dist / 1000.0)
         }
+}
+
+// Exposed as constants so the UI picker and the storage layer stay in sync.
+object WorkoutSubTypes {
+    // STRENGTH_TRAINING sub-types
+    const val PUSH = "PUSH"
+    const val PULL = "PULL"
+    const val OTHER = "OTHER"
+
+    // OTHER_WORKOUT sub-types
+    const val LEG_EXERCISES = "LEG_EXERCISES"
+
+    val strengthOptions: List<String> = listOf(PUSH, PULL, OTHER)
+    val otherWorkoutOptions: List<String> = listOf(LEG_EXERCISES, OTHER)
+
+    fun optionsFor(exerciseType: String): List<String>? = when (exerciseType) {
+        "EXERCISE_TYPE_STRENGTH_TRAINING" -> strengthOptions
+        "EXERCISE_TYPE_OTHER_WORKOUT" -> otherWorkoutOptions
+        else -> null
+    }
+}
+
+private fun formatSubType(subType: String): String = when (subType) {
+    WorkoutSubTypes.PUSH -> "Push"
+    WorkoutSubTypes.PULL -> "Pull"
+    WorkoutSubTypes.OTHER -> "Other"
+    WorkoutSubTypes.LEG_EXERCISES -> "Leg exercises"
+    else -> subType.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }
 }
 
 data class StepsTrendPoint(

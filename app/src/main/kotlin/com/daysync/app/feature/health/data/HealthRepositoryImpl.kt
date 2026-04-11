@@ -4,10 +4,12 @@ import com.daysync.app.core.database.dao.DailyHealthOverrideDao
 import com.daysync.app.core.database.dao.ExerciseSessionDao
 import com.daysync.app.core.database.dao.HealthMetricDao
 import com.daysync.app.core.database.dao.SleepSessionDao
+import com.daysync.app.core.database.dao.WorkoutMetadataDao
 import com.daysync.app.core.database.entity.DailyHealthOverrideEntity
 import com.daysync.app.core.database.entity.ExerciseSessionEntity
 import com.daysync.app.core.database.entity.HealthMetricEntity
 import com.daysync.app.core.database.entity.SleepSessionEntity
+import com.daysync.app.core.database.entity.WorkoutMetadataEntity
 import com.daysync.app.core.sync.SyncStatus
 import com.daysync.app.feature.health.model.HeartRateZoneConfig
 import java.time.Instant as JavaInstant
@@ -15,6 +17,7 @@ import javax.inject.Inject
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.datetime.LocalDate
 
 class HealthRepositoryImpl @Inject constructor(
@@ -23,6 +26,7 @@ class HealthRepositoryImpl @Inject constructor(
     private val sleepSessionDao: SleepSessionDao,
     private val exerciseSessionDao: ExerciseSessionDao,
     private val dailyHealthOverrideDao: DailyHealthOverrideDao,
+    private val workoutMetadataDao: WorkoutMetadataDao,
     private val zoneConfig: HeartRateZoneConfig,
 ) : HealthRepository {
 
@@ -96,6 +100,25 @@ class HealthRepositoryImpl @Inject constructor(
             DailyHealthOverrideEntity(
                 date = date,
                 totalCalories = totalCalories,
+                syncStatus = SyncStatus.PENDING,
+                lastModified = Clock.System.now(),
+            )
+        )
+    }
+
+    override fun observeWorkoutMetadata(sessionIds: List<String>): Flow<Map<String, String?>> =
+        workoutMetadataDao.observeBySessionIds(sessionIds)
+            .map { rows -> rows.associate { it.sessionId to it.subType } }
+
+    override suspend fun setWorkoutSubType(sessionId: String, subType: String?) {
+        if (subType == null) {
+            workoutMetadataDao.deleteBySessionId(sessionId)
+            return
+        }
+        workoutMetadataDao.upsert(
+            WorkoutMetadataEntity(
+                sessionId = sessionId,
+                subType = subType,
                 syncStatus = SyncStatus.PENDING,
                 lastModified = Clock.System.now(),
             )

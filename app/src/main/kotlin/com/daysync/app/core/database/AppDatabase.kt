@@ -7,6 +7,7 @@ import com.daysync.app.core.database.dao.DailyHealthOverrideDao
 import com.daysync.app.core.database.dao.DailyMealEntryDao
 import com.daysync.app.core.database.dao.DailyNutritionSummaryDao
 import com.daysync.app.core.database.dao.ExerciseSessionDao
+import com.daysync.app.core.database.dao.WorkoutMetadataDao
 import com.daysync.app.core.database.dao.ExpenseDao
 import com.daysync.app.core.database.dao.FoodItemDao
 import com.daysync.app.core.database.dao.PayeeRuleDao
@@ -22,6 +23,7 @@ import com.daysync.app.core.database.entity.CompetitionEntity
 import com.daysync.app.core.database.entity.CompetitorEntity
 import com.daysync.app.core.database.entity.DailyHealthOverrideEntity
 import com.daysync.app.core.database.entity.DailyMealEntryEntity
+import com.daysync.app.core.database.entity.WorkoutMetadataEntity
 import com.daysync.app.core.database.entity.DailyNutritionSummaryEntity
 import com.daysync.app.core.database.entity.EventParticipantEntity
 import com.daysync.app.core.database.entity.ExerciseSessionEntity
@@ -44,11 +46,12 @@ import com.daysync.app.core.database.entity.WatchlistEntryEntity
 
 @Database(
     entities = [
-        // Health (4)
+        // Health (5)
         HealthMetricEntity::class,
         SleepSessionEntity::class,
         ExerciseSessionEntity::class,
         DailyHealthOverrideEntity::class,
+        WorkoutMetadataEntity::class,
         // Nutrition (5)
         FoodItemEntity::class,
         MealTemplateEntity::class,
@@ -74,7 +77,7 @@ import com.daysync.app.core.database.entity.WatchlistEntryEntity
         // Media (1)
         MediaItemEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -84,6 +87,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun sleepSessionDao(): SleepSessionDao
     abstract fun exerciseSessionDao(): ExerciseSessionDao
     abstract fun dailyHealthOverrideDao(): DailyHealthOverrideDao
+    abstract fun workoutMetadataDao(): WorkoutMetadataDao
 
     // Nutrition
     abstract fun foodItemDao(): FoodItemDao
