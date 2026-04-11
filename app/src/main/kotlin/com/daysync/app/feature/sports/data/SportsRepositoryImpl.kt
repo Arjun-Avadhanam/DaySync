@@ -30,6 +30,7 @@ import com.daysync.app.feature.sports.data.remote.dto.toTennisMatchEntities
 import com.daysync.app.feature.sports.data.remote.dto.toVenueEntity
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
@@ -195,36 +196,6 @@ class SportsRepositoryImpl @Inject constructor(
     }
 
     // Refresh
-    override suspend fun refreshFootballFixtures(competitionCode: String, competitionId: String) {
-        val response = footballDataApi.getMatches(competitionCode)
-        // Insert competitors BEFORE events (events have FK to competitors)
-        val competitors = response.matches.flatMap { match ->
-            listOfNotNull(
-                match.homeTeam?.toCompetitorEntity(),
-                match.awayTeam?.toCompetitorEntity(),
-            )
-        }.distinctBy { it.id }
-        if (competitors.isNotEmpty()) {
-            dao.insertCompetitors(competitors)
-        }
-        val events = response.matches.map { it.toSportEventEntity(competitionId) }
-        if (events.isNotEmpty()) {
-            dao.insertEvents(events)
-        }
-    }
-
-    override suspend fun refreshFootballTeams(competitionCode: String) {
-        try {
-            val response = footballDataApi.getTeams(competitionCode)
-            val competitors = response.teams.map { it.toCompetitorEntity() }
-            if (competitors.isNotEmpty()) {
-                dao.insertCompetitors(competitors)
-            }
-        } catch (e: Exception) {
-            throw e
-        }
-    }
-
     override suspend fun refreshAllSports() {
         val errors = mutableListOf<String>()
 
@@ -263,37 +234,6 @@ class SportsRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun refreshApiFootballCompetitions() {
-        if (apiFootballService.isBudgetExhausted) return
-        val apifCompetitions = mapOf(
-            3 to "football-el",     // Europa League
-            48 to "football-efl",   // EFL Cup
-            5 to "football-unl",    // Nations League
-        )
-        val currentYear = Clock.System.now()
-            .toLocalDateTime(TimeZone.UTC).year
-        for ((leagueId, compId) in apifCompetitions) {
-            if (apiFootballService.isBudgetExhausted) break
-            try {
-                val response = apiFootballService.getFixtures(leagueId, currentYear)
-                // Insert competitors BEFORE events (FK dependency)
-                val competitors = response.response.flatMap { fixture ->
-                    listOfNotNull(
-                        fixture.teams?.home?.toCompetitorEntity(),
-                        fixture.teams?.away?.toCompetitorEntity(),
-                    )
-                }.distinctBy { it.id }
-                if (competitors.isNotEmpty()) dao.insertCompetitors(competitors)
-                val events = response.response.mapNotNull {
-                    it.toSportEventEntity(compId)
-                }
-                if (events.isNotEmpty()) dao.insertEvents(events)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to refresh API-Football league $leagueId: ${e.message}", e)
-            }
-        }
-    }
-
     private suspend fun refreshFootballEspn() {
         // All 16 competitions with ESPN slugs
         val footballComps = mapOf(
@@ -315,18 +255,36 @@ class SportsRepositoryImpl @Inject constructor(
             "conmebol.america" to "football-copa",
         )
 
+        // ESPN's no-dates default returns only "today" for active competitions and
+        // the last final for dormant ones. Always pass an explicit window and drop
+        // anything outside it.
+        val today = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
+        val windowStart = today.minus(7, DateTimeUnit.DAY)
+        val windowEnd = today.plus(7, DateTimeUnit.DAY)
+        val datesParam = "${windowStart.toEspnDateString()}-${windowEnd.toEspnDateString()}"
+        val windowStartInstant = windowStart.atStartOfDayIn(TimeZone.UTC)
+        val windowEndInstant = windowEnd
+            .plus(1, DateTimeUnit.DAY)
+            .atStartOfDayIn(TimeZone.UTC)
+
         val allTeams = mutableListOf<CompetitorEntity>()
         val allEvents = mutableListOf<SportEventEntity>()
 
         for ((slug, compId) in footballComps) {
             try {
-                val response = espnApi.getScoreboard("soccer", slug)
+                val response = espnApi.getScoreboard("soccer", slug, dates = datesParam)
                 for (event in response.events) {
                     val comp = event.competitions.firstOrNull() ?: continue
+                    val entity = event.toFootballMatchEntity(compId) ?: continue
+                    if (entity.scheduledAt < windowStartInstant ||
+                        entity.scheduledAt >= windowEndInstant
+                    ) {
+                        continue
+                    }
                     comp.competitors.forEach { competitor ->
                         competitor.toFootballTeamEntity()?.let { allTeams += it }
                     }
-                    event.toFootballMatchEntity(compId)?.let { allEvents += it }
+                    allEvents += entity
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to fetch football $slug: ${e.message}")
@@ -337,6 +295,10 @@ class SportsRepositoryImpl @Inject constructor(
         if (distinctTeams.isNotEmpty()) dao.insertCompetitors(distinctTeams)
         if (allEvents.isNotEmpty()) dao.insertEvents(allEvents)
     }
+
+    @Suppress("DEPRECATION")
+    private fun kotlinx.datetime.LocalDate.toEspnDateString(): String =
+        "%04d%02d%02d".format(year, monthNumber, dayOfMonth)
 
     private suspend fun refreshNbaGamesEspn() {
         val today = Clock.System.now().toLocalDateTime(TimeZone.UTC).date

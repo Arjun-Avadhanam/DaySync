@@ -49,8 +49,6 @@ interface SportsRepository {
     suspend fun toggleFollowCompetitor(competitorId: String)
 
     // Refresh
-    suspend fun refreshFootballFixtures(competitionCode: String, competitionId: String)
-    suspend fun refreshFootballTeams(competitionCode: String)
     suspend fun refreshAllSports()
 
     // Standings
