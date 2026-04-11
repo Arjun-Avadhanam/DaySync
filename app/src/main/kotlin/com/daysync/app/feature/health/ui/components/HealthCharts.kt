@@ -9,6 +9,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,7 +35,6 @@ import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
 import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.common.component.LineComponent
-import kotlinx.coroutines.runBlocking
 
 @Composable
 fun StepsTrendChart(
@@ -43,22 +43,21 @@ fun StepsTrendChart(
 ) {
     if (data.size < 2) return
 
-    ChartCard(title = "Steps Trend", modifier = modifier) {
-        val modelProducer = remember(data) {
-            CartesianChartModelProducer().apply {
-                runBlocking {
-                    runTransaction {
-                        columnSeries { series(data.map { it.steps }) }
-                    }
-                }
-            }
+    // One producer for the lifetime of this composable; data updates flow
+    // through runTransaction inside a coroutine, never on the main thread.
+    val modelProducer = remember { CartesianChartModelProducer() }
+    LaunchedEffect(data) {
+        modelProducer.runTransaction {
+            columnSeries { series(data.map { it.steps }) }
         }
-        val labelFormatter = remember(data) {
-            CartesianValueFormatter { _, x, _ ->
-                data.getOrNull(x.toInt())?.label ?: ""
-            }
+    }
+    val labelFormatter = remember(data) {
+        CartesianValueFormatter { _, x, _ ->
+            data.getOrNull(x.toInt())?.label ?: ""
         }
+    }
 
+    ChartCard(title = "Steps Trend", modifier = modifier) {
         CartesianChartHost(
             chart = rememberCartesianChart(
                 rememberColumnCartesianLayer(
@@ -90,26 +89,23 @@ fun HeartRateTrendChart(
 ) {
     if (data.size < 2) return
 
-    ChartCard(title = "Heart Rate Trend", modifier = modifier) {
-        val modelProducer = remember(data) {
-            CartesianChartModelProducer().apply {
-                runBlocking {
-                    runTransaction {
-                        lineSeries {
-                            series(data.map { it.avg })
-                            series(data.map { it.max })
-                            series(data.map { it.min })
-                        }
-                    }
-                }
+    val modelProducer = remember { CartesianChartModelProducer() }
+    LaunchedEffect(data) {
+        modelProducer.runTransaction {
+            lineSeries {
+                series(data.map { it.avg })
+                series(data.map { it.max })
+                series(data.map { it.min })
             }
         }
-        val labelFormatter = remember(data) {
-            CartesianValueFormatter { _, x, _ ->
-                data.getOrNull(x.toInt())?.label ?: ""
-            }
+    }
+    val labelFormatter = remember(data) {
+        CartesianValueFormatter { _, x, _ ->
+            data.getOrNull(x.toInt())?.label ?: ""
         }
+    }
 
+    ChartCard(title = "Heart Rate Trend", modifier = modifier) {
         CartesianChartHost(
             chart = rememberCartesianChart(
                 rememberLineCartesianLayer(
@@ -140,24 +136,21 @@ fun SleepTrendChart(
 ) {
     if (data.size < 2) return
 
-    ChartCard(title = "Sleep Trend", modifier = modifier) {
-        val modelProducer = remember(data) {
-            CartesianChartModelProducer().apply {
-                runBlocking {
-                    runTransaction {
-                        columnSeries {
-                            series(data.map { it.totalMinutes / 60.0 })
-                        }
-                    }
-                }
+    val modelProducer = remember { CartesianChartModelProducer() }
+    LaunchedEffect(data) {
+        modelProducer.runTransaction {
+            columnSeries {
+                series(data.map { it.totalMinutes / 60.0 })
             }
         }
-        val labelFormatter = remember(data) {
-            CartesianValueFormatter { _, x, _ ->
-                data.getOrNull(x.toInt())?.label ?: ""
-            }
+    }
+    val labelFormatter = remember(data) {
+        CartesianValueFormatter { _, x, _ ->
+            data.getOrNull(x.toInt())?.label ?: ""
         }
+    }
 
+    ChartCard(title = "Sleep Trend", modifier = modifier) {
         CartesianChartHost(
             chart = rememberCartesianChart(
                 rememberColumnCartesianLayer(
