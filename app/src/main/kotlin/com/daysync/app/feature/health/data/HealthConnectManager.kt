@@ -88,24 +88,14 @@ class HealthConnectManager(private val context: Context) {
         }
 
         // Total calories
-        val totalCalResult = tryAggregate(timeRange, setOf(TotalCaloriesBurnedRecord.ENERGY_TOTAL))
-        android.util.Log.d("HealthConnect", "Total calories aggregate result: $totalCalResult")
-        android.util.Log.d("HealthConnect", "Total calories energy: ${totalCalResult?.get(TotalCaloriesBurnedRecord.ENERGY_TOTAL)}")
-        totalCalResult?.let { result ->
+        tryAggregate(timeRange, setOf(TotalCaloriesBurnedRecord.ENERGY_TOTAL))?.let { result ->
             result[TotalCaloriesBurnedRecord.ENERGY_TOTAL]?.let { energy ->
-                android.util.Log.d("HealthConnect", "Total calories kcal: ${energy.inKilocalories}")
                 metrics += metric("TOTAL_CALORIES", energy.inKilocalories, "kcal", ts)
             }
         }
 
-        // Also check individual records count for diagnosis
-        val totalCalRecords = readRecords<TotalCaloriesBurnedRecord>(timeRange)
-        android.util.Log.d("HealthConnect", "Total calories individual records count: ${totalCalRecords?.size}, sum: ${totalCalRecords?.sumOf { it.energy.inKilocalories }}")
-
         // Active calories
-        val activeCalResult = tryAggregate(timeRange, setOf(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL))
-        android.util.Log.d("HealthConnect", "Active calories aggregate: ${activeCalResult?.get(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL)}")
-        activeCalResult?.let { result ->
+        tryAggregate(timeRange, setOf(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL))?.let { result ->
             result[ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL]?.let { energy ->
                 metrics += metric("ACTIVE_CALORIES", energy.inKilocalories, "kcal", ts)
             }
@@ -225,7 +215,6 @@ class HealthConnectManager(private val context: Context) {
         ) ?: return emptyList()
 
         return records.map { session ->
-            android.util.Log.d("HealthConnect", "Exercise session: type=${session.exerciseType}, title=${session.title}")
             enrichExerciseSession(session, zoneConfig)
         }
     }
@@ -377,39 +366,68 @@ class HealthConnectManager(private val context: Context) {
 
     @Suppress("CyclomaticComplexMethod")
     private fun mapExerciseType(type: Int): String = when (type) {
-        ExerciseSessionRecord.EXERCISE_TYPE_RUNNING -> "EXERCISE_TYPE_RUNNING"
-        ExerciseSessionRecord.EXERCISE_TYPE_RUNNING_TREADMILL -> "EXERCISE_TYPE_RUNNING_TREADMILL"
-        ExerciseSessionRecord.EXERCISE_TYPE_WALKING -> "EXERCISE_TYPE_WALKING"
+        ExerciseSessionRecord.EXERCISE_TYPE_BADMINTON -> "EXERCISE_TYPE_BADMINTON"
+        ExerciseSessionRecord.EXERCISE_TYPE_BASEBALL -> "EXERCISE_TYPE_BASEBALL"
+        ExerciseSessionRecord.EXERCISE_TYPE_BASKETBALL -> "EXERCISE_TYPE_BASKETBALL"
         ExerciseSessionRecord.EXERCISE_TYPE_BIKING -> "EXERCISE_TYPE_BIKING"
         ExerciseSessionRecord.EXERCISE_TYPE_BIKING_STATIONARY -> "EXERCISE_TYPE_BIKING_STATIONARY"
-        ExerciseSessionRecord.EXERCISE_TYPE_SWIMMING_OPEN_WATER -> "EXERCISE_TYPE_SWIMMING_OPEN_WATER"
-        ExerciseSessionRecord.EXERCISE_TYPE_SWIMMING_POOL -> "EXERCISE_TYPE_SWIMMING_POOL"
-        ExerciseSessionRecord.EXERCISE_TYPE_STRENGTH_TRAINING -> "EXERCISE_TYPE_STRENGTH_TRAINING"
-        ExerciseSessionRecord.EXERCISE_TYPE_WEIGHTLIFTING -> "EXERCISE_TYPE_WEIGHTLIFTING"
-        ExerciseSessionRecord.EXERCISE_TYPE_YOGA -> "EXERCISE_TYPE_YOGA"
-        ExerciseSessionRecord.EXERCISE_TYPE_HIKING -> "EXERCISE_TYPE_HIKING"
-        ExerciseSessionRecord.EXERCISE_TYPE_SOCCER -> "EXERCISE_TYPE_SOCCER"
-        ExerciseSessionRecord.EXERCISE_TYPE_BASKETBALL -> "EXERCISE_TYPE_BASKETBALL"
-        ExerciseSessionRecord.EXERCISE_TYPE_CRICKET -> "EXERCISE_TYPE_CRICKET"
-        ExerciseSessionRecord.EXERCISE_TYPE_TENNIS -> "EXERCISE_TYPE_TENNIS"
-        ExerciseSessionRecord.EXERCISE_TYPE_BADMINTON -> "EXERCISE_TYPE_BADMINTON"
-        ExerciseSessionRecord.EXERCISE_TYPE_FOOTBALL_AMERICAN -> "EXERCISE_TYPE_FOOTBALL_AMERICAN"
-        ExerciseSessionRecord.EXERCISE_TYPE_DANCING -> "EXERCISE_TYPE_DANCING"
-        ExerciseSessionRecord.EXERCISE_TYPE_ELLIPTICAL -> "EXERCISE_TYPE_ELLIPTICAL"
-        ExerciseSessionRecord.EXERCISE_TYPE_ROWING -> "EXERCISE_TYPE_ROWING"
-        ExerciseSessionRecord.EXERCISE_TYPE_ROWING_MACHINE -> "EXERCISE_TYPE_ROWING_MACHINE"
-        ExerciseSessionRecord.EXERCISE_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING -> "EXERCISE_TYPE_HIIT"
-        ExerciseSessionRecord.EXERCISE_TYPE_PILATES -> "EXERCISE_TYPE_PILATES"
-        ExerciseSessionRecord.EXERCISE_TYPE_MARTIAL_ARTS -> "EXERCISE_TYPE_MARTIAL_ARTS"
-        ExerciseSessionRecord.EXERCISE_TYPE_STAIR_CLIMBING -> "EXERCISE_TYPE_STAIR_CLIMBING"
-        ExerciseSessionRecord.EXERCISE_TYPE_STRETCHING -> "EXERCISE_TYPE_STRETCHING"
-        ExerciseSessionRecord.EXERCISE_TYPE_GOLF -> "EXERCISE_TYPE_GOLF"
-        ExerciseSessionRecord.EXERCISE_TYPE_SKIING -> "EXERCISE_TYPE_SKIING"
-        ExerciseSessionRecord.EXERCISE_TYPE_SNOWBOARDING -> "EXERCISE_TYPE_SNOWBOARDING"
-        ExerciseSessionRecord.EXERCISE_TYPE_CALISTHENICS -> "EXERCISE_TYPE_CALISTHENICS"
         ExerciseSessionRecord.EXERCISE_TYPE_BOOT_CAMP -> "EXERCISE_TYPE_BOOT_CAMP"
         ExerciseSessionRecord.EXERCISE_TYPE_BOXING -> "EXERCISE_TYPE_BOXING"
-        else -> "EXERCISE_TYPE_OTHER"
+        ExerciseSessionRecord.EXERCISE_TYPE_CALISTHENICS -> "EXERCISE_TYPE_CALISTHENICS"
+        ExerciseSessionRecord.EXERCISE_TYPE_CRICKET -> "EXERCISE_TYPE_CRICKET"
+        ExerciseSessionRecord.EXERCISE_TYPE_DANCING -> "EXERCISE_TYPE_DANCING"
+        ExerciseSessionRecord.EXERCISE_TYPE_ELLIPTICAL -> "EXERCISE_TYPE_ELLIPTICAL"
+        ExerciseSessionRecord.EXERCISE_TYPE_EXERCISE_CLASS -> "EXERCISE_TYPE_EXERCISE_CLASS"
+        ExerciseSessionRecord.EXERCISE_TYPE_FENCING -> "EXERCISE_TYPE_FENCING"
+        ExerciseSessionRecord.EXERCISE_TYPE_FOOTBALL_AMERICAN -> "EXERCISE_TYPE_FOOTBALL_AMERICAN"
+        ExerciseSessionRecord.EXERCISE_TYPE_FOOTBALL_AUSTRALIAN -> "EXERCISE_TYPE_FOOTBALL_AUSTRALIAN"
+        ExerciseSessionRecord.EXERCISE_TYPE_FRISBEE_DISC -> "EXERCISE_TYPE_FRISBEE_DISC"
+        ExerciseSessionRecord.EXERCISE_TYPE_GOLF -> "EXERCISE_TYPE_GOLF"
+        ExerciseSessionRecord.EXERCISE_TYPE_GUIDED_BREATHING -> "EXERCISE_TYPE_GUIDED_BREATHING"
+        ExerciseSessionRecord.EXERCISE_TYPE_GYMNASTICS -> "EXERCISE_TYPE_GYMNASTICS"
+        ExerciseSessionRecord.EXERCISE_TYPE_HANDBALL -> "EXERCISE_TYPE_HANDBALL"
+        ExerciseSessionRecord.EXERCISE_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING -> "EXERCISE_TYPE_HIIT"
+        ExerciseSessionRecord.EXERCISE_TYPE_HIKING -> "EXERCISE_TYPE_HIKING"
+        ExerciseSessionRecord.EXERCISE_TYPE_ICE_HOCKEY -> "EXERCISE_TYPE_ICE_HOCKEY"
+        ExerciseSessionRecord.EXERCISE_TYPE_ICE_SKATING -> "EXERCISE_TYPE_ICE_SKATING"
+        ExerciseSessionRecord.EXERCISE_TYPE_MARTIAL_ARTS -> "EXERCISE_TYPE_MARTIAL_ARTS"
+        ExerciseSessionRecord.EXERCISE_TYPE_OTHER_WORKOUT -> "EXERCISE_TYPE_OTHER_WORKOUT"
+        ExerciseSessionRecord.EXERCISE_TYPE_PADDLING -> "EXERCISE_TYPE_PADDLING"
+        ExerciseSessionRecord.EXERCISE_TYPE_PARAGLIDING -> "EXERCISE_TYPE_PARAGLIDING"
+        ExerciseSessionRecord.EXERCISE_TYPE_PILATES -> "EXERCISE_TYPE_PILATES"
+        ExerciseSessionRecord.EXERCISE_TYPE_RACQUETBALL -> "EXERCISE_TYPE_RACQUETBALL"
+        ExerciseSessionRecord.EXERCISE_TYPE_ROCK_CLIMBING -> "EXERCISE_TYPE_ROCK_CLIMBING"
+        ExerciseSessionRecord.EXERCISE_TYPE_ROLLER_HOCKEY -> "EXERCISE_TYPE_ROLLER_HOCKEY"
+        ExerciseSessionRecord.EXERCISE_TYPE_ROWING -> "EXERCISE_TYPE_ROWING"
+        ExerciseSessionRecord.EXERCISE_TYPE_ROWING_MACHINE -> "EXERCISE_TYPE_ROWING_MACHINE"
+        ExerciseSessionRecord.EXERCISE_TYPE_RUGBY -> "EXERCISE_TYPE_RUGBY"
+        ExerciseSessionRecord.EXERCISE_TYPE_RUNNING -> "EXERCISE_TYPE_RUNNING"
+        ExerciseSessionRecord.EXERCISE_TYPE_RUNNING_TREADMILL -> "EXERCISE_TYPE_RUNNING_TREADMILL"
+        ExerciseSessionRecord.EXERCISE_TYPE_SAILING -> "EXERCISE_TYPE_SAILING"
+        ExerciseSessionRecord.EXERCISE_TYPE_SCUBA_DIVING -> "EXERCISE_TYPE_SCUBA_DIVING"
+        ExerciseSessionRecord.EXERCISE_TYPE_SKATING -> "EXERCISE_TYPE_SKATING"
+        ExerciseSessionRecord.EXERCISE_TYPE_SKIING -> "EXERCISE_TYPE_SKIING"
+        ExerciseSessionRecord.EXERCISE_TYPE_SNOWBOARDING -> "EXERCISE_TYPE_SNOWBOARDING"
+        ExerciseSessionRecord.EXERCISE_TYPE_SNOWSHOEING -> "EXERCISE_TYPE_SNOWSHOEING"
+        ExerciseSessionRecord.EXERCISE_TYPE_SOCCER -> "EXERCISE_TYPE_SOCCER"
+        ExerciseSessionRecord.EXERCISE_TYPE_SOFTBALL -> "EXERCISE_TYPE_SOFTBALL"
+        ExerciseSessionRecord.EXERCISE_TYPE_SQUASH -> "EXERCISE_TYPE_SQUASH"
+        ExerciseSessionRecord.EXERCISE_TYPE_STAIR_CLIMBING -> "EXERCISE_TYPE_STAIR_CLIMBING"
+        ExerciseSessionRecord.EXERCISE_TYPE_STAIR_CLIMBING_MACHINE -> "EXERCISE_TYPE_STAIR_CLIMBING_MACHINE"
+        ExerciseSessionRecord.EXERCISE_TYPE_STRENGTH_TRAINING -> "EXERCISE_TYPE_STRENGTH_TRAINING"
+        ExerciseSessionRecord.EXERCISE_TYPE_STRETCHING -> "EXERCISE_TYPE_STRETCHING"
+        ExerciseSessionRecord.EXERCISE_TYPE_SURFING -> "EXERCISE_TYPE_SURFING"
+        ExerciseSessionRecord.EXERCISE_TYPE_SWIMMING_OPEN_WATER -> "EXERCISE_TYPE_SWIMMING_OPEN_WATER"
+        ExerciseSessionRecord.EXERCISE_TYPE_SWIMMING_POOL -> "EXERCISE_TYPE_SWIMMING_POOL"
+        ExerciseSessionRecord.EXERCISE_TYPE_TABLE_TENNIS -> "EXERCISE_TYPE_TABLE_TENNIS"
+        ExerciseSessionRecord.EXERCISE_TYPE_TENNIS -> "EXERCISE_TYPE_TENNIS"
+        ExerciseSessionRecord.EXERCISE_TYPE_VOLLEYBALL -> "EXERCISE_TYPE_VOLLEYBALL"
+        ExerciseSessionRecord.EXERCISE_TYPE_WALKING -> "EXERCISE_TYPE_WALKING"
+        ExerciseSessionRecord.EXERCISE_TYPE_WATER_POLO -> "EXERCISE_TYPE_WATER_POLO"
+        ExerciseSessionRecord.EXERCISE_TYPE_WEIGHTLIFTING -> "EXERCISE_TYPE_WEIGHTLIFTING"
+        ExerciseSessionRecord.EXERCISE_TYPE_WHEELCHAIR -> "EXERCISE_TYPE_WHEELCHAIR"
+        ExerciseSessionRecord.EXERCISE_TYPE_YOGA -> "EXERCISE_TYPE_YOGA"
+        else -> "EXERCISE_TYPE_OTHER_WORKOUT"
     }
 
     @Serializable

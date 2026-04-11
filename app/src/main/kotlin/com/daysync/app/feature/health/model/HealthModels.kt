@@ -35,7 +35,6 @@ data class HealthDailySummary(
     val floorsClimbed: Double? = null,
     val vo2Max: Double? = null,
     val weight: Double? = null,
-    val debugInfo: String? = null, // Temporary: remove after diagnosing calories issue
 )
 
 data class SleepSummary(
@@ -59,7 +58,6 @@ data class WorkoutSummary(
         }
 
     val displayType: String get() = formatExerciseType(session.exerciseType)
-    val debugType: String get() = session.exerciseType // Temporary: raw type from Health Connect
 
     val paceMinPerKm: Double?
         get() {
@@ -112,8 +110,12 @@ enum class HealthPeriod(val label: String, val days: Int) {
     MONTHLY("30 Days", 30),
 }
 
-private fun formatExerciseType(type: String): String =
-    type.removePrefix("EXERCISE_TYPE_")
+private fun formatExerciseType(type: String): String = when (type) {
+    // OHealth maps soccer to FOOTBALL_AUSTRALIAN in Health Connect's enum.
+    "EXERCISE_TYPE_FOOTBALL_AUSTRALIAN" -> "Football"
+    "EXERCISE_TYPE_OTHER_WORKOUT" -> "Workout"
+    else -> type.removePrefix("EXERCISE_TYPE_")
         .replace("_", " ")
         .lowercase()
         .replaceFirstChar { it.uppercase() }
+}

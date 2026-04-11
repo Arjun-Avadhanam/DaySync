@@ -124,7 +124,6 @@ class HealthViewModel @Inject constructor(
         metrics: List<com.daysync.app.core.database.entity.HealthMetricEntity>,
     ): HealthDailySummary {
         val byType = metrics.associateBy { it.type }
-        val debug = "Metrics found: ${metrics.size}, types: ${metrics.map { it.type }.distinct()}"
         return HealthDailySummary(
             steps = byType["STEPS"]?.value?.toLong(),
             totalCalories = byType["TOTAL_CALORIES"]?.value,
@@ -138,7 +137,6 @@ class HealthViewModel @Inject constructor(
             floorsClimbed = byType["FLOORS"]?.value,
             vo2Max = byType["VO2MAX"]?.value,
             weight = byType["WEIGHT"]?.value,
-            debugInfo = debug,
         )
     }
 
