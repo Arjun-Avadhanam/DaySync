@@ -25,7 +25,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate as KLocalDate
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
+
+private val IST = ZoneId.of("Asia/Kolkata")
 
 @HiltViewModel
 class HealthViewModel @Inject constructor(
@@ -38,16 +43,19 @@ class HealthViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<HealthUiState>(HealthUiState.Loading)
     val uiState: StateFlow<HealthUiState> = _uiState.asStateFlow()
 
+    private val _selectedDate = MutableStateFlow(todayKLocalDate())
+    val selectedDate: StateFlow<KLocalDate> = _selectedDate.asStateFlow()
+
     private val _selectedPeriod = MutableStateFlow(HealthPeriod.WEEKLY)
     val selectedPeriod: StateFlow<HealthPeriod> = _selectedPeriod.asStateFlow()
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
-    // Reactive observers so dialog edits update the UI without requiring
-    // a full reload. Cancelled and restarted each loadData.
     private var overrideJob: Job? = null
     private var subTypeJob: Job? = null
+
+    // ── Lifecycle ────────────────────────────────────────────────────────
 
     fun checkAvailabilityAndLoad() {
         viewModelScope.launch {
@@ -67,11 +75,6 @@ class HealthViewModel @Inject constructor(
         viewModelScope.launch { syncAndLoad() }
     }
 
-    fun onPeriodSelected(period: HealthPeriod) {
-        _selectedPeriod.value = period
-        viewModelScope.launch { loadData() }
-    }
-
     fun refresh() {
         viewModelScope.launch {
             _isRefreshing.value = true
@@ -80,12 +83,43 @@ class HealthViewModel @Inject constructor(
         }
     }
 
+    // ── Date navigation ──────────────────────────────────────────────────
+
+    fun navigateToPreviousDay() {
+        _selectedDate.value = _selectedDate.value.minus(1, DateTimeUnit.DAY)
+        viewModelScope.launch { loadData() }
+    }
+
+    fun navigateToNextDay() {
+        _selectedDate.value = _selectedDate.value.plus(1, DateTimeUnit.DAY)
+        viewModelScope.launch { loadData() }
+    }
+
+    fun navigateToToday() {
+        _selectedDate.value = todayKLocalDate()
+        viewModelScope.launch { loadData() }
+    }
+
+    fun onPeriodSelected(period: HealthPeriod) {
+        _selectedPeriod.value = period
+        viewModelScope.launch { loadData() }
+    }
+
+    // ── Sync + load ──────────────────────────────────────────────────────
+
     private suspend fun syncAndLoad() {
         _uiState.value = HealthUiState.Loading
         try {
-            // Sync today's data from Health Connect to Room
-            val todayRange = todayRange()
-            healthRepository.syncHealthData(todayRange.first, todayRange.second)
+            // Backfill the last 7 days from Health Connect so navigating to
+            // past dates has data even if the app wasn't open on those days.
+            val today = LocalDate.now(IST)
+            val weekAgo = today.minusDays(6)
+            val syncStart = weekAgo.atStartOfDay(IST).toInstant()
+            val syncEnd = today.atTime(LocalTime.MAX).atZone(IST).toInstant()
+            healthRepository.syncHealthData(
+                Instant.fromEpochMilliseconds(syncStart.toEpochMilli()),
+                Instant.fromEpochMilliseconds(syncEnd.toEpochMilli()),
+            )
             loadData()
         } catch (e: Exception) {
             _uiState.value = HealthUiState.Error(e.message ?: "Failed to sync health data")
@@ -94,32 +128,32 @@ class HealthViewModel @Inject constructor(
 
     private suspend fun loadData() {
         try {
+            val date = _selectedDate.value
             val period = _selectedPeriod.value
+            val (dayStart, dayEnd) = dateRange(date)
             val (periodStart, periodEnd) = periodRange(period)
-            val (todayStart, todayEnd) = todayRange()
-            val today = todayLocalDate()
 
-            // Today's summary from metrics, with any manual override applied
-            val todayMetrics = healthRepository.getMetricsByDateRange(todayStart, todayEnd).first()
-            val currentOverride = healthRepository.observeDailyOverride(today).first()
-            val dailySummary = buildDailySummary(todayMetrics, currentOverride?.totalCalories)
+            // Daily summary for the selected date
+            val dayMetrics = healthRepository.getMetricsByDateRange(dayStart, dayEnd).first()
+            val currentOverride = healthRepository.observeDailyOverride(date).first()
+            val dailySummary = buildDailySummary(dayMetrics, currentOverride?.totalCalories)
 
-            // Sleep sessions for today (may be multiple if the user woke in between)
-            val sleepSessions = healthRepository.getSleepSessions(todayStart, todayEnd).first()
+            // Sleep sessions for the selected date
+            val sleepSessions = healthRepository.getSleepSessions(dayStart, dayEnd).first()
                 .map { SleepSummary(it) }
 
-            // Recent workouts with their stored sub-type metadata applied
-            val recentSessions = healthRepository.getRecentWorkouts(5).first()
-            val subTypes = if (recentSessions.isEmpty()) {
+            // Workouts for the selected date only
+            val daySessions = healthRepository.getExerciseSessions(dayStart, dayEnd).first()
+            val subTypes = if (daySessions.isEmpty()) {
                 emptyMap()
             } else {
-                healthRepository.observeWorkoutMetadata(recentSessions.map { it.id }).first()
+                healthRepository.observeWorkoutMetadata(daySessions.map { it.id }).first()
             }
-            val recentWorkouts = recentSessions.map { session ->
+            val dayWorkouts = daySessions.map { session ->
                 WorkoutSummary(session = session, subType = subTypes[session.id])
             }
 
-            // Trend data for selected period
+            // Trend charts (always use period range, independent of selectedDate)
             val stepsTrend = buildStepsTrend(periodStart, periodEnd, period)
             val heartRateTrend = buildHeartRateTrend(periodStart, periodEnd, period)
             val sleepTrend = buildSleepTrend(periodStart, periodEnd, period)
@@ -127,24 +161,23 @@ class HealthViewModel @Inject constructor(
             _uiState.value = HealthUiState.Success(
                 dailySummary = dailySummary,
                 sleepSessions = sleepSessions,
-                recentWorkouts = recentWorkouts,
+                recentWorkouts = dayWorkouts,
                 stepsTrend = stepsTrend,
                 heartRateTrend = heartRateTrend,
                 sleepTrend = sleepTrend,
             )
 
-            // Keep the override and sub-type streams reactive so dialog edits
-            // update the UI immediately without requiring a full reload.
+            // Reactive observers for dialog edits
             overrideJob?.cancel()
             overrideJob = viewModelScope.launch {
-                healthRepository.observeDailyOverride(today).collect { override ->
+                healthRepository.observeDailyOverride(date).collect { override ->
                     applyCalorieOverride(override?.totalCalories)
                 }
             }
             subTypeJob?.cancel()
-            if (recentSessions.isNotEmpty()) {
+            if (daySessions.isNotEmpty()) {
                 subTypeJob = viewModelScope.launch {
-                    healthRepository.observeWorkoutMetadata(recentSessions.map { it.id })
+                    healthRepository.observeWorkoutMetadata(daySessions.map { it.id })
                         .collect { applySubTypes(it) }
                 }
             }
@@ -152,6 +185,36 @@ class HealthViewModel @Inject constructor(
             _uiState.value = HealthUiState.Error(e.message ?: "Failed to load health data")
         }
     }
+
+    // ── Calorie override ─────────────────────────────────────────────────
+
+    private suspend fun applyCalorieOverride(overrideValue: Double?) {
+        val current = _uiState.value as? HealthUiState.Success ?: return
+        val date = _selectedDate.value
+        val (dayStart, dayEnd) = dateRange(date)
+        val rawMetrics = healthRepository.getMetricsByDateRange(dayStart, dayEnd).first()
+        val rawTotal = rawMetrics.firstOrNull { it.type == "TOTAL_CALORIES" }?.value
+        val resolved = overrideValue ?: rawTotal
+        if (resolved == current.dailySummary.totalCalories &&
+            (overrideValue != null) == current.dailySummary.totalCaloriesOverridden
+        ) return
+        _uiState.update {
+            (it as? HealthUiState.Success)?.copy(
+                dailySummary = current.dailySummary.copy(
+                    totalCalories = resolved,
+                    totalCaloriesOverridden = overrideValue != null,
+                ),
+            ) ?: it
+        }
+    }
+
+    fun setCalorieOverride(totalCalories: Double?) {
+        viewModelScope.launch {
+            healthRepository.setCalorieOverride(_selectedDate.value, totalCalories)
+        }
+    }
+
+    // ── Workout sub-type ─────────────────────────────────────────────────
 
     private fun applySubTypes(subTypes: Map<String, String?>) {
         val current = _uiState.value as? HealthUiState.Success ?: return
@@ -172,30 +235,7 @@ class HealthViewModel @Inject constructor(
         }
     }
 
-    private suspend fun applyCalorieOverride(overrideValue: Double?) {
-        val current = _uiState.value as? HealthUiState.Success ?: return
-        val (todayStart, todayEnd) = todayRange()
-        val rawMetrics = healthRepository.getMetricsByDateRange(todayStart, todayEnd).first()
-        val rawTotal = rawMetrics.firstOrNull { it.type == "TOTAL_CALORIES" }?.value
-        val resolved = overrideValue ?: rawTotal
-        if (resolved == current.dailySummary.totalCalories &&
-            (overrideValue != null) == current.dailySummary.totalCaloriesOverridden
-        ) return
-        _uiState.update {
-            (it as? HealthUiState.Success)?.copy(
-                dailySummary = current.dailySummary.copy(
-                    totalCalories = resolved,
-                    totalCaloriesOverridden = overrideValue != null,
-                ),
-            ) ?: it
-        }
-    }
-
-    fun setCalorieOverride(totalCalories: Double?) {
-        viewModelScope.launch {
-            healthRepository.setCalorieOverride(todayLocalDate(), totalCalories)
-        }
-    }
+    // ── Summary builder ──────────────────────────────────────────────────
 
     private fun buildDailySummary(
         metrics: List<com.daysync.app.core.database.entity.HealthMetricEntity>,
@@ -220,15 +260,13 @@ class HealthViewModel @Inject constructor(
         )
     }
 
+    // ── Trend builders ───────────────────────────────────────────────────
+
     private suspend fun buildStepsTrend(
-        start: Instant,
-        end: Instant,
-        period: HealthPeriod,
+        start: Instant, end: Instant, period: HealthPeriod,
     ): List<StepsTrendPoint> {
         val metrics = healthRepository.getMetricsByTypeAndDateRange("STEPS", start, end).first()
         if (metrics.isEmpty()) return emptyList()
-
-        // Deduplicate by label (multiple syncs create duplicate entries per day)
         return metrics.reversed()
             .groupBy { formatLabel(it.timestamp, period) }
             .map { (label, group) ->
@@ -237,17 +275,13 @@ class HealthViewModel @Inject constructor(
     }
 
     private suspend fun buildHeartRateTrend(
-        start: Instant,
-        end: Instant,
-        period: HealthPeriod,
+        start: Instant, end: Instant, period: HealthPeriod,
     ): List<HeartRateTrendPoint> {
         val avgMetrics = healthRepository.getMetricsByTypeAndDateRange("HR_AVG", start, end).first()
         val maxMetrics = healthRepository.getMetricsByTypeAndDateRange("HR_MAX", start, end).first()
             .associateBy { formatLabel(it.timestamp, period) }
         val minMetrics = healthRepository.getMetricsByTypeAndDateRange("HR_MIN", start, end).first()
             .associateBy { formatLabel(it.timestamp, period) }
-
-        // Deduplicate by label
         return avgMetrics.reversed()
             .groupBy { formatLabel(it.timestamp, period) }
             .map { (label, group) ->
@@ -262,12 +296,9 @@ class HealthViewModel @Inject constructor(
     }
 
     private suspend fun buildSleepTrend(
-        start: Instant,
-        end: Instant,
-        period: HealthPeriod,
+        start: Instant, end: Instant, period: HealthPeriod,
     ): List<SleepTrendPoint> {
         val sessions = healthRepository.getSleepSessions(start, end).first()
-        // Deduplicate by label
         return sessions.reversed()
             .groupBy { formatLabel(it.startTime, period) }
             .map { (label, group) ->
@@ -280,35 +311,35 @@ class HealthViewModel @Inject constructor(
                     remMinutes = session.remMinutes,
                     awakeMinutes = session.awakeMinutes,
                 )
-        }
+            }
     }
 
-    private fun todayRange(): Pair<Instant, Instant> {
-        val zone = ZoneId.of("Asia/Kolkata")
-        val todayStart = LocalDate.now(zone).atStartOfDay(zone).toInstant()
-        val todayEnd = LocalDate.now(zone).atTime(LocalTime.MAX).atZone(zone).toInstant()
-        return Instant.fromEpochMilliseconds(todayStart.toEpochMilli()) to
-            Instant.fromEpochMilliseconds(todayEnd.toEpochMilli())
-    }
+    // ── Date/time helpers ────────────────────────────────────────────────
 
-    private fun todayLocalDate(): KLocalDate {
-        val today = LocalDate.now(ZoneId.of("Asia/Kolkata"))
-        return KLocalDate(today.year, today.monthValue, today.dayOfMonth)
+    private fun dateRange(date: KLocalDate): Pair<Instant, Instant> {
+        val jDate = LocalDate.of(date.year, date.monthNumber, date.dayOfMonth)
+        val start = jDate.atStartOfDay(IST).toInstant()
+        val end = jDate.atTime(LocalTime.MAX).atZone(IST).toInstant()
+        return Instant.fromEpochMilliseconds(start.toEpochMilli()) to
+            Instant.fromEpochMilliseconds(end.toEpochMilli())
     }
 
     private fun periodRange(period: HealthPeriod): Pair<Instant, Instant> {
-        val zone = ZoneId.of("Asia/Kolkata")
-        val todayEnd = LocalDate.now(zone).atTime(LocalTime.MAX).atZone(zone).toInstant()
-        val periodStart = LocalDate.now(zone).minusDays(period.days.toLong() - 1)
-            .atStartOfDay(zone).toInstant()
+        val todayEnd = LocalDate.now(IST).atTime(LocalTime.MAX).atZone(IST).toInstant()
+        val periodStart = LocalDate.now(IST).minusDays(period.days.toLong() - 1)
+            .atStartOfDay(IST).toInstant()
         return Instant.fromEpochMilliseconds(periodStart.toEpochMilli()) to
             Instant.fromEpochMilliseconds(todayEnd.toEpochMilli())
     }
 
+    private fun todayKLocalDate(): KLocalDate {
+        val today = LocalDate.now(IST)
+        return KLocalDate(today.year, today.monthValue, today.dayOfMonth)
+    }
+
     private fun formatLabel(instant: Instant, period: HealthPeriod): String {
-        val zone = ZoneId.of("Asia/Kolkata")
         val dateTime = java.time.Instant.ofEpochMilli(instant.toEpochMilliseconds())
-            .atZone(zone).toLocalDateTime()
+            .atZone(IST).toLocalDateTime()
         return when (period) {
             HealthPeriod.DAILY -> dateTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
             HealthPeriod.WEEKLY -> dateTime.format(java.time.format.DateTimeFormatter.ofPattern("EEE"))

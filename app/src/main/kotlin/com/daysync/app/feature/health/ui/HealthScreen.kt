@@ -35,6 +35,8 @@ import com.daysync.app.feature.health.ui.components.SleepCard
 import com.daysync.app.feature.health.ui.components.SleepTrendChart
 import com.daysync.app.feature.health.ui.components.StepsTrendChart
 import com.daysync.app.feature.health.ui.components.WorkoutList
+import com.daysync.app.feature.nutrition.ui.components.DateNavigator
+import kotlinx.datetime.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +45,7 @@ fun HealthScreen(
     viewModel: HealthViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val selectedDate by viewModel.selectedDate.collectAsState()
     val selectedPeriod by viewModel.selectedPeriod.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
 
@@ -110,7 +113,11 @@ fun HealthScreen(
             is HealthUiState.Success -> {
                 HealthDashboard(
                     state = state,
+                    selectedDate = selectedDate,
                     selectedPeriod = selectedPeriod,
+                    onPreviousDay = viewModel::navigateToPreviousDay,
+                    onNextDay = viewModel::navigateToNextDay,
+                    onToday = viewModel::navigateToToday,
                     onPeriodSelected = viewModel::onPeriodSelected,
                     onCaloriesOverride = viewModel::setCalorieOverride,
                     onWorkoutSubTypeChange = viewModel::setWorkoutSubType,
@@ -123,7 +130,11 @@ fun HealthScreen(
 @Composable
 private fun HealthDashboard(
     state: HealthUiState.Success,
+    selectedDate: LocalDate,
     selectedPeriod: HealthPeriod,
+    onPreviousDay: () -> Unit,
+    onNextDay: () -> Unit,
+    onToday: () -> Unit,
     onPeriodSelected: (HealthPeriod) -> Unit,
     onCaloriesOverride: (Double?) -> Unit,
     onWorkoutSubTypeChange: (String, String?) -> Unit,
@@ -135,24 +146,32 @@ private fun HealthDashboard(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        // Today's summary
+        // Date navigator (arrows + "Today" button)
+        DateNavigator(
+            date = selectedDate,
+            onPreviousDay = onPreviousDay,
+            onNextDay = onNextDay,
+            onToday = onToday,
+        )
+
+        // Daily summary for the selected date
         HealthSummaryCard(
             summary = state.dailySummary,
             onCaloriesOverride = onCaloriesOverride,
         )
 
-        // Sleep sessions (may be multiple if the user woke and slept again)
+        // Sleep sessions for the selected date
         if (state.sleepSessions.isNotEmpty()) {
             SleepCard(sessions = state.sleepSessions)
         }
 
-        // Recent workouts
+        // Workouts for the selected date
         WorkoutList(
             workouts = state.recentWorkouts,
             onSubTypeChange = onWorkoutSubTypeChange,
         )
 
-        // Period selector
+        // Period selector (charts are independent of selectedDate)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
