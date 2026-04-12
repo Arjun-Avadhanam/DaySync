@@ -1,6 +1,7 @@
 package com.daysync.app.core.di
 
 import com.daysync.app.BuildConfig
+import com.daysync.app.core.ai.GeminiRestClient
 import com.daysync.app.core.database.dao.DailyNutritionSummaryDao
 import com.daysync.app.core.database.dao.ExerciseSessionDao
 import com.daysync.app.core.database.dao.ExpenseDao
@@ -14,7 +15,6 @@ import com.daysync.app.feature.ai.data.AiRepositoryImpl
 import com.daysync.app.feature.ai.data.DataContextBuilder
 import com.daysync.app.feature.ai.data.GeminiChatService
 import com.daysync.app.feature.ai.data.GroqChatService
-import com.google.ai.client.generativeai.GenerativeModel
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -33,11 +33,18 @@ object AiModule {
 
     @Provides
     @Singleton
-    fun provideGeminiModel(): GenerativeModel {
-        return GenerativeModel(
-            modelName = "gemini-2.5-flash",
+    fun provideGeminiRestClient(@Named("gemini") httpClient: HttpClient): GeminiRestClient {
+        return GeminiRestClient(
+            httpClient = httpClient,
             apiKey = BuildConfig.GEMINI_API_KEY,
         )
+    }
+
+    @Provides
+    @Singleton
+    @Named("gemini")
+    fun provideGeminiHttpClient(): HttpClient {
+        return HttpClient(OkHttp)
     }
 
     @Provides
@@ -80,8 +87,8 @@ object AiModule {
 
     @Provides
     @Singleton
-    fun provideGeminiChatService(): GeminiChatService {
-        return GeminiChatService(apiKey = BuildConfig.GEMINI_API_KEY)
+    fun provideGeminiChatService(geminiClient: GeminiRestClient): GeminiChatService {
+        return GeminiChatService(geminiClient)
     }
 
     @Provides

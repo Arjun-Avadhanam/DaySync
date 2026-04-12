@@ -2,9 +2,9 @@ package com.daysync.app.feature.nutrition.data
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.Base64
+import com.daysync.app.core.ai.GeminiRestClient
 import com.daysync.app.feature.nutrition.domain.model.NutritionLabelResult
-import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.content
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -14,26 +14,21 @@ import javax.inject.Singleton
 
 @Singleton
 class NutritionLabelExtractor @Inject constructor(
-    private val model: GenerativeModel,
+    private val geminiClient: GeminiRestClient,
 ) {
     private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
 
     suspend fun extractFromImage(imageBytes: ByteArray): NutritionLabelResult =
         withContext(Dispatchers.IO) {
             val compressed = compressBitmapForApi(imageBytes, maxDim = 1024)
-            val bitmap = BitmapFactory.decodeByteArray(compressed, 0, compressed.size)
-                ?: throw IllegalStateException("Failed to decode image")
+            val base64 = Base64.encodeToString(compressed, Base64.NO_WRAP)
 
-            val response = model.generateContent(
-                content {
-                    image(bitmap)
-                    text(PROMPT)
-                },
+            val text = geminiClient.generateWithImage(
+                prompt = PROMPT,
+                imageBase64 = base64,
+                mimeType = "image/jpeg",
+                jsonMode = true,
             )
-            bitmap.recycle()
-
-            val text = response.text
-                ?: throw IllegalStateException("Empty response from Gemini")
 
             json.decodeFromString<NutritionLabelResult>(text)
         }

@@ -136,8 +136,8 @@ dependencies {
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
 
-    // Google Generative AI (Gemini - Android SDK)
-    implementation(libs.google.generativeai)
+    // Gemini AI — uses direct REST calls via Ktor (the old
+    // com.google.ai.client.generativeai SDK was deprecated Nov 2025)
 
     // Ktor (for Groq fallback)
     implementation(libs.ktor.client.content.negotiation)
