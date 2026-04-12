@@ -97,7 +97,9 @@ fun HeartRateTrendChart(
     data: List<HeartRateTrendPoint>,
     modifier: Modifier = Modifier,
 ) {
-    if (data.isEmpty()) return
+    // Line charts need ≥2 points to draw a segment (unlike column charts
+    // which can render a single bar).
+    if (data.size < 2) return
 
     val modelProducer = remember { CartesianChartModelProducer() }
     LaunchedEffect(data) {
