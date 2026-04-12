@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable data object Dashboard
 @Serializable data object AppSettings
+@Serializable data object AppGuide
 @Serializable data object Health
 @Serializable data object Nutrition
 @Serializable data object Expenses

@@ -7,6 +7,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import com.daysync.app.feature.dashboard.ui.AppGuideScreen
 import com.daysync.app.feature.dashboard.ui.DashboardScreen
 import com.daysync.app.feature.dashboard.ui.SettingsScreen
 import com.daysync.app.feature.expenses.ui.CsvImportScreen
@@ -47,7 +48,13 @@ fun DaySyncNavHost(
             )
         }
         composable<AppSettings> {
-            SettingsScreen(onBack = { navController.popBackStack() })
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
+                onOpenGuide = { navController.navigate(AppGuide) },
+            )
+        }
+        composable<AppGuide> {
+            AppGuideScreen(onBack = { navController.popBackStack() })
         }
         composable<Health> { HealthScreen() }
         composable<Nutrition> { NutritionScreen() }

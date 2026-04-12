@@ -52,6 +52,8 @@ android {
         buildConfigField("String", "RAWG_API_KEY", "\"${localProperties.getProperty("RAWG_API_KEY", "")}\"")
         buildConfigField("String", "NOTION_API_KEY", "\"${localProperties.getProperty("NOTION_API_KEY", "")}\"")
         buildConfigField("String", "NOTION_MEAL_DATABASE_ID", "\"${localProperties.getProperty("NOTION_MEAL_DATABASE_ID", "")}\"")
+        buildConfigField("String", "NOTION_JOURNAL_DATABASE_ID", "\"${localProperties.getProperty("NOTION_JOURNAL_DATABASE_ID", "")}\"")
+        buildConfigField("String", "NOTION_MEDIA_DATABASE_ID", "\"${localProperties.getProperty("NOTION_MEDIA_DATABASE_ID", "")}\"")
     }
 
     buildTypes {

@@ -2,6 +2,7 @@ package com.daysync.app.feature.dashboard.ui
 
 import android.Manifest
 import android.content.Context
+import androidx.compose.foundation.clickable
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -42,6 +43,7 @@ import com.daysync.app.feature.expenses.ui.NotificationAccessHelper
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
+    onOpenGuide: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -104,6 +106,34 @@ fun SettingsScreen(
                 isGranted = null, // Can't easily check all 16 HC permissions inline
                 onManage = { openHealthConnectSettings(context) },
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Help",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenGuide() },
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("App Guide", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text("View tutorial", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
