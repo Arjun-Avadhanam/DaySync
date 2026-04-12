@@ -36,7 +36,7 @@ class DaySyncApplication : Application(), Configuration.Provider {
 
     private fun scheduleDailySync() {
         val now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"))
-        var targetTime = now.withHour(23).withMinute(0).withSecond(0).withNano(0)
+        var targetTime = now.withHour(23).withMinute(59).withSecond(0).withNano(0)
         if (now.isAfter(targetTime)) {
             targetTime = targetTime.plusDays(1)
         }
