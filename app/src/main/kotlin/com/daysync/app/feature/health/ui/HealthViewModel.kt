@@ -399,7 +399,6 @@ class HealthViewModel @Inject constructor(
         val dateTime = java.time.Instant.ofEpochMilli(instant.toEpochMilliseconds())
             .atZone(IST).toLocalDateTime()
         return when (period) {
-            HealthPeriod.DAILY -> dateTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
             HealthPeriod.WEEKLY -> dateTime.format(java.time.format.DateTimeFormatter.ofPattern("EEE"))
             HealthPeriod.MONTHLY -> dateTime.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM"))
         }

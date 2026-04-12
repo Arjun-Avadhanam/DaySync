@@ -156,7 +156,6 @@ sealed interface HealthUiState {
 }
 
 enum class HealthPeriod(val label: String, val days: Int) {
-    DAILY("Today", 1),
     WEEKLY("7 Days", 7),
     MONTHLY("30 Days", 30),
 }

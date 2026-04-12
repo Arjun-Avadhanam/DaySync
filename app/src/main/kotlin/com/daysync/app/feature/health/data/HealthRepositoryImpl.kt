@@ -34,19 +34,28 @@ class HealthRepositoryImpl @Inject constructor(
         val javaStart = JavaInstant.ofEpochMilli(start.toEpochMilliseconds())
         val javaEnd = JavaInstant.ofEpochMilli(end.toEpochMilliseconds())
 
-        // Read and store daily metrics
-        val metrics = healthConnectManager.readDailyMetrics(javaStart, javaEnd)
-        if (metrics.isNotEmpty()) {
-            healthMetricDao.insertAll(metrics)
+        // Metrics use HC's aggregate API which collapses the entire time range
+        // into one value. To get per-day data we must query each day separately.
+        val zone = java.time.ZoneId.of("Asia/Kolkata")
+        var cursor = javaStart.atZone(zone).toLocalDate()
+        val lastDay = javaEnd.atZone(zone).toLocalDate()
+        while (!cursor.isAfter(lastDay)) {
+            val dayStart = cursor.atStartOfDay(zone).toInstant()
+            val dayEnd = cursor.atTime(java.time.LocalTime.MAX).atZone(zone).toInstant()
+            val dayMetrics = healthConnectManager.readDailyMetrics(dayStart, dayEnd)
+            if (dayMetrics.isNotEmpty()) {
+                healthMetricDao.insertAll(dayMetrics)
+            }
+            cursor = cursor.plusDays(1)
         }
 
-        // Read and store sleep sessions
+        // Sleep and exercise are interval records with their own timestamps,
+        // so the full window query works correctly.
         val sleepSessions = healthConnectManager.readSleepSessions(javaStart, javaEnd)
         if (sleepSessions.isNotEmpty()) {
             sleepSessionDao.insertAll(sleepSessions)
         }
 
-        // Read and store enriched exercise sessions
         val exerciseSessions = healthConnectManager.readExerciseSessions(
             javaStart,
             javaEnd,

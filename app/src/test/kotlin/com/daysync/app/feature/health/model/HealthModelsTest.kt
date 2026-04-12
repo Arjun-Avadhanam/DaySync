@@ -222,14 +222,12 @@ class HealthModelsTest {
 
     @Test
     fun `HealthPeriod values`() {
-        assertEquals(1, HealthPeriod.DAILY.days)
         assertEquals(7, HealthPeriod.WEEKLY.days)
         assertEquals(30, HealthPeriod.MONTHLY.days)
     }
 
     @Test
     fun `HealthPeriod labels`() {
-        assertEquals("Today", HealthPeriod.DAILY.label)
         assertEquals("7 Days", HealthPeriod.WEEKLY.label)
         assertEquals("30 Days", HealthPeriod.MONTHLY.label)
     }
