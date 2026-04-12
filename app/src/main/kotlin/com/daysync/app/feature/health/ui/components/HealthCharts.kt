@@ -1,9 +1,15 @@
 package com.daysync.app.feature.health.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -41,7 +47,7 @@ fun StepsTrendChart(
     data: List<StepsTrendPoint>,
     modifier: Modifier = Modifier,
 ) {
-    if (data.size < 2) return
+    if (data.isEmpty()) return
 
     // One producer for the lifetime of this composable; data updates flow
     // through runTransaction inside a coroutine, never on the main thread.
@@ -82,12 +88,16 @@ fun StepsTrendChart(
     }
 }
 
+private val AvgHrColor = Color(0xFFE53935)
+private val MaxHrColor = Color(0xFFEF9A9A)
+private val MinHrColor = Color(0xFFFFCDD2)
+
 @Composable
 fun HeartRateTrendChart(
     data: List<HeartRateTrendPoint>,
     modifier: Modifier = Modifier,
 ) {
-    if (data.size < 2) return
+    if (data.isEmpty()) return
 
     val modelProducer = remember { CartesianChartModelProducer() }
     LaunchedEffect(data) {
@@ -110,9 +120,9 @@ fun HeartRateTrendChart(
             chart = rememberCartesianChart(
                 rememberLineCartesianLayer(
                     lineProvider = LineCartesianLayer.LineProvider.series(
-                        LineCartesianLayer.rememberLine(fill = remember { LineCartesianLayer.LineFill.single(fill(Color(0xFFE53935))) }),
-                        LineCartesianLayer.rememberLine(fill = remember { LineCartesianLayer.LineFill.single(fill(Color(0xFFEF9A9A))) }),
-                        LineCartesianLayer.rememberLine(fill = remember { LineCartesianLayer.LineFill.single(fill(Color(0xFFFFCDD2))) }),
+                        LineCartesianLayer.rememberLine(fill = remember { LineCartesianLayer.LineFill.single(fill(AvgHrColor)) }),
+                        LineCartesianLayer.rememberLine(fill = remember { LineCartesianLayer.LineFill.single(fill(MaxHrColor)) }),
+                        LineCartesianLayer.rememberLine(fill = remember { LineCartesianLayer.LineFill.single(fill(MinHrColor)) }),
                     ),
                 ),
                 startAxis = VerticalAxis.rememberStart(),
@@ -126,6 +136,32 @@ fun HeartRateTrendChart(
                 .fillMaxWidth()
                 .height(180.dp),
         )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            ChartLegendItem("Avg", AvgHrColor)
+            ChartLegendItem("Max", MaxHrColor)
+            ChartLegendItem("Min", MinHrColor)
+        }
+    }
+}
+
+@Composable
+private fun ChartLegendItem(label: String, color: Color) {
+    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(color, CircleShape),
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(start = 4.dp),
+        )
     }
 }
 
@@ -134,7 +170,7 @@ fun SleepTrendChart(
     data: List<SleepTrendPoint>,
     modifier: Modifier = Modifier,
 ) {
-    if (data.size < 2) return
+    if (data.isEmpty()) return
 
     val modelProducer = remember { CartesianChartModelProducer() }
     LaunchedEffect(data) {

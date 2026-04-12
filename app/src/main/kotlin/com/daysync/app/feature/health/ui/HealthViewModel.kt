@@ -104,9 +104,9 @@ class HealthViewModel @Inject constructor(
             val currentOverride = healthRepository.observeDailyOverride(today).first()
             val dailySummary = buildDailySummary(todayMetrics, currentOverride?.totalCalories)
 
-            // Latest sleep
-            val latestSleep = healthRepository.getLatestSleep().first()
-            val sleepSummary = latestSleep?.let { SleepSummary(it) }
+            // Sleep sessions for today (may be multiple if the user woke in between)
+            val sleepSessions = healthRepository.getSleepSessions(todayStart, todayEnd).first()
+                .map { SleepSummary(it) }
 
             // Recent workouts with their stored sub-type metadata applied
             val recentSessions = healthRepository.getRecentWorkouts(5).first()
@@ -126,7 +126,7 @@ class HealthViewModel @Inject constructor(
 
             _uiState.value = HealthUiState.Success(
                 dailySummary = dailySummary,
-                sleepSummary = sleepSummary,
+                sleepSessions = sleepSessions,
                 recentWorkouts = recentWorkouts,
                 stepsTrend = stepsTrend,
                 heartRateTrend = heartRateTrend,

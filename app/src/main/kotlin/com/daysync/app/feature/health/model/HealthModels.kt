@@ -137,7 +137,7 @@ sealed interface HealthUiState {
     data object HealthConnectNotAvailable : HealthUiState
     data class Success(
         val dailySummary: HealthDailySummary,
-        val sleepSummary: SleepSummary?,
+        val sleepSessions: List<SleepSummary> = emptyList(),
         val recentWorkouts: List<WorkoutSummary>,
         val stepsTrend: List<StepsTrendPoint>,
         val heartRateTrend: List<HeartRateTrendPoint>,

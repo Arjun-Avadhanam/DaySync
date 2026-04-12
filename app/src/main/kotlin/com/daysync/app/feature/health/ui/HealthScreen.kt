@@ -141,8 +141,10 @@ private fun HealthDashboard(
             onCaloriesOverride = onCaloriesOverride,
         )
 
-        // Sleep card
-        state.sleepSummary?.let { SleepCard(sleep = it) }
+        // Sleep sessions (may be multiple if the user woke and slept again)
+        if (state.sleepSessions.isNotEmpty()) {
+            SleepCard(sessions = state.sleepSessions)
+        }
 
         // Recent workouts
         WorkoutList(

@@ -136,6 +136,13 @@ private fun WorkoutItem(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                workout.session.maxHeartRate?.let {
+                    Text(
+                        text = "max $it",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 workout.session.distance?.let {
                     if (it > 0) {
                         Text(
