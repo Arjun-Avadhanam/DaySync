@@ -254,26 +254,39 @@ class HealthViewModel @Inject constructor(
 
     fun selectWorkoutType(exerciseType: String?) {
         viewModelScope.launch {
-            val trend = if (exerciseType != null) buildWorkoutTypeTrend(exerciseType, null) else emptyList()
-            _uiState.update {
-                (it as? HealthUiState.Success)?.copy(
-                    selectedWorkoutType = exerciseType,
-                    selectedWorkoutSubType = null,
-                    workoutTypeTrend = trend,
-                ) ?: it
+            try {
+                val trend = if (exerciseType != null) buildWorkoutTypeTrend(exerciseType, null) else emptyList()
+                _uiState.update {
+                    (it as? HealthUiState.Success)?.copy(
+                        selectedWorkoutType = exerciseType,
+                        selectedWorkoutSubType = null,
+                        workoutTypeTrend = trend,
+                    ) ?: it
+                }
+            } catch (e: Exception) {
+                _uiState.value = HealthUiState.Error(
+                    "Workout type filter failed: ${e::class.simpleName}: ${e.message}"
+                )
             }
         }
     }
 
     fun selectWorkoutSubType(subType: String?) {
         viewModelScope.launch {
-            val currentType = (_uiState.value as? HealthUiState.Success)?.selectedWorkoutType ?: return@launch
-            val trend = buildWorkoutTypeTrend(currentType, subType)
-            _uiState.update {
-                (it as? HealthUiState.Success)?.copy(
-                    selectedWorkoutSubType = subType,
-                    workoutTypeTrend = trend,
-                ) ?: it
+            try {
+                val currentType = (_uiState.value as? HealthUiState.Success)?.selectedWorkoutType ?: return@launch
+                val trend = buildWorkoutTypeTrend(currentType, subType)
+                _uiState.update {
+                    (it as? HealthUiState.Success)?.copy(
+                        selectedWorkoutSubType = subType,
+                        workoutTypeTrend = trend,
+                    ) ?: it
+                }
+            } catch (e: Exception) {
+                // Surface the error so we can diagnose without logcat
+                _uiState.value = HealthUiState.Error(
+                    "Sub-type filter failed: ${e::class.simpleName}: ${e.message}"
+                )
             }
         }
     }
