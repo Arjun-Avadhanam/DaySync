@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.daysync.app.feature.dashboard.ui.DashboardScreen
+import com.daysync.app.feature.dashboard.ui.SettingsScreen
 import com.daysync.app.feature.expenses.ui.CsvImportScreen
 import com.daysync.app.feature.expenses.ui.ExpenseFormScreen
 import com.daysync.app.feature.expenses.ui.ExpensesScreen
@@ -28,7 +29,15 @@ fun DaySyncNavHost(
         startDestination = Dashboard,
         modifier = modifier,
     ) {
-        composable<Dashboard> { DashboardScreen() }
+        composable<Dashboard> {
+            DashboardScreen(
+                onNavigateToSection = { route -> navController.navigate(route) },
+                onNavigateToSettings = { navController.navigate(AppSettings) },
+            )
+        }
+        composable<AppSettings> {
+            SettingsScreen(onBack = { navController.popBackStack() })
+        }
         composable<Health> { HealthScreen() }
         composable<Nutrition> { NutritionScreen() }
         composable<Expenses> { ExpensesScreen(navController = navController) }
