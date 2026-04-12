@@ -2,6 +2,7 @@ package com.daysync.app.feature.health.di
 
 import android.content.Context
 import com.daysync.app.core.database.dao.DailyHealthOverrideDao
+import com.daysync.app.core.database.dao.DailyNutritionSummaryDao
 import com.daysync.app.core.database.dao.ExerciseSessionDao
 import com.daysync.app.core.database.dao.HealthMetricDao
 import com.daysync.app.core.database.dao.SleepSessionDao
@@ -46,6 +47,7 @@ object HealthModule {
         exerciseSessionDao: ExerciseSessionDao,
         dailyHealthOverrideDao: DailyHealthOverrideDao,
         workoutMetadataDao: WorkoutMetadataDao,
+        nutritionSummaryDao: DailyNutritionSummaryDao,
         zoneConfig: HeartRateZoneConfig,
     ): HealthRepository = HealthRepositoryImpl(
         healthConnectManager,
@@ -54,6 +56,7 @@ object HealthModule {
         exerciseSessionDao,
         dailyHealthOverrideDao,
         workoutMetadataDao,
+        nutritionSummaryDao,
         zoneConfig,
     )
 }

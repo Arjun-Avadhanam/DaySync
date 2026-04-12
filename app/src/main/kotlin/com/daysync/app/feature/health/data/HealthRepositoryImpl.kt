@@ -1,6 +1,7 @@
 package com.daysync.app.feature.health.data
 
 import com.daysync.app.core.database.dao.DailyHealthOverrideDao
+import com.daysync.app.core.database.dao.DailyNutritionSummaryDao
 import com.daysync.app.core.database.dao.ExerciseSessionDao
 import com.daysync.app.core.database.dao.HealthMetricDao
 import com.daysync.app.core.database.dao.SleepSessionDao
@@ -27,6 +28,7 @@ class HealthRepositoryImpl @Inject constructor(
     private val exerciseSessionDao: ExerciseSessionDao,
     private val dailyHealthOverrideDao: DailyHealthOverrideDao,
     private val workoutMetadataDao: WorkoutMetadataDao,
+    private val nutritionSummaryDao: DailyNutritionSummaryDao,
     private val zoneConfig: HeartRateZoneConfig,
 ) : HealthRepository {
 
@@ -135,5 +137,9 @@ class HealthRepositoryImpl @Inject constructor(
                 lastModified = Clock.System.now(),
             )
         )
+    }
+
+    override suspend fun getCaloriesConsumed(date: LocalDate): Double? {
+        return nutritionSummaryDao.getByDate(date)?.totalCalories?.takeIf { it > 0 }
     }
 }

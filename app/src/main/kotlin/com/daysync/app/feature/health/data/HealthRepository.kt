@@ -28,4 +28,7 @@ interface HealthRepository {
 
     // Workout queries for charts
     fun getWorkoutsByExerciseType(exerciseType: String): Flow<List<ExerciseSessionEntity>>
+
+    // Cross-feature: read calories consumed from nutrition for a date
+    suspend fun getCaloriesConsumed(date: LocalDate): Double?
 }

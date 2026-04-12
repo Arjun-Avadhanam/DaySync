@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -95,6 +97,40 @@ fun HealthSummaryCard(
                     value = summary.floorsClimbed?.let { "${it.toInt()}" } ?: "--",
                     modifier = Modifier.weight(1f),
                 )
+            }
+
+            // Calorie deficit/surplus
+            val burned = summary.totalCalories
+            val consumed = summary.caloriesConsumed
+            if (burned != null && consumed != null) {
+                val deficit = burned - consumed
+                val sign = if (deficit >= 0) "+" else ""
+                val label = if (deficit >= 0) "Deficit" else "Surplus"
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "Calorie $label",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                    Text(
+                        text = "$sign${deficit.toInt()} kcal",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (deficit >= 0) {
+                            Color(0xFF4CAF50) // green for deficit
+                        } else {
+                            Color(0xFFEF5350) // red for surplus
+                        },
+                    )
+                }
             }
         }
     }

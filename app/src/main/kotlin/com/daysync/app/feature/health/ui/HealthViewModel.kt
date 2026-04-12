@@ -137,7 +137,8 @@ class HealthViewModel @Inject constructor(
             // Daily summary for the selected date
             val dayMetrics = healthRepository.getMetricsByDateRange(dayStart, dayEnd).first()
             val currentOverride = healthRepository.observeDailyOverride(date).first()
-            val dailySummary = buildDailySummary(dayMetrics, currentOverride?.totalCalories)
+            val caloriesConsumed = healthRepository.getCaloriesConsumed(date)
+            val dailySummary = buildDailySummary(dayMetrics, currentOverride?.totalCalories, caloriesConsumed)
 
             // Sleep sessions for the selected date
             val sleepSessions = healthRepository.getSleepSessions(dayStart, dayEnd).first()
@@ -296,6 +297,7 @@ class HealthViewModel @Inject constructor(
     private fun buildDailySummary(
         metrics: List<com.daysync.app.core.database.entity.HealthMetricEntity>,
         caloriesOverride: Double?,
+        caloriesConsumed: Double?,
     ): HealthDailySummary {
         val byType = metrics.associateBy { it.type }
         val rawTotal = byType["TOTAL_CALORIES"]?.value
@@ -303,6 +305,7 @@ class HealthViewModel @Inject constructor(
             steps = byType["STEPS"]?.value?.toLong(),
             totalCalories = caloriesOverride ?: rawTotal,
             totalCaloriesOverridden = caloriesOverride != null,
+            caloriesConsumed = caloriesConsumed,
             activeCalories = byType["ACTIVE_CALORIES"]?.value,
             avgHeartRate = byType["HR_AVG"]?.value?.toLong(),
             minHeartRate = byType["HR_MIN"]?.value?.toLong(),

@@ -131,14 +131,14 @@ private fun WorkoutItem(
                 }
                 workout.session.avgHeartRate?.let {
                     Text(
-                        text = "$it bpm",
+                        text = "Avg $it BPM",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 workout.session.maxHeartRate?.let {
                     Text(
-                        text = "max $it",
+                        text = "Max $it BPM",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
