@@ -3,6 +3,7 @@ package com.daysync.app.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
@@ -31,7 +32,17 @@ fun DaySyncNavHost(
     ) {
         composable<Dashboard> {
             DashboardScreen(
-                onNavigateToSection = { route -> navController.navigate(route) },
+                onNavigateToSection = { route ->
+                    // Use the same nav pattern as the bottom bar so we switch
+                    // tabs instead of pushing onto the Home tab's back stack.
+                    navController.navigate(route) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
                 onNavigateToSettings = { navController.navigate(AppSettings) },
             )
         }
