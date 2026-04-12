@@ -272,7 +272,7 @@ class HealthConnectManager(private val context: Context) {
 
         return ExerciseSessionEntity(
             id = session.metadata.id,
-            exerciseType = mapExerciseType(session.exerciseType),
+            exerciseType = resolveExerciseType(session.exerciseType, session.title),
             startTime = kotlinInstant(session.startTime),
             endTime = kotlinInstant(session.endTime),
             title = session.title,
@@ -363,6 +363,18 @@ class HealthConnectManager(private val context: Context) {
 
     private fun kotlinInstant(javaInstant: Instant): kotlin.time.Instant =
         kotlin.time.Instant.fromEpochMilliseconds(javaInstant.toEpochMilli())
+
+    // OHealth writes many workout types as OTHER_WORKOUT and puts the real
+    // name in the title field. Recover known types from the title so the
+    // rest of the app (sub-type picker, type charts) works correctly.
+    private fun resolveExerciseType(rawType: Int, title: String?): String {
+        val mapped = mapExerciseType(rawType)
+        if (mapped != "EXERCISE_TYPE_OTHER_WORKOUT") return mapped
+        return when (title?.trim()?.lowercase()) {
+            "strength training" -> "EXERCISE_TYPE_STRENGTH_TRAINING"
+            else -> mapped
+        }
+    }
 
     @Suppress("CyclomaticComplexMethod")
     private fun mapExerciseType(type: Int): String = when (type) {

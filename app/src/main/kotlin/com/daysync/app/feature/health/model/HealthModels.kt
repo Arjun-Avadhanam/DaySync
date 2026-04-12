@@ -151,6 +151,7 @@ sealed interface HealthUiState {
         val workoutTrend: List<WorkoutTrendPoint> = emptyList(),
         val workoutTypeTrend: List<WorkoutTrendPoint> = emptyList(),
         val selectedWorkoutType: String? = null,
+        val selectedWorkoutSubType: String? = null,
     ) : HealthUiState
     data class Error(val message: String) : HealthUiState
 }

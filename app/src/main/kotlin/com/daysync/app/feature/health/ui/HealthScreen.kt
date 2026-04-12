@@ -124,6 +124,7 @@ fun HealthScreen(
                     onCaloriesOverride = viewModel::setCalorieOverride,
                     onWorkoutSubTypeChange = viewModel::setWorkoutSubType,
                     onWorkoutTypeSelected = viewModel::selectWorkoutType,
+                    onWorkoutSubTypeFilterSelected = viewModel::selectWorkoutSubType,
                 )
             }
         }
@@ -142,6 +143,7 @@ private fun HealthDashboard(
     onCaloriesOverride: (Double?) -> Unit,
     onWorkoutSubTypeChange: (String, String?) -> Unit,
     onWorkoutTypeSelected: (String?) -> Unit,
+    onWorkoutSubTypeFilterSelected: (String?) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -195,11 +197,13 @@ private fun HealthDashboard(
         SleepTrendChart(data = state.sleepTrend)
         WorkoutTrendChart(data = state.workoutTrend, title = "Workout Trend")
 
-        // Per-type workout chart with dropdown
+        // Per-type workout chart with type + sub-type filter
         WorkoutTypeSection(
             selectedType = state.selectedWorkoutType,
+            selectedSubType = state.selectedWorkoutSubType,
             typeTrend = state.workoutTypeTrend,
             onTypeSelected = onWorkoutTypeSelected,
+            onSubTypeSelected = onWorkoutSubTypeFilterSelected,
         )
     }
 }
@@ -207,8 +211,10 @@ private fun HealthDashboard(
 @Composable
 private fun WorkoutTypeSection(
     selectedType: String?,
+    selectedSubType: String?,
     typeTrend: List<com.daysync.app.feature.health.model.WorkoutTrendPoint>,
     onTypeSelected: (String?) -> Unit,
+    onSubTypeSelected: (String?) -> Unit,
 ) {
     val workoutTypes = listOf(
         "EXERCISE_TYPE_RUNNING" to "Running",
@@ -243,6 +249,40 @@ private fun WorkoutTypeSection(
                 )
             }
         }
+
+        // Sub-type chips for strength training and other workouts
+        val subTypeOptions = com.daysync.app.feature.health.model.WorkoutSubTypes.optionsFor(selectedType ?: "")
+        if (selectedType != null && subTypeOptions != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilterChip(
+                    selected = selectedSubType == null,
+                    onClick = { onSubTypeSelected(null) },
+                    label = { Text("All", style = MaterialTheme.typography.labelSmall) },
+                )
+                subTypeOptions.forEach { subType ->
+                    val label = when (subType) {
+                        com.daysync.app.feature.health.model.WorkoutSubTypes.PUSH -> "Push"
+                        com.daysync.app.feature.health.model.WorkoutSubTypes.PULL -> "Pull"
+                        com.daysync.app.feature.health.model.WorkoutSubTypes.LEG_EXERCISES -> "Leg exercises"
+                        com.daysync.app.feature.health.model.WorkoutSubTypes.OTHER -> "Other"
+                        else -> subType
+                    }
+                    FilterChip(
+                        selected = selectedSubType == subType,
+                        onClick = {
+                            onSubTypeSelected(if (selectedSubType == subType) null else subType)
+                        },
+                        label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                    )
+                }
+            }
+        }
+
         if (selectedType != null) {
             WorkoutTrendChart(
                 data = typeTrend,

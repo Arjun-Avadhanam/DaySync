@@ -162,8 +162,9 @@ class HealthViewModel @Inject constructor(
 
             // Per-type workout trend (if a type was previously selected)
             val prevType = (_uiState.value as? HealthUiState.Success)?.selectedWorkoutType
+            val prevSubType = (_uiState.value as? HealthUiState.Success)?.selectedWorkoutSubType
             val workoutTypeTrend = if (prevType != null) {
-                buildWorkoutTypeTrend(prevType)
+                buildWorkoutTypeTrend(prevType, prevSubType)
             } else {
                 emptyList()
             }
@@ -178,6 +179,7 @@ class HealthViewModel @Inject constructor(
                 workoutTrend = workoutTrend,
                 workoutTypeTrend = workoutTypeTrend,
                 selectedWorkoutType = prevType,
+                selectedWorkoutSubType = prevSubType,
             )
 
             // Reactive observers for dialog edits
@@ -252,10 +254,24 @@ class HealthViewModel @Inject constructor(
 
     fun selectWorkoutType(exerciseType: String?) {
         viewModelScope.launch {
-            val trend = if (exerciseType != null) buildWorkoutTypeTrend(exerciseType) else emptyList()
+            val trend = if (exerciseType != null) buildWorkoutTypeTrend(exerciseType, null) else emptyList()
             _uiState.update {
                 (it as? HealthUiState.Success)?.copy(
                     selectedWorkoutType = exerciseType,
+                    selectedWorkoutSubType = null,
+                    workoutTypeTrend = trend,
+                ) ?: it
+            }
+        }
+    }
+
+    fun selectWorkoutSubType(subType: String?) {
+        viewModelScope.launch {
+            val currentType = (_uiState.value as? HealthUiState.Success)?.selectedWorkoutType ?: return@launch
+            val trend = buildWorkoutTypeTrend(currentType, subType)
+            _uiState.update {
+                (it as? HealthUiState.Success)?.copy(
+                    selectedWorkoutSubType = subType,
                     workoutTypeTrend = trend,
                 ) ?: it
             }
@@ -357,9 +373,19 @@ class HealthViewModel @Inject constructor(
             }
     }
 
-    private suspend fun buildWorkoutTypeTrend(exerciseType: String): List<WorkoutTrendPoint> {
-        val sessions = healthRepository.getWorkoutsByExerciseType(exerciseType).first()
+    private suspend fun buildWorkoutTypeTrend(
+        exerciseType: String,
+        subTypeFilter: String?,
+    ): List<WorkoutTrendPoint> {
+        var sessions = healthRepository.getWorkoutsByExerciseType(exerciseType).first()
         if (sessions.isEmpty()) return emptyList()
+
+        // Filter by sub-type if selected (requires joining with WorkoutMetadata)
+        if (subTypeFilter != null) {
+            val metadata = healthRepository.observeWorkoutMetadata(sessions.map { it.id }).first()
+            sessions = sessions.filter { metadata[it.id] == subTypeFilter }
+        }
+
         return sessions.map { session ->
             val dateLabel = java.time.Instant.ofEpochMilli(session.startTime.toEpochMilliseconds())
                 .atZone(IST).toLocalDate()
