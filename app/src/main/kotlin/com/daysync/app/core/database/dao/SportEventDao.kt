@@ -21,10 +21,10 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface SportEventDao {
     // Sports
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertSport(entity: SportEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertSports(entities: List<SportEntity>)
 
     @Query("SELECT * FROM sports")
@@ -34,10 +34,10 @@ interface SportEventDao {
     suspend fun getSportById(id: String): SportEntity?
 
     // Competitions
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertCompetition(entity: CompetitionEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertCompetitions(entities: List<CompetitionEntity>)
 
     @Query("SELECT * FROM competitions WHERE sportId = :sportId")
@@ -53,10 +53,10 @@ interface SportEventDao {
     suspend fun getAllCompetitionsList(): List<CompetitionEntity>
 
     // Competitors
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertCompetitor(entity: CompetitorEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertCompetitors(entities: List<CompetitorEntity>)
 
     @Query("SELECT * FROM competitors WHERE sportId = :sportId")
@@ -84,10 +84,10 @@ interface SportEventDao {
     suspend fun getCompetitorsByIds(ids: List<String>): List<CompetitorEntity>
 
     // Venues
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertVenue(entity: VenueEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertVenues(entities: List<VenueEntity>)
 
     // Events — use @Upsert (INSERT OR IGNORE + UPDATE) instead of
@@ -169,10 +169,10 @@ interface SportEventDao {
     suspend fun markEventsSynced(ids: List<String>)
 
     // Event Participants
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertParticipant(entity: EventParticipantEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertParticipants(entities: List<EventParticipantEntity>)
 
     @Query("SELECT * FROM event_participants WHERE eventId = :eventId")
@@ -182,7 +182,7 @@ interface SportEventDao {
     suspend fun getParticipantsByEventList(eventId: String): List<EventParticipantEntity>
 
     // Watchlist
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertWatchlistEntry(entity: WatchlistEntryEntity)
 
     @Delete
@@ -215,7 +215,7 @@ interface SportEventDao {
     suspend fun markWatchlistSynced(ids: List<String>)
 
     // Followed Competitors
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertFollowedCompetitor(entity: FollowedCompetitorEntity)
 
     @Delete
@@ -237,7 +237,7 @@ interface SportEventDao {
     suspend fun markFollowedCompetitorsSynced(ids: List<String>)
 
     // Followed Competitions
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertFollowedCompetition(entity: FollowedCompetitionEntity)
 
     @Delete
