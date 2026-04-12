@@ -67,6 +67,7 @@ class DaySyncEngine @Inject constructor(
     private val sportEventDao: SportEventDao,
     private val journalEntryDao: JournalEntryDao,
     private val mediaItemDao: MediaItemDao,
+    private val dailyHealthOverrideDao: com.daysync.app.core.database.dao.DailyHealthOverrideDao,
     private val syncLogDao: SyncLogDao,
 ) : SyncEngine {
 
@@ -103,6 +104,7 @@ class DaySyncEngine @Inject constructor(
             "followed_competitions" to ::syncFollowedCompetitions,
             "journal_entries" to ::syncJournalEntries,
             "media_items" to ::syncMediaItems,
+            "daily_health_overrides" to ::syncDailyHealthOverrides,
         )
 
         for ((tableName, syncFn) in syncSteps) {
@@ -294,6 +296,15 @@ class DaySyncEngine @Inject constructor(
         logSync("media_items", pending.size, "SUCCESS")
     }.onFailure { logSync("media_items", 0, "FAILED"); Log.e(TAG, "syncMediaItems failed", it) }
 
+    private suspend fun syncDailyHealthOverrides(): Result<Unit> = runCatching {
+        val pending = dailyHealthOverrideDao.getPendingSync()
+        if (pending.isEmpty()) { logSync("daily_health_overrides", 0, "SUCCESS"); return@runCatching }
+        val dtos = pending.map { it.toDto() }
+        upsertChunked("daily_health_overrides", dtos)
+        dailyHealthOverrideDao.markAsSynced(pending.map { it.date })
+        logSync("daily_health_overrides", pending.size, "SUCCESS")
+    }.onFailure { logSync("daily_health_overrides", 0, "FAILED"); Log.e(TAG, "syncDailyHealthOverrides failed", it) }
+
     // --- Reference data backup (non-syncable tables) ---
 
     private suspend fun syncReferenceData() {
@@ -359,7 +370,7 @@ class DaySyncEngine @Inject constructor(
     }
 
     companion object {
-        private const val TOTAL_TABLES = 15
+        private const val TOTAL_TABLES = 16
     }
 }
 

@@ -300,6 +300,19 @@ fun MediaItemEntity.toDto() = MediaItemDto(
     isDeleted = isDeleted,
 )
 
+// Daily Health Overrides
+
+fun com.daysync.app.core.database.entity.DailyHealthOverrideEntity.toDto() =
+    com.daysync.app.core.sync.dto.DailyHealthOverrideDto(
+        date = date.toString(),
+        totalCalories = totalCalories,
+        weightMorning = weightMorning,
+        weightEvening = weightEvening,
+        weightNight = weightNight,
+        lastModified = lastModified.toEpochMilliseconds(),
+        isDeleted = isDeleted,
+    )
+
 // Sync Log
 
 fun SyncLogEntity.toDto() = SyncLogDto(
