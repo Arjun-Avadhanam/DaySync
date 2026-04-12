@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -191,11 +192,14 @@ private fun HealthDashboard(
             }
         }
 
-        // Trend charts
-        StepsTrendChart(data = state.stepsTrend)
-        HeartRateTrendChart(data = state.heartRateTrend)
-        SleepTrendChart(data = state.sleepTrend)
-        WorkoutTrendChart(data = state.workoutTrend, title = "Workout Trend")
+        // Trend charts — wrapped in key(period) so Vico gets a clean slate
+        // on each period switch instead of trying to animate between states.
+        key(selectedPeriod) {
+            StepsTrendChart(data = state.stepsTrend)
+            HeartRateTrendChart(data = state.heartRateTrend)
+            SleepTrendChart(data = state.sleepTrend)
+            WorkoutTrendChart(data = state.workoutTrend, title = "Workout Trend")
+        }
 
         // Per-type workout chart with type + sub-type filter
         WorkoutTypeSection(
@@ -284,10 +288,14 @@ private fun WorkoutTypeSection(
         }
 
         if (selectedType != null) {
-            WorkoutTrendChart(
-                data = typeTrend,
-                title = workoutTypes.firstOrNull { it.first == selectedType }?.second ?: "Workout",
-            )
+            // key() forces a clean chart recreation on each filter change so
+            // Vico's producer doesn't crash transitioning between data sets.
+            key(selectedType, selectedSubType) {
+                WorkoutTrendChart(
+                    data = typeTrend,
+                    title = workoutTypes.firstOrNull { it.first == selectedType }?.second ?: "Workout",
+                )
+            }
         }
     }
 }
