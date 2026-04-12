@@ -2,6 +2,7 @@ package com.daysync.app.feature.media.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.daysync.app.core.notion.NotionMediaExporter
 import com.daysync.app.feature.media.data.MediaRepository
 import com.daysync.app.feature.media.data.remote.MediaMetadataResult
 import com.daysync.app.feature.media.data.remote.MediaMetadataService
@@ -57,6 +58,7 @@ sealed interface MediaScreenState {
 class MediaViewModel @Inject constructor(
     private val repository: MediaRepository,
     private val metadataService: MediaMetadataService,
+    private val notionExporter: NotionMediaExporter,
 ) : ViewModel() {
 
     private val _typeFilter = MutableStateFlow<Set<MediaType>?>(null)
@@ -231,5 +233,31 @@ class MediaViewModel @Inject constructor(
 
     fun clearMetadataResults() {
         _metadataResults.value = emptyList()
+    }
+
+    private val _notionExportStatus = MutableStateFlow<String?>(null)
+    val notionExportStatus: StateFlow<String?> = _notionExportStatus.asStateFlow()
+
+    fun exportToNotion(item: MediaItem) {
+        viewModelScope.launch {
+            _notionExportStatus.value = "Saving..."
+            val entity = com.daysync.app.core.database.entity.MediaItemEntity(
+                id = item.id,
+                title = item.title,
+                mediaType = item.mediaType.name,
+                status = item.status.name,
+                score = item.score,
+                creators = item.creators,
+                completedDate = item.completedDate,
+                notes = item.notes,
+                coverImageUrl = item.coverImageUrl,
+            )
+            notionExporter.export(entity).fold(
+                onSuccess = { _notionExportStatus.value = "Saved to Notion" },
+                onFailure = { _notionExportStatus.value = "Failed: ${it.message}" },
+            )
+            kotlinx.coroutines.delay(3000)
+            _notionExportStatus.value = null
+        }
     }
 }

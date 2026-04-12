@@ -33,6 +33,9 @@ class JournalRepositoryImpl @Inject constructor(
     override suspend fun getEntryById(id: String): JournalEntry? =
         dao.getById(id)?.toDomain()
 
+    override suspend fun getEntryEntityById(id: String): com.daysync.app.core.database.entity.JournalEntryEntity? =
+        dao.getById(id)
+
     override suspend fun saveEntry(entry: JournalEntry) {
         dao.insert(entry.toEntity())
     }

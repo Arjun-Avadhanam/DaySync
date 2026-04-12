@@ -32,4 +32,5 @@ data class JournalUiState(
     val isSaving: Boolean = false,
     // Tags
     val availableTags: kotlin.collections.List<String> = emptyList(),
+    val snackbarMessage: String? = null,
 )

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.Card
@@ -433,6 +434,33 @@ fun MediaAddEditScreen(
                 enabled = title.isNotBlank(),
             ) {
                 Text(if (isEditing) "Save Changes" else "Add Media")
+            }
+
+            // Save to Notion (edit mode only)
+            if (isEditing) {
+                val notionStatus by viewModel.notionExportStatus.collectAsState()
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = {
+                        viewModel.exportToNotion(
+                            MediaItem(
+                                id = editItemId ?: "",
+                                title = title.trim(),
+                                mediaType = mediaType,
+                                status = status,
+                                score = score,
+                                creators = creators,
+                                completedDate = completedDate,
+                                notes = notes.ifBlank { null },
+                                coverImageUrl = coverImageUrl.ifBlank { null },
+                            )
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = notionStatus == null,
+                ) {
+                    Text(notionStatus ?: "Save to Notion")
+                }
             }
         }
     }

@@ -28,6 +28,7 @@ import kotlinx.datetime.toLocalDateTime
 @HiltViewModel
 class JournalViewModel @Inject constructor(
     private val repository: JournalRepository,
+    private val notionExporter: com.daysync.app.core.notion.NotionJournalExporter,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(JournalUiState())
@@ -289,6 +290,28 @@ class JournalViewModel @Inject constructor(
             state.editorTitle.isNotBlank() || state.editorContent.isNotBlank() ||
                 state.editorMood != null || state.editorTags.isNotEmpty()
         }
+    }
+
+    fun exportToNotion(entryId: String) {
+        viewModelScope.launch {
+            try {
+                val entity = repository.getEntryEntityById(entryId) ?: return@launch
+                notionExporter.export(entity).fold(
+                    onSuccess = {
+                        _uiState.update { s -> s.copy(snackbarMessage = "Saved to Notion") }
+                    },
+                    onFailure = { err ->
+                        _uiState.update { s -> s.copy(snackbarMessage = "Notion export failed: ${err.message}") }
+                    },
+                )
+            } catch (e: Exception) {
+                _uiState.update { s -> s.copy(snackbarMessage = "Notion export failed: ${e.message}") }
+            }
+        }
+    }
+
+    fun clearSnackbar() {
+        _uiState.update { it.copy(snackbarMessage = null) }
     }
 
     private enum class ListMode { ALL, ARCHIVED }

@@ -348,13 +348,17 @@ class HealthConnectManager(private val context: Context) {
         null
     }
 
+    // Deterministic ID so re-syncing the same day's metric replaces the
+    // old value instead of accumulating duplicate rows. The old random UUID
+    // pattern left stale aggregates (e.g. 7-day summed steps on Monday)
+    // in Room permanently.
     private fun metric(
         type: String,
         value: Double,
         unit: String,
         timestamp: kotlin.time.Instant,
     ) = HealthMetricEntity(
-        id = UUID.randomUUID().toString(),
+        id = "$type-${timestamp.toEpochMilliseconds()}",
         type = type,
         value = value,
         unit = unit,

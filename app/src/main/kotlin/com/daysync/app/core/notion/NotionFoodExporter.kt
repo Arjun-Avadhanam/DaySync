@@ -26,6 +26,31 @@ class NotionFoodExporter(
         return client.createPage(databaseId, props)
     }
 
+    suspend fun exportFromDomain(
+        name: String,
+        caloriesPerUnit: Double,
+        proteinPerUnit: Double,
+        carbsPerUnit: Double,
+        fatPerUnit: Double,
+        sugarPerUnit: Double,
+        category: String?,
+        unitType: String,
+        servingDescription: String?,
+    ): Result<String> {
+        val props = buildJsonObject {
+            put("Meal Name", titleProperty(name))
+            put("Calories per Unit", numberProperty(caloriesPerUnit))
+            put("Protein per Unit (g)", numberProperty(proteinPerUnit))
+            put("Carbs per Unit (g)", numberProperty(carbsPerUnit))
+            put("Fat per Unit (g)", numberProperty(fatPerUnit))
+            put("Sugar per Unit (g)", numberProperty(sugarPerUnit))
+            category?.let { put("Food Category", selectProperty(it)) }
+            put("Unit Type", selectProperty(mapUnitType(unitType)))
+            servingDescription?.let { put("Serving Description", richTextProperty(it)) }
+        }
+        return client.createPage(databaseId, props)
+    }
+
     private fun mapUnitType(appUnit: String): String = when (appUnit) {
         "PIECES" -> "pieces"
         "SLICE" -> "slices"

@@ -32,6 +32,7 @@ sealed interface FoodLibraryEvent {
 class FoodLibraryViewModel @Inject constructor(
     private val repository: NutritionRepository,
     private val notionImporter: NotionMealImporter,
+    private val notionFoodExporter: com.daysync.app.core.notion.NotionFoodExporter,
 ) : ViewModel() {
 
     private val _isImporting = MutableStateFlow(false)
@@ -120,6 +121,30 @@ class FoodLibraryViewModel @Inject constructor(
                 _events.emit(FoodLibraryEvent.ImportFailed(e.message ?: e::class.simpleName ?: "unknown error"))
             } finally {
                 _isImporting.value = false
+            }
+        }
+    }
+
+    fun exportFoodToNotion(foodId: String) {
+        viewModelScope.launch {
+            try {
+                val food = repository.getFoodItemById(foodId) ?: return@launch
+                notionFoodExporter.exportFromDomain(
+                    name = food.name,
+                    caloriesPerUnit = food.caloriesPerUnit,
+                    proteinPerUnit = food.proteinPerUnit,
+                    carbsPerUnit = food.carbsPerUnit,
+                    fatPerUnit = food.fatPerUnit,
+                    sugarPerUnit = food.sugarPerUnit,
+                    category = food.category,
+                    unitType = food.unitType.name,
+                    servingDescription = food.servingDescription,
+                ).fold(
+                    onSuccess = { _events.emit(FoodLibraryEvent.ImportComplete(upserted = 1, softDeleted = 0)) },
+                    onFailure = { _events.emit(FoodLibraryEvent.Error("Notion export failed: ${it.message}")) },
+                )
+            } catch (e: Exception) {
+                _events.emit(FoodLibraryEvent.Error("Notion export failed: ${e.message}"))
             }
         }
     }
