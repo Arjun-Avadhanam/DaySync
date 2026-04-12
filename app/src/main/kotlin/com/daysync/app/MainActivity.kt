@@ -29,9 +29,22 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         maybeRequestNotificationPermission()
+        val navigateTo = intent?.getStringExtra("navigate_to")
+
         setContent {
             DaySyncTheme {
                 val navController = rememberNavController()
+
+                // Handle deep link from expense classification notification
+                androidx.compose.runtime.LaunchedEffect(navigateTo) {
+                    if (navigateTo == "expense_detail") {
+                        navController.navigate(com.daysync.app.ui.navigation.Expenses) {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                        }
+                    }
+                }
+
                 Scaffold(
                     bottomBar = { BottomNavBar(navController) },
                     floatingActionButton = { AiFab() },
