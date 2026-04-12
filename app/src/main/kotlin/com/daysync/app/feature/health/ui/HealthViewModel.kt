@@ -8,6 +8,7 @@ import com.daysync.app.feature.health.model.HealthDailySummary
 import com.daysync.app.feature.health.model.HealthPeriod
 import com.daysync.app.feature.health.model.HealthUiState
 import com.daysync.app.feature.health.model.HeartRateTrendPoint
+import com.daysync.app.feature.health.model.PeriodStats
 import com.daysync.app.feature.health.model.SleepSummary
 import com.daysync.app.feature.health.model.SleepTrendPoint
 import com.daysync.app.feature.health.model.StepsTrendPoint
@@ -138,7 +139,7 @@ class HealthViewModel @Inject constructor(
             val dayMetrics = healthRepository.getMetricsByDateRange(dayStart, dayEnd).first()
             val currentOverride = healthRepository.observeDailyOverride(date).first()
             val caloriesConsumed = healthRepository.getCaloriesConsumed(date)
-            val dailySummary = buildDailySummary(dayMetrics, currentOverride?.totalCalories, caloriesConsumed)
+            val dailySummary = buildDailySummary(dayMetrics, currentOverride, caloriesConsumed)
 
             // Sleep sessions for the selected date
             val sleepSessions = healthRepository.getSleepSessions(dayStart, dayEnd).first()
@@ -161,6 +162,9 @@ class HealthViewModel @Inject constructor(
             val sleepTrend = buildSleepTrend(periodStart, periodEnd, period)
             val workoutTrend = buildWorkoutTrend(periodStart, periodEnd, period)
 
+            // Periodic stats (above charts)
+            val periodStats = buildPeriodStats(periodStart, periodEnd)
+
             // Per-type workout trend (if a type was previously selected)
             val prevType = (_uiState.value as? HealthUiState.Success)?.selectedWorkoutType
             val prevSubType = (_uiState.value as? HealthUiState.Success)?.selectedWorkoutSubType
@@ -177,6 +181,7 @@ class HealthViewModel @Inject constructor(
                 stepsTrend = stepsTrend,
                 heartRateTrend = heartRateTrend,
                 sleepTrend = sleepTrend,
+                periodStats = periodStats,
                 workoutTrend = workoutTrend,
                 workoutTypeTrend = workoutTypeTrend,
                 selectedWorkoutType = prevType,
@@ -227,6 +232,12 @@ class HealthViewModel @Inject constructor(
     fun setCalorieOverride(totalCalories: Double?) {
         viewModelScope.launch {
             healthRepository.setCalorieOverride(_selectedDate.value, totalCalories)
+        }
+    }
+
+    fun setWeight(morning: Double?, evening: Double?, night: Double?) {
+        viewModelScope.launch {
+            healthRepository.setWeight(_selectedDate.value, morning, evening, night)
         }
     }
 
@@ -296,16 +307,19 @@ class HealthViewModel @Inject constructor(
 
     private fun buildDailySummary(
         metrics: List<com.daysync.app.core.database.entity.HealthMetricEntity>,
-        caloriesOverride: Double?,
+        override: com.daysync.app.core.database.entity.DailyHealthOverrideEntity?,
         caloriesConsumed: Double?,
     ): HealthDailySummary {
         val byType = metrics.associateBy { it.type }
         val rawTotal = byType["TOTAL_CALORIES"]?.value
         return HealthDailySummary(
             steps = byType["STEPS"]?.value?.toLong(),
-            totalCalories = caloriesOverride ?: rawTotal,
-            totalCaloriesOverridden = caloriesOverride != null,
+            totalCalories = override?.totalCalories ?: rawTotal,
+            totalCaloriesOverridden = override?.totalCalories != null,
             caloriesConsumed = caloriesConsumed,
+            weightMorning = override?.weightMorning,
+            weightEvening = override?.weightEvening,
+            weightNight = override?.weightNight,
             activeCalories = byType["ACTIVE_CALORIES"]?.value,
             avgHeartRate = byType["HR_AVG"]?.value?.toLong(),
             minHeartRate = byType["HR_MIN"]?.value?.toLong(),
@@ -371,6 +385,48 @@ class HealthViewModel @Inject constructor(
                     awakeMinutes = session.awakeMinutes,
                 )
             }
+    }
+
+    private suspend fun buildPeriodStats(start: Instant, end: Instant): PeriodStats {
+        // Average sleep
+        val sleepSessions = healthRepository.getSleepSessions(start, end).first()
+        val avgSleep = if (sleepSessions.isNotEmpty()) {
+            sleepSessions.map { it.totalMinutes }.average().toInt()
+        } else null
+
+        // Average weight from daily overrides
+        val zone = java.time.ZoneId.of("Asia/Kolkata")
+        val startDate = java.time.Instant.ofEpochMilli(start.toEpochMilliseconds()).atZone(zone).toLocalDate()
+        val endDate = java.time.Instant.ofEpochMilli(end.toEpochMilliseconds()).atZone(zone).toLocalDate()
+        val weights = mutableListOf<Double>()
+        var cursor = startDate
+        while (!cursor.isAfter(endDate)) {
+            val kDate = kotlinx.datetime.LocalDate(cursor.year, cursor.monthValue, cursor.dayOfMonth)
+            val override = healthRepository.observeDailyOverride(kDate).first()
+            val dayWeights = listOfNotNull(override?.weightMorning, override?.weightEvening, override?.weightNight)
+            if (dayWeights.isNotEmpty()) weights.add(dayWeights.average())
+            cursor = cursor.plusDays(1)
+        }
+        val avgWeight = if (weights.isNotEmpty()) weights.average() else null
+
+        // Total calorie deficit
+        val calorieMetrics = healthRepository.getMetricsByTypeAndDateRange("TOTAL_CALORIES", start, end).first()
+        val totalBurned = calorieMetrics.sumOf { it.value }
+        var totalConsumed = 0.0
+        cursor = startDate
+        while (!cursor.isAfter(endDate)) {
+            val kDate = kotlinx.datetime.LocalDate(cursor.year, cursor.monthValue, cursor.dayOfMonth)
+            val consumed = healthRepository.getCaloriesConsumed(kDate)
+            if (consumed != null) totalConsumed += consumed
+            cursor = cursor.plusDays(1)
+        }
+        val totalDeficit = if (totalBurned > 0 || totalConsumed > 0) totalBurned - totalConsumed else null
+
+        return PeriodStats(
+            avgSleepMinutes = avgSleep,
+            avgWeight = avgWeight?.let { Math.round(it * 10.0) / 10.0 },
+            totalCalorieDeficit = totalDeficit,
+        )
     }
 
     private suspend fun buildWorkoutTrend(

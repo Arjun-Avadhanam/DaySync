@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.Upsert
 import com.daysync.app.core.database.entity.CompetitionEntity
 import com.daysync.app.core.database.entity.CompetitorEntity
 import com.daysync.app.core.database.entity.EventParticipantEntity
@@ -89,11 +90,13 @@ interface SportEventDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertVenues(entities: List<VenueEntity>)
 
-    // Events
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    // Events — use @Upsert (INSERT OR IGNORE + UPDATE) instead of
+    // @Insert(REPLACE) to avoid triggering CASCADE deletes on the
+    // watchlist_entries foreign key.
+    @Upsert
     suspend fun insertEvent(entity: SportEventEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insertEvents(entities: List<SportEventEntity>)
 
     @Update

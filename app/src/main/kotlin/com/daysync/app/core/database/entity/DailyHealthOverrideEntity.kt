@@ -18,6 +18,9 @@ import kotlinx.datetime.LocalDate
 data class DailyHealthOverrideEntity(
     @PrimaryKey val date: LocalDate,
     val totalCalories: Double? = null,
+    val weightMorning: Double? = null,
+    val weightEvening: Double? = null,
+    val weightNight: Double? = null,
     override val syncStatus: SyncStatus = SyncStatus.PENDING,
     override val lastModified: Instant = Clock.System.now(),
     override val isDeleted: Boolean = false,

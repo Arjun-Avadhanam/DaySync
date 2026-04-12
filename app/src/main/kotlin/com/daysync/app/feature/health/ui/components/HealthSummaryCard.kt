@@ -34,9 +34,11 @@ import java.text.NumberFormat
 fun HealthSummaryCard(
     summary: HealthDailySummary,
     onCaloriesOverride: (Double?) -> Unit,
+    onWeightChange: (Double?, Double?, Double?) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     var showCalorieDialog by remember { mutableStateOf(false) }
+    var showWeightDialog by remember { mutableStateOf(false) }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -132,6 +134,35 @@ fun HealthSummaryCard(
                     )
                 }
             }
+
+            // Weight tracking (morning / evening / night)
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 8.dp),
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f),
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showWeightDialog = true },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Weight",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+                val weightText = listOfNotNull(
+                    summary.weightMorning?.let { "M: ${it}kg" },
+                    summary.weightEvening?.let { "E: ${it}kg" },
+                    summary.weightNight?.let { "N: ${it}kg" },
+                ).joinToString("  ")
+                Text(
+                    text = weightText.ifEmpty { "Tap to set" },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                )
+            }
         }
     }
 
@@ -147,6 +178,19 @@ fun HealthSummaryCard(
             onClear = {
                 onCaloriesOverride(null)
                 showCalorieDialog = false
+            },
+        )
+    }
+
+    if (showWeightDialog) {
+        WeightDialog(
+            morning = summary.weightMorning,
+            evening = summary.weightEvening,
+            night = summary.weightNight,
+            onDismiss = { showWeightDialog = false },
+            onSave = { m, e, n ->
+                onWeightChange(m, e, n)
+                showWeightDialog = false
             },
         )
     }
@@ -197,6 +241,64 @@ private fun CalorieOverrideDialog(
                 }
                 TextButton(onClick = onDismiss) { Text("Cancel") }
             }
+        },
+    )
+}
+
+@Composable
+private fun WeightDialog(
+    morning: Double?,
+    evening: Double?,
+    night: Double?,
+    onDismiss: () -> Unit,
+    onSave: (Double?, Double?, Double?) -> Unit,
+) {
+    var morningText by remember { mutableStateOf(morning?.toString().orEmpty()) }
+    var eveningText by remember { mutableStateOf(evening?.toString().orEmpty()) }
+    var nightText by remember { mutableStateOf(night?.toString().orEmpty()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Weight") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = morningText,
+                    onValueChange = { morningText = it },
+                    label = { Text("Morning (kg)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = eveningText,
+                    onValueChange = { eveningText = it },
+                    label = { Text("Evening (kg)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = nightText,
+                    onValueChange = { nightText = it },
+                    label = { Text("Night (kg)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onSave(
+                    morningText.toDoubleOrNull(),
+                    eveningText.toDoubleOrNull(),
+                    nightText.toDoubleOrNull(),
+                )
+            }) { Text("Save") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
         },
     )
 }

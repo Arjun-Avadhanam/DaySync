@@ -6,9 +6,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -123,6 +127,7 @@ fun HealthScreen(
                     onToday = viewModel::navigateToToday,
                     onPeriodSelected = viewModel::onPeriodSelected,
                     onCaloriesOverride = viewModel::setCalorieOverride,
+                    onWeightChange = viewModel::setWeight,
                     onWorkoutSubTypeChange = viewModel::setWorkoutSubType,
                     onWorkoutTypeSelected = viewModel::selectWorkoutType,
                     onWorkoutSubTypeFilterSelected = viewModel::selectWorkoutSubType,
@@ -142,6 +147,7 @@ private fun HealthDashboard(
     onToday: () -> Unit,
     onPeriodSelected: (HealthPeriod) -> Unit,
     onCaloriesOverride: (Double?) -> Unit,
+    onWeightChange: (Double?, Double?, Double?) -> Unit,
     onWorkoutSubTypeChange: (String, String?) -> Unit,
     onWorkoutTypeSelected: (String?) -> Unit,
     onWorkoutSubTypeFilterSelected: (String?) -> Unit,
@@ -165,6 +171,7 @@ private fun HealthDashboard(
         HealthSummaryCard(
             summary = state.dailySummary,
             onCaloriesOverride = onCaloriesOverride,
+            onWeightChange = onWeightChange,
         )
 
         // Sleep sessions for the selected date
@@ -189,6 +196,37 @@ private fun HealthDashboard(
                     onClick = { onPeriodSelected(period) },
                     label = { Text(period.label) },
                 )
+            }
+        }
+
+        // Periodic statistics
+        val stats = state.periodStats
+        if (stats.avgSleepMinutes != null || stats.avgWeight != null || stats.totalCalorieDeficit != null) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        "Period Statistics",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    stats.avgSleepMinutes?.let {
+                        Text("Avg Sleep: ${it / 60}h ${it % 60}m", style = MaterialTheme.typography.bodyMedium)
+                    }
+                    stats.avgWeight?.let {
+                        Text("Avg Weight: ${it} kg", style = MaterialTheme.typography.bodyMedium)
+                    }
+                    stats.totalCalorieDeficit?.let {
+                        val sign = if (it >= 0) "+" else ""
+                        val label = if (it >= 0) "deficit" else "surplus"
+                        Text("Total Calorie ${label}: $sign${it.toInt()} kcal", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
             }
         }
 

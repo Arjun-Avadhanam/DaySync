@@ -21,6 +21,7 @@ interface HealthRepository {
     // Daily overrides — user-entered corrections for fields that upstream sources get wrong
     fun observeDailyOverride(date: LocalDate): Flow<DailyHealthOverrideEntity?>
     suspend fun setCalorieOverride(date: LocalDate, totalCalories: Double?)
+    suspend fun setWeight(date: LocalDate, morning: Double?, evening: Double?, night: Double?)
 
     // Per-workout metadata (sub-type picker for strength training / other workouts)
     fun observeWorkoutMetadata(sessionIds: List<String>): Flow<Map<String, String?>>

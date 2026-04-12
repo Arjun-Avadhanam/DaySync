@@ -27,6 +27,9 @@ data class HealthDailySummary(
     val totalCalories: Double? = null,
     val totalCaloriesOverridden: Boolean = false,
     val caloriesConsumed: Double? = null,
+    val weightMorning: Double? = null,
+    val weightEvening: Double? = null,
+    val weightNight: Double? = null,
     val activeCalories: Double? = null,
     val avgHeartRate: Long? = null,
     val minHeartRate: Long? = null,
@@ -111,6 +114,12 @@ private fun formatSubType(subType: String): String = when (subType) {
     else -> subType.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }
 }
 
+data class PeriodStats(
+    val avgSleepMinutes: Int? = null,
+    val avgWeight: Double? = null,
+    val totalCalorieDeficit: Double? = null,
+)
+
 data class WorkoutTrendPoint(
     val label: String,
     val avgHr: Int,
@@ -149,6 +158,7 @@ sealed interface HealthUiState {
         val stepsTrend: List<StepsTrendPoint>,
         val heartRateTrend: List<HeartRateTrendPoint>,
         val sleepTrend: List<SleepTrendPoint>,
+        val periodStats: PeriodStats = PeriodStats(),
         val workoutTrend: List<WorkoutTrendPoint> = emptyList(),
         val workoutTypeTrend: List<WorkoutTrendPoint> = emptyList(),
         val selectedWorkoutType: String? = null,

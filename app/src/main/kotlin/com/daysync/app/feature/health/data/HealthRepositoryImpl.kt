@@ -117,6 +117,18 @@ class HealthRepositoryImpl @Inject constructor(
         )
     }
 
+    override suspend fun setWeight(date: LocalDate, morning: Double?, evening: Double?, night: Double?) {
+        val existing = dailyHealthOverrideDao.get(date)
+        val entity = (existing ?: DailyHealthOverrideEntity(date = date)).copy(
+            weightMorning = morning,
+            weightEvening = evening,
+            weightNight = night,
+            syncStatus = SyncStatus.PENDING,
+            lastModified = Clock.System.now(),
+        )
+        dailyHealthOverrideDao.upsert(entity)
+    }
+
     override fun getWorkoutsByExerciseType(exerciseType: String): Flow<List<ExerciseSessionEntity>> =
         exerciseSessionDao.getByExerciseType(exerciseType)
 
