@@ -223,17 +223,22 @@ fun WorkoutTrendChart(
     title: String = "Workout Trend",
     modifier: Modifier = Modifier,
 ) {
-    if (data.isEmpty()) return
-
+    // Producer lives across data transitions so Vico doesn't crash when
+    // a sub-type filter empties the data after the chart was already shown.
     val modelProducer = remember { CartesianChartModelProducer() }
     LaunchedEffect(data) {
-        modelProducer.runTransaction {
-            columnSeries {
-                series(data.map { it.calories })
-                series(data.map { it.avgHr })
+        if (data.isNotEmpty()) {
+            modelProducer.runTransaction {
+                columnSeries {
+                    series(data.map { it.calories })
+                    series(data.map { it.avgHr })
+                }
             }
         }
     }
+
+    if (data.isEmpty()) return
+
     val labelFormatter = remember(data) {
         CartesianValueFormatter { _, x, _ ->
             data.getOrNull(x.toInt())?.label ?: ""
