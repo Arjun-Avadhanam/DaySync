@@ -110,6 +110,12 @@ private fun formatSubType(subType: String): String = when (subType) {
     else -> subType.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }
 }
 
+data class WorkoutTrendPoint(
+    val label: String,
+    val avgHr: Int,
+    val calories: Int,
+)
+
 data class StepsTrendPoint(
     val label: String,
     val steps: Long,
@@ -142,6 +148,9 @@ sealed interface HealthUiState {
         val stepsTrend: List<StepsTrendPoint>,
         val heartRateTrend: List<HeartRateTrendPoint>,
         val sleepTrend: List<SleepTrendPoint>,
+        val workoutTrend: List<WorkoutTrendPoint> = emptyList(),
+        val workoutTypeTrend: List<WorkoutTrendPoint> = emptyList(),
+        val selectedWorkoutType: String? = null,
     ) : HealthUiState
     data class Error(val message: String) : HealthUiState
 }

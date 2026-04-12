@@ -42,6 +42,12 @@ interface ExerciseSessionDao {
     )
     fun getRecent(limit: Int): Flow<List<ExerciseSessionEntity>>
 
+    @Query(
+        "SELECT * FROM exercise_sessions WHERE isDeleted = 0 " +
+            "AND exerciseType = :exerciseType ORDER BY startTime DESC"
+    )
+    fun getByExerciseType(exerciseType: String): Flow<List<ExerciseSessionEntity>>
+
     @Query("SELECT * FROM exercise_sessions WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<ExerciseSessionEntity>
 

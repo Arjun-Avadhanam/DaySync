@@ -12,6 +12,7 @@ import com.daysync.app.feature.health.model.SleepSummary
 import com.daysync.app.feature.health.model.SleepTrendPoint
 import com.daysync.app.feature.health.model.StepsTrendPoint
 import com.daysync.app.feature.health.model.WorkoutSummary
+import com.daysync.app.feature.health.model.WorkoutTrendPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
 import java.time.LocalTime
@@ -157,6 +158,15 @@ class HealthViewModel @Inject constructor(
             val stepsTrend = buildStepsTrend(periodStart, periodEnd, period)
             val heartRateTrend = buildHeartRateTrend(periodStart, periodEnd, period)
             val sleepTrend = buildSleepTrend(periodStart, periodEnd, period)
+            val workoutTrend = buildWorkoutTrend(periodStart, periodEnd, period)
+
+            // Per-type workout trend (if a type was previously selected)
+            val prevType = (_uiState.value as? HealthUiState.Success)?.selectedWorkoutType
+            val workoutTypeTrend = if (prevType != null) {
+                buildWorkoutTypeTrend(prevType)
+            } else {
+                emptyList()
+            }
 
             _uiState.value = HealthUiState.Success(
                 dailySummary = dailySummary,
@@ -165,6 +175,9 @@ class HealthViewModel @Inject constructor(
                 stepsTrend = stepsTrend,
                 heartRateTrend = heartRateTrend,
                 sleepTrend = sleepTrend,
+                workoutTrend = workoutTrend,
+                workoutTypeTrend = workoutTypeTrend,
+                selectedWorkoutType = prevType,
             )
 
             // Reactive observers for dialog edits
@@ -232,6 +245,20 @@ class HealthViewModel @Inject constructor(
     fun setWorkoutSubType(sessionId: String, subType: String?) {
         viewModelScope.launch {
             healthRepository.setWorkoutSubType(sessionId, subType)
+        }
+    }
+
+    // ── Workout type chart ──────────────────────────────────────────────
+
+    fun selectWorkoutType(exerciseType: String?) {
+        viewModelScope.launch {
+            val trend = if (exerciseType != null) buildWorkoutTypeTrend(exerciseType) else emptyList()
+            _uiState.update {
+                (it as? HealthUiState.Success)?.copy(
+                    selectedWorkoutType = exerciseType,
+                    workoutTypeTrend = trend,
+                ) ?: it
+            }
         }
     }
 
@@ -312,6 +339,37 @@ class HealthViewModel @Inject constructor(
                     awakeMinutes = session.awakeMinutes,
                 )
             }
+    }
+
+    private suspend fun buildWorkoutTrend(
+        start: Instant, end: Instant, period: HealthPeriod,
+    ): List<WorkoutTrendPoint> {
+        val sessions = healthRepository.getExerciseSessions(start, end).first()
+        if (sessions.isEmpty()) return emptyList()
+        return sessions.reversed()
+            .groupBy { formatLabel(it.startTime, period) }
+            .map { (label, group) ->
+                WorkoutTrendPoint(
+                    label = label,
+                    avgHr = group.mapNotNull { it.avgHeartRate }.average().toInt().takeIf { it > 0 } ?: 0,
+                    calories = group.mapNotNull { it.calories }.sumOf { it.toInt() },
+                )
+            }
+    }
+
+    private suspend fun buildWorkoutTypeTrend(exerciseType: String): List<WorkoutTrendPoint> {
+        val sessions = healthRepository.getWorkoutsByExerciseType(exerciseType).first()
+        if (sessions.isEmpty()) return emptyList()
+        return sessions.map { session ->
+            val dateLabel = java.time.Instant.ofEpochMilli(session.startTime.toEpochMilliseconds())
+                .atZone(IST).toLocalDate()
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM"))
+            WorkoutTrendPoint(
+                label = dateLabel,
+                avgHr = session.avgHeartRate ?: 0,
+                calories = session.calories?.toInt() ?: 0,
+            )
+        }
     }
 
     // ── Date/time helpers ────────────────────────────────────────────────

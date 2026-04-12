@@ -1,6 +1,7 @@
 package com.daysync.app.feature.health.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +36,7 @@ import com.daysync.app.feature.health.ui.components.SleepCard
 import com.daysync.app.feature.health.ui.components.SleepTrendChart
 import com.daysync.app.feature.health.ui.components.StepsTrendChart
 import com.daysync.app.feature.health.ui.components.WorkoutList
+import com.daysync.app.feature.health.ui.components.WorkoutTrendChart
 import com.daysync.app.feature.nutrition.ui.components.DateNavigator
 import kotlinx.datetime.LocalDate
 
@@ -121,6 +123,7 @@ fun HealthScreen(
                     onPeriodSelected = viewModel::onPeriodSelected,
                     onCaloriesOverride = viewModel::setCalorieOverride,
                     onWorkoutSubTypeChange = viewModel::setWorkoutSubType,
+                    onWorkoutTypeSelected = viewModel::selectWorkoutType,
                 )
             }
         }
@@ -138,6 +141,7 @@ private fun HealthDashboard(
     onPeriodSelected: (HealthPeriod) -> Unit,
     onCaloriesOverride: (Double?) -> Unit,
     onWorkoutSubTypeChange: (String, String?) -> Unit,
+    onWorkoutTypeSelected: (String?) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -189,5 +193,61 @@ private fun HealthDashboard(
         StepsTrendChart(data = state.stepsTrend)
         HeartRateTrendChart(data = state.heartRateTrend)
         SleepTrendChart(data = state.sleepTrend)
+        WorkoutTrendChart(data = state.workoutTrend, title = "Workout Trend")
+
+        // Per-type workout chart with dropdown
+        WorkoutTypeSection(
+            selectedType = state.selectedWorkoutType,
+            typeTrend = state.workoutTypeTrend,
+            onTypeSelected = onWorkoutTypeSelected,
+        )
+    }
+}
+
+@Composable
+private fun WorkoutTypeSection(
+    selectedType: String?,
+    typeTrend: List<com.daysync.app.feature.health.model.WorkoutTrendPoint>,
+    onTypeSelected: (String?) -> Unit,
+) {
+    val workoutTypes = listOf(
+        "EXERCISE_TYPE_RUNNING" to "Running",
+        "EXERCISE_TYPE_STRENGTH_TRAINING" to "Strength training",
+        "EXERCISE_TYPE_FOOTBALL_AUSTRALIAN" to "Football",
+        "EXERCISE_TYPE_OTHER_WORKOUT" to "Workout (Other)",
+        "EXERCISE_TYPE_WALKING" to "Walking",
+        "EXERCISE_TYPE_BIKING" to "Biking",
+        "EXERCISE_TYPE_HIKING" to "Hiking",
+        "EXERCISE_TYPE_YOGA" to "Yoga",
+    )
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "Workout by Type",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            workoutTypes.forEach { (type, label) ->
+                FilterChip(
+                    selected = selectedType == type,
+                    onClick = {
+                        onTypeSelected(if (selectedType == type) null else type)
+                    },
+                    label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                )
+            }
+        }
+        if (selectedType != null) {
+            WorkoutTrendChart(
+                data = typeTrend,
+                title = workoutTypes.firstOrNull { it.first == selectedType }?.second ?: "Workout",
+            )
+        }
     }
 }

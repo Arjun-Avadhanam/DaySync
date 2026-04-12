@@ -106,6 +106,9 @@ class HealthRepositoryImpl @Inject constructor(
         )
     }
 
+    override fun getWorkoutsByExerciseType(exerciseType: String): Flow<List<ExerciseSessionEntity>> =
+        exerciseSessionDao.getByExerciseType(exerciseType)
+
     override fun observeWorkoutMetadata(sessionIds: List<String>): Flow<Map<String, String?>> =
         workoutMetadataDao.observeBySessionIds(sessionIds)
             .map { rows -> rows.associate { it.sessionId to it.subType } }

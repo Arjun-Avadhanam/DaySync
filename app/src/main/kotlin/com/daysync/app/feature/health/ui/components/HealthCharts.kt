@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.daysync.app.feature.health.model.HeartRateTrendPoint
 import com.daysync.app.feature.health.model.SleepTrendPoint
 import com.daysync.app.feature.health.model.StepsTrendPoint
+import com.daysync.app.feature.health.model.WorkoutTrendPoint
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
@@ -210,6 +211,64 @@ fun SleepTrendChart(
                 .fillMaxWidth()
                 .height(180.dp),
         )
+    }
+}
+
+private val CaloriesColor = Color(0xFFFF7043)
+private val WorkoutHrColor = Color(0xFFE53935)
+
+@Composable
+fun WorkoutTrendChart(
+    data: List<WorkoutTrendPoint>,
+    title: String = "Workout Trend",
+    modifier: Modifier = Modifier,
+) {
+    if (data.isEmpty()) return
+
+    val modelProducer = remember { CartesianChartModelProducer() }
+    LaunchedEffect(data) {
+        modelProducer.runTransaction {
+            columnSeries {
+                series(data.map { it.calories })
+                series(data.map { it.avgHr })
+            }
+        }
+    }
+    val labelFormatter = remember(data) {
+        CartesianValueFormatter { _, x, _ ->
+            data.getOrNull(x.toInt())?.label ?: ""
+        }
+    }
+
+    ChartCard(title = title, modifier = modifier) {
+        CartesianChartHost(
+            chart = rememberCartesianChart(
+                rememberColumnCartesianLayer(
+                    columnProvider = ColumnCartesianLayer.ColumnProvider.series(
+                        LineComponent(fill = fill(CaloriesColor), thicknessDp = 6f),
+                        LineComponent(fill = fill(WorkoutHrColor), thicknessDp = 6f),
+                    ),
+                ),
+                startAxis = VerticalAxis.rememberStart(),
+                bottomAxis = HorizontalAxis.rememberBottom(
+                    valueFormatter = labelFormatter,
+                    itemPlacer = HorizontalAxis.ItemPlacer.aligned(),
+                ),
+            ),
+            modelProducer = modelProducer,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            ChartLegendItem("Calories", CaloriesColor)
+            ChartLegendItem("Avg HR", WorkoutHrColor)
+        }
     }
 }
 

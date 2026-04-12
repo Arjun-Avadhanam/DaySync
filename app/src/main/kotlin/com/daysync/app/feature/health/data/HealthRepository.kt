@@ -25,4 +25,7 @@ interface HealthRepository {
     // Per-workout metadata (sub-type picker for strength training / other workouts)
     fun observeWorkoutMetadata(sessionIds: List<String>): Flow<Map<String, String?>>
     suspend fun setWorkoutSubType(sessionId: String, subType: String?)
+
+    // Workout queries for charts
+    fun getWorkoutsByExerciseType(exerciseType: String): Flow<List<ExerciseSessionEntity>>
 }
