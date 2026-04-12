@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -216,6 +217,17 @@ fun NutritionAddEditFoodScreen(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(if (isEdit) "Update Food" else "Add Food")
+            }
+
+            // Save to Notion (edit mode only)
+            if (isEdit && foodId != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = { viewModel.exportFoodToNotion(foodId) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Save to Notion")
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

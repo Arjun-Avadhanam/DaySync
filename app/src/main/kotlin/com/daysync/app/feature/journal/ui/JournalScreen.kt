@@ -89,6 +89,7 @@ fun JournalScreen(
                     onEdit = { viewModel.navigateToEditor(screenState.entryId) },
                     onArchive = { viewModel.toggleArchive(screenState.entryId) },
                     onDelete = { viewModel.deleteEntry(screenState.entryId) },
+                    onExportToNotion = { viewModel.exportToNotion(screenState.entryId) },
                 )
             }
 

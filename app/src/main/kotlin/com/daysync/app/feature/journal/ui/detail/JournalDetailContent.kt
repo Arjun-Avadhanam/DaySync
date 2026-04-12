@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Unarchive
@@ -52,6 +53,7 @@ fun JournalDetailContent(
     onEdit: () -> Unit,
     onArchive: () -> Unit,
     onDelete: () -> Unit,
+    onExportToNotion: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -93,6 +95,16 @@ fun JournalDetailContent(
                                     onClick = {
                                         showMenu = false
                                         onArchive()
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Save to Notion") },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Share, contentDescription = null)
+                                    },
+                                    onClick = {
+                                        showMenu = false
+                                        onExportToNotion()
                                     },
                                 )
                                 DropdownMenuItem(
