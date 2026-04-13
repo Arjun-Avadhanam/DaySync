@@ -30,6 +30,7 @@ class DaySyncApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        com.daysync.app.core.CrashLogger.install(this)
         ExpenseNotificationChannel.createChannel(this)
         scheduleDailySync()
     }
