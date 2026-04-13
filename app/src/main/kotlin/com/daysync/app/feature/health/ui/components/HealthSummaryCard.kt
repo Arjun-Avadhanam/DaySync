@@ -65,9 +65,8 @@ fun HealthSummaryCard(
                     modifier = Modifier.weight(1f),
                 )
                 MetricItem(
-                    label = if (summary.totalCaloriesOverridden) "Calories (manual)" else "Calories",
+                    label = "Calories",
                     value = summary.totalCalories?.let { "${it.toInt()} kcal" } ?: "tap to set",
-                    italic = summary.totalCaloriesOverridden,
                     modifier = Modifier
                         .weight(1f)
                         .clickable { showCalorieDialog = true },
@@ -169,7 +168,7 @@ fun HealthSummaryCard(
     if (showCalorieDialog) {
         CalorieOverrideDialog(
             currentValue = summary.totalCalories,
-            isOverridden = summary.totalCaloriesOverridden,
+            isOverridden = summary.totalCalories != null,
             onDismiss = { showCalorieDialog = false },
             onSave = { newValue ->
                 onCaloriesOverride(newValue)

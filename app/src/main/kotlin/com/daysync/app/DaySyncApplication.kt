@@ -33,6 +33,7 @@ class DaySyncApplication : Application(), Configuration.Provider {
         com.daysync.app.core.CrashLogger.install(this)
         ExpenseNotificationChannel.createChannel(this)
         scheduleDailySync()
+        scheduleDailyReminder()
     }
 
     private fun scheduleDailySync() {
@@ -59,6 +60,28 @@ class DaySyncApplication : Application(), Configuration.Provider {
             "daysync_daily_sync",
             ExistingPeriodicWorkPolicy.UPDATE,
             syncRequest,
+        )
+    }
+
+    private fun scheduleDailyReminder() {
+        val now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"))
+        var reminderTime = now.withHour(23).withMinute(30).withSecond(0).withNano(0)
+        if (now.isAfter(reminderTime)) {
+            reminderTime = reminderTime.plusDays(1)
+        }
+        val delayMillis = Duration.between(now, reminderTime).toMillis()
+
+        val request = PeriodicWorkRequestBuilder<com.daysync.app.core.sync.DailyReminderWorker>(
+            24, TimeUnit.HOURS,
+        )
+            .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
+            .addTag("daily_reminder")
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "daysync_daily_reminder",
+            ExistingPeriodicWorkPolicy.UPDATE,
+            request,
         )
     }
 }

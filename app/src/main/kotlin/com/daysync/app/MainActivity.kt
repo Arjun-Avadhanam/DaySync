@@ -35,10 +35,15 @@ class MainActivity : ComponentActivity() {
             DaySyncTheme {
                 val navController = rememberNavController()
 
-                // Handle deep link from expense classification notification
+                // Handle deep links from notifications
                 androidx.compose.runtime.LaunchedEffect(navigateTo) {
-                    if (navigateTo == "expense_detail") {
-                        navController.navigate(com.daysync.app.ui.navigation.Expenses) {
+                    val route = when (navigateTo) {
+                        "expense_detail" -> com.daysync.app.ui.navigation.Expenses
+                        "health" -> com.daysync.app.ui.navigation.Health
+                        else -> null
+                    }
+                    if (route != null) {
+                        navController.navigate(route) {
                             popUpTo(navController.graph.startDestinationId) { saveState = true }
                             launchSingleTop = true
                         }

@@ -103,18 +103,27 @@ class HealthRepositoryImpl @Inject constructor(
     override suspend fun setCalorieOverride(date: LocalDate, totalCalories: Double?) {
         val existing = dailyHealthOverrideDao.get(date)
         if (totalCalories == null && existing == null) return
-        if (totalCalories == null) {
-            dailyHealthOverrideDao.deleteByDate(date)
+        if (totalCalories == null && existing != null) {
+            // Clear only calories, keep weight if present
+            val hasWeight = existing.weightMorning != null || existing.weightEvening != null || existing.weightNight != null
+            if (hasWeight) {
+                dailyHealthOverrideDao.upsert(existing.copy(
+                    totalCalories = null,
+                    syncStatus = SyncStatus.PENDING,
+                    lastModified = Clock.System.now(),
+                ))
+            } else {
+                dailyHealthOverrideDao.deleteByDate(date)
+            }
             return
         }
-        dailyHealthOverrideDao.upsert(
-            DailyHealthOverrideEntity(
-                date = date,
-                totalCalories = totalCalories,
-                syncStatus = SyncStatus.PENDING,
-                lastModified = Clock.System.now(),
-            )
+        // Merge with existing to preserve weight fields
+        val entity = (existing ?: DailyHealthOverrideEntity(date = date)).copy(
+            totalCalories = totalCalories,
+            syncStatus = SyncStatus.PENDING,
+            lastModified = Clock.System.now(),
         )
+        dailyHealthOverrideDao.upsert(entity)
     }
 
     override suspend fun setWeight(date: LocalDate, morning: Double?, evening: Double?, night: Double?) {

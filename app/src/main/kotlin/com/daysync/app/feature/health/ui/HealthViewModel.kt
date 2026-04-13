@@ -192,7 +192,7 @@ class HealthViewModel @Inject constructor(
             overrideJob?.cancel()
             overrideJob = viewModelScope.launch {
                 healthRepository.observeDailyOverride(date).collect { override ->
-                    applyCalorieOverride(override?.totalCalories)
+                    applyOverride(override)
                 }
             }
             subTypeJob?.cancel()
@@ -209,21 +209,15 @@ class HealthViewModel @Inject constructor(
 
     // ── Calorie override ─────────────────────────────────────────────────
 
-    private suspend fun applyCalorieOverride(overrideValue: Double?) {
+    private fun applyOverride(override: com.daysync.app.core.database.entity.DailyHealthOverrideEntity?) {
         val current = _uiState.value as? HealthUiState.Success ?: return
-        val date = _selectedDate.value
-        val (dayStart, dayEnd) = dateRange(date)
-        val rawMetrics = healthRepository.getMetricsByDateRange(dayStart, dayEnd).first()
-        val rawTotal = rawMetrics.firstOrNull { it.type == "TOTAL_CALORIES" }?.value
-        val resolved = overrideValue ?: rawTotal
-        if (resolved == current.dailySummary.totalCalories &&
-            (overrideValue != null) == current.dailySummary.totalCaloriesOverridden
-        ) return
         _uiState.update {
             (it as? HealthUiState.Success)?.copy(
                 dailySummary = current.dailySummary.copy(
-                    totalCalories = resolved,
-                    totalCaloriesOverridden = overrideValue != null,
+                    totalCalories = override?.totalCalories,
+                    weightMorning = override?.weightMorning,
+                    weightEvening = override?.weightEvening,
+                    weightNight = override?.weightNight,
                 ),
             ) ?: it
         }
@@ -311,16 +305,16 @@ class HealthViewModel @Inject constructor(
         caloriesConsumed: Double?,
     ): HealthDailySummary {
         val byType = metrics.associateBy { it.type }
-        val rawTotal = byType["TOTAL_CALORIES"]?.value
+        // Calories are always manual — HC total is unreliable (OHealth
+        // doesn't write BMR during sleep). HC metrics are kept in Room
+        // for reference but not used in the daily summary.
         return HealthDailySummary(
             steps = byType["STEPS"]?.value?.toLong(),
-            totalCalories = override?.totalCalories ?: rawTotal,
-            totalCaloriesOverridden = override?.totalCalories != null,
+            totalCalories = override?.totalCalories,
             caloriesConsumed = caloriesConsumed,
             weightMorning = override?.weightMorning,
             weightEvening = override?.weightEvening,
             weightNight = override?.weightNight,
-            activeCalories = byType["ACTIVE_CALORIES"]?.value,
             avgHeartRate = byType["HR_AVG"]?.value?.toLong(),
             minHeartRate = byType["HR_MIN"]?.value?.toLong(),
             maxHeartRate = byType["HR_MAX"]?.value?.toLong(),

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -205,26 +206,67 @@ private fun HealthDashboard(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
                 ),
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        "Period Statistics",
+                        "${selectedPeriod.label} Statistics",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    stats.avgSleepMinutes?.let {
-                        Text("Avg Sleep: ${it / 60}h ${it % 60}m", style = MaterialTheme.typography.bodyMedium)
-                    }
-                    stats.avgWeight?.let {
-                        Text("Avg Weight: ${it} kg", style = MaterialTheme.typography.bodyMedium)
-                    }
-                    stats.totalCalorieDeficit?.let {
-                        val sign = if (it >= 0) "+" else ""
-                        val label = if (it >= 0) "deficit" else "surplus"
-                        Text("Total Calorie ${label}: $sign${it.toInt()} kcal", style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                    ) {
+                        stats.avgSleepMinutes?.let {
+                            Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                                Text(
+                                    "${it / 60}h ${it % 60}m",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                    color = Color(0xFF5C6BC0),
+                                )
+                                Text(
+                                    "Avg Sleep",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                                )
+                            }
+                        }
+                        stats.avgWeight?.let {
+                            Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                                Text(
+                                    "${it} kg",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                                Text(
+                                    "Avg Weight",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                                )
+                            }
+                        }
+                        stats.totalCalorieDeficit?.let {
+                            val sign = if (it >= 0) "+" else ""
+                            Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                                Text(
+                                    "$sign${it.toInt()}",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                    color = if (it >= 0) Color(0xFF4CAF50) else Color(0xFFEF5350),
+                                )
+                                Text(
+                                    if (it >= 0) "Cal Deficit" else "Cal Surplus",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                                )
+                            }
+                        }
                     }
                 }
             }
