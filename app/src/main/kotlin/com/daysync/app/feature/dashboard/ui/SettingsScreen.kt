@@ -225,7 +225,6 @@ private fun PermissionRow(
                         color = if (isGranted) Color(0xFF4CAF50) else Color(0xFFEF5350),
                     )
                 }
-                }
                 Text(
                     description,
                     style = MaterialTheme.typography.bodySmall,
