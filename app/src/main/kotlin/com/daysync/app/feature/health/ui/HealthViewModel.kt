@@ -369,51 +369,48 @@ class HealthViewModel @Inject constructor(
         return sessions.reversed()
             .groupBy { formatLabel(it.startTime, period) }
             .map { (label, group) ->
-                val session = group.last()
                 SleepTrendPoint(
                     label = label,
-                    totalMinutes = session.totalMinutes,
-                    deepMinutes = session.deepMinutes,
-                    lightMinutes = session.lightMinutes,
-                    remMinutes = session.remMinutes,
-                    awakeMinutes = session.awakeMinutes,
+                    totalMinutes = group.sumOf { it.totalMinutes },
+                    deepMinutes = group.sumOf { it.deepMinutes },
+                    lightMinutes = group.sumOf { it.lightMinutes },
+                    remMinutes = group.sumOf { it.remMinutes },
+                    awakeMinutes = group.sumOf { it.awakeMinutes },
                 )
             }
     }
 
     private suspend fun buildPeriodStats(start: Instant, end: Instant): PeriodStats {
-        // Average sleep
+        // Average sleep — sum sessions per day, then average across days
         val sleepSessions = healthRepository.getSleepSessions(start, end).first()
-        val avgSleep = if (sleepSessions.isNotEmpty()) {
-            sleepSessions.map { it.totalMinutes }.average().toInt()
+        val zone = java.time.ZoneId.of("Asia/Kolkata")
+        val dailySleepTotals = sleepSessions
+            .groupBy { java.time.Instant.ofEpochMilli(it.startTime.toEpochMilliseconds()).atZone(zone).toLocalDate() }
+            .map { (_, sessions) -> sessions.sumOf { it.totalMinutes } }
+        val avgSleep = if (dailySleepTotals.isNotEmpty()) {
+            dailySleepTotals.average().toInt()
         } else null
 
-        // Average weight from daily overrides
-        val zone = java.time.ZoneId.of("Asia/Kolkata")
+        // Iterate days for weight and calorie stats from daily overrides
         val startDate = java.time.Instant.ofEpochMilli(start.toEpochMilliseconds()).atZone(zone).toLocalDate()
         val endDate = java.time.Instant.ofEpochMilli(end.toEpochMilliseconds()).atZone(zone).toLocalDate()
         val weights = mutableListOf<Double>()
+        var totalBurned = 0.0
+        var totalConsumed = 0.0
         var cursor = startDate
         while (!cursor.isAfter(endDate)) {
             val kDate = kotlinx.datetime.LocalDate(cursor.year, cursor.monthValue, cursor.dayOfMonth)
             val override = healthRepository.observeDailyOverride(kDate).first()
+            // Weight
             val dayWeights = listOfNotNull(override?.weightMorning, override?.weightEvening, override?.weightNight)
             if (dayWeights.isNotEmpty()) weights.add(dayWeights.average())
+            // Manual calories burned
+            override?.totalCalories?.let { totalBurned += it }
+            // Calories consumed from nutrition
+            healthRepository.getCaloriesConsumed(kDate)?.let { totalConsumed += it }
             cursor = cursor.plusDays(1)
         }
         val avgWeight = if (weights.isNotEmpty()) weights.average() else null
-
-        // Total calorie deficit
-        val calorieMetrics = healthRepository.getMetricsByTypeAndDateRange("TOTAL_CALORIES", start, end).first()
-        val totalBurned = calorieMetrics.sumOf { it.value }
-        var totalConsumed = 0.0
-        cursor = startDate
-        while (!cursor.isAfter(endDate)) {
-            val kDate = kotlinx.datetime.LocalDate(cursor.year, cursor.monthValue, cursor.dayOfMonth)
-            val consumed = healthRepository.getCaloriesConsumed(kDate)
-            if (consumed != null) totalConsumed += consumed
-            cursor = cursor.plusDays(1)
-        }
         val totalDeficit = if (totalBurned > 0 || totalConsumed > 0) totalBurned - totalConsumed else null
 
         return PeriodStats(

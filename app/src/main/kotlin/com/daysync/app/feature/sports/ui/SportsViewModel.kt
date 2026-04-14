@@ -138,13 +138,14 @@ class SportsViewModel @Inject constructor(
             }
         }
 
-        // Collect watchlisted events (not sport-filtered)
+        // Collect watchlisted events (filtered by selected sport)
         viewModelScope.launch {
             combine(
                 repository.getWatchlistedEvents(),
                 repository.getWatchlistedEventIds(),
             ) { events, watchlistIds ->
-                events to watchlistIds.toSet()
+                val filtered = if (sportId != null) events.filter { it.sportId == sportId } else events
+                filtered to watchlistIds.toSet()
             }.collect { (events, watchlistIds) ->
                 val enriched = events.map { repository.enrichEvent(it, watchlistIds) }
                 _uiState.update { it.copy(watchlistedEvents = enriched) }
