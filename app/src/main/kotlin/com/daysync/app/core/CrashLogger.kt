@@ -69,9 +69,16 @@ object CrashLogger {
         }
     }
 
+    private const val MAX_AGE_MS = 7L * 24 * 60 * 60 * 1000 // 7 days
+
     fun getLastCrash(context: Context): String? {
         val file = File(context.filesDir, FILE_NAME)
-        return if (file.exists()) file.readText() else null
+        if (!file.exists()) return null
+        if (System.currentTimeMillis() - file.lastModified() > MAX_AGE_MS) {
+            file.delete()
+            return null
+        }
+        return file.readText()
     }
 
     fun clearLastCrash(context: Context) {

@@ -97,8 +97,8 @@ fun SettingsScreen(
             )
 
             PermissionRow(
-                title = "Notification Listener (Expenses)",
-                description = "Reads bank SMS notifications to auto-track expenses",
+                title = "Notification Listener",
+                description = "Reads notifications for alerts",
                 isGranted = NotificationAccessHelper.isNotificationAccessEnabled(context),
                 onManage = { NotificationAccessHelper.openNotificationAccessSettings(context) },
             )
@@ -217,15 +217,14 @@ private fun PermissionRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                    if (isGranted != null) {
-                        Text(
-                            text = if (isGranted) "  Granted" else "  Denied",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (isGranted) Color(0xFF4CAF50) else Color(0xFFEF5350),
-                        )
-                    }
+                Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                if (isGranted != null) {
+                    Text(
+                        text = if (isGranted) "Granted" else "Denied",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isGranted) Color(0xFF4CAF50) else Color(0xFFEF5350),
+                    )
+                }
                 }
                 Text(
                     description,
