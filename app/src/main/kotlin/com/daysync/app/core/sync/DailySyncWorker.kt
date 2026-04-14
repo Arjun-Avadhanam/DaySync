@@ -23,7 +23,9 @@ class DailySyncWorker @AssistedInject constructor(
         Log.d(TAG, "Daily sync started (attempt ${runAttemptCount + 1})")
         ensureChannel()
         return try {
-            setForeground(createForegroundInfo())
+            // Android 12+ blocks startForegroundService() from background.
+            // The sync still works without the foreground notification.
+            try { setForeground(createForegroundInfo()) } catch (_: Exception) {}
             val result = syncEngine.syncAll()
             if (result.isSuccess) {
                 Log.d(TAG, "Daily sync completed successfully")
