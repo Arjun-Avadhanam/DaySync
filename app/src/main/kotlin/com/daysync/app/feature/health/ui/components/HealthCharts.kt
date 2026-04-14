@@ -60,7 +60,7 @@ fun StepsTrendChart(
     }
     val labelFormatter = remember(data) {
         CartesianValueFormatter { _, x, _ ->
-            data.getOrNull(x.toInt())?.label ?: ""
+            data.getOrNull(x.toInt())?.label ?: " "
         }
     }
 
@@ -114,7 +114,7 @@ fun HeartRateTrendChart(
     }
     val labelFormatter = remember(data) {
         CartesianValueFormatter { _, x, _ ->
-            data.getOrNull(x.toInt())?.label ?: ""
+            data.getOrNull(x.toInt())?.label ?: " "
         }
     }
 
@@ -185,7 +185,7 @@ fun SleepTrendChart(
     }
     val labelFormatter = remember(data) {
         CartesianValueFormatter { _, x, _ ->
-            data.getOrNull(x.toInt())?.label ?: ""
+            data.getOrNull(x.toInt())?.label ?: " "
         }
     }
 
@@ -241,7 +241,7 @@ fun WorkoutTrendChart(
 
     val labelFormatter = remember(data) {
         CartesianValueFormatter { _, x, _ ->
-            data.getOrNull(x.toInt())?.label ?: ""
+            data.getOrNull(x.toInt())?.label ?: " "
         }
     }
 
