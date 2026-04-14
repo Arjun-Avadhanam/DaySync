@@ -10,6 +10,7 @@ import com.daysync.app.core.database.dao.MediaItemDao
 import com.daysync.app.core.database.dao.SleepSessionDao
 import com.daysync.app.core.database.dao.SportEventDao
 import com.daysync.app.core.sync.SyncEngine
+import com.daysync.app.core.sync.SyncRestoreEngine
 import com.daysync.app.core.sync.SyncState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -50,6 +51,7 @@ class HomeViewModel @Inject constructor(
     private val journalEntryDao: JournalEntryDao,
     private val mediaItemDao: MediaItemDao,
     private val syncEngine: SyncEngine,
+    private val restoreEngine: SyncRestoreEngine,
 ) : ViewModel() {
 
     private val _summary = MutableStateFlow(HomeSummary())
@@ -121,5 +123,35 @@ class HomeViewModel @Inject constructor(
             _isSyncing.value = false
             loadSummary()
         }
+    }
+
+    private val _isRestoring = MutableStateFlow(false)
+    val isRestoring: StateFlow<Boolean> = _isRestoring.asStateFlow()
+
+    private val _restoreMessage = MutableStateFlow<String?>(null)
+    val restoreMessage: StateFlow<String?> = _restoreMessage.asStateFlow()
+
+    fun restoreFromCloud() {
+        viewModelScope.launch {
+            _isRestoring.value = true
+            try {
+                val result = restoreEngine.restoreAll()
+                val msg = if (result.errors.isEmpty()) {
+                    "Restored ${result.totalRecords} records from ${result.tablesRestored} tables"
+                } else {
+                    "Restored ${result.totalRecords} records (${result.errors.size} errors)"
+                }
+                _restoreMessage.value = msg
+            } catch (e: Exception) {
+                _restoreMessage.value = "Restore failed: ${e.message}"
+            } finally {
+                _isRestoring.value = false
+                loadSummary()
+            }
+        }
+    }
+
+    fun clearRestoreMessage() {
+        _restoreMessage.value = null
     }
 }

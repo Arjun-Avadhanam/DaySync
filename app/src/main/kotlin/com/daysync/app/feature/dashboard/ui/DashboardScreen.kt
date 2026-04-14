@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -56,6 +57,8 @@ fun DashboardScreen(
     val summary by viewModel.summary.collectAsState()
     val syncState by viewModel.syncState.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
+    val isRestoring by viewModel.isRestoring.collectAsState()
+    val restoreMessage by viewModel.restoreMessage.collectAsState()
 
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
@@ -141,6 +144,38 @@ fun DashboardScreen(
                 isSyncing = isSyncing,
                 onSyncNow = viewModel::syncNow,
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Restore from cloud
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Cloud Restore",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = restoreMessage ?: "Download data from Supabase after reinstall",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                OutlinedButton(
+                    onClick = viewModel::restoreFromCloud,
+                    enabled = !isRestoring && !isSyncing,
+                ) {
+                    if (isRestoring) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                    Text("Restore")
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
         }
