@@ -8,9 +8,10 @@ import android.util.Log
 class BootCompletedReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            Log.d("BootCompletedReceiver", "Device rebooted, WorkManager will auto-reschedule")
-            // WorkManager automatically reschedules periodic work after reboot
-            // No manual rescheduling needed
+            Log.d("BootCompletedReceiver", "Device rebooted, rescheduling reminder alarm")
+            // WorkManager auto-reschedules periodic work after reboot
+            // AlarmManager alarms do NOT survive reboot — reschedule manually
+            ReminderAlarmReceiver.scheduleReminder(context)
         }
     }
 }

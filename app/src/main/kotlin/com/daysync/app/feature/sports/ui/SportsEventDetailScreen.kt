@@ -16,17 +16,25 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -54,8 +62,10 @@ fun SportsEventDetailScreen(
     event: SportEventWithDetails?,
     participants: List<EventParticipantEntity> = emptyList(),
     competitorNames: Map<String, String> = emptyMap(),
+    watchnotes: String? = null,
     onBack: () -> Unit,
     onWatchlistToggle: (String) -> Unit,
+    onWatchnotesChange: (String, String?) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
@@ -258,6 +268,69 @@ fun SportsEventDetailScreen(
                         }
                     }
                 }
+            }
+
+            // Watchnotes — user-editable match notes, synced to cloud
+            Spacer(modifier = Modifier.height(16.dp))
+            WatchnotesSection(
+                eventId = event.id,
+                currentNotes = watchnotes,
+                onSave = onWatchnotesChange,
+            )
+        }
+    }
+}
+
+@Composable
+private fun WatchnotesSection(
+    eventId: String,
+    currentNotes: String?,
+    onSave: (String, String?) -> Unit,
+) {
+    // Local draft state — only commits to repo on blur/explicit save to avoid
+    // thrashing Room on every keystroke. Re-sync when source of truth changes.
+    var draft by remember(eventId, currentNotes) {
+        mutableStateOf(currentNotes.orEmpty())
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Watchnotes",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = draft,
+                onValueChange = { new ->
+                    // Soft-cap at 1000 chars to keep sync payloads sane
+                    draft = if (new.length > 1000) new.take(1000) else new
+                },
+                placeholder = { Text("Add your thoughts on this match…") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3,
+                maxLines = 10,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "${draft.length}/1000",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                androidx.compose.material3.TextButton(
+                    onClick = { onSave(eventId, draft) },
+                    enabled = draft != (currentNotes.orEmpty()),
+                ) { Text("Save") }
             }
         }
     }

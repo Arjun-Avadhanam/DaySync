@@ -32,7 +32,7 @@ interface SleepSessionDao {
 
     @Query(
         "SELECT * FROM sleep_sessions WHERE isDeleted = 0 " +
-            "AND startTime >= :start AND startTime < :end ORDER BY startTime DESC"
+            "AND endTime >= :start AND endTime < :end ORDER BY endTime DESC"
     )
     fun getByDateRange(start: Instant, end: Instant): Flow<List<SleepSessionEntity>>
 
@@ -45,7 +45,7 @@ interface SleepSessionDao {
     @Query("SELECT * FROM sleep_sessions WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<SleepSessionEntity>
 
-    @Query("SELECT * FROM sleep_sessions WHERE startTime >= :startMillis AND startTime <= :endMillis AND isDeleted = 0")
+    @Query("SELECT * FROM sleep_sessions WHERE endTime >= :startMillis AND endTime <= :endMillis AND isDeleted = 0")
     suspend fun getByDateRange(startMillis: Long, endMillis: Long): List<SleepSessionEntity>
 
     @Query("UPDATE sleep_sessions SET syncStatus = 'SYNCED' WHERE id IN (:ids)")

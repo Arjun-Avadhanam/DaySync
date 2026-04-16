@@ -10,6 +10,7 @@ import com.daysync.app.core.database.dao.JournalEntryDao
 import com.daysync.app.core.database.dao.MealTemplateDao
 import com.daysync.app.core.database.dao.MealTemplateItemDao
 import com.daysync.app.core.database.dao.MediaItemDao
+import com.daysync.app.core.database.dao.SportEventDao
 import com.daysync.app.core.sync.SyncRestoreEngine
 import dagger.Module
 import dagger.Provides
@@ -39,6 +40,7 @@ object SyncRestoreModule {
         journalEntryDao: JournalEntryDao,
         mediaItemDao: MediaItemDao,
         dailyHealthOverrideDao: DailyHealthOverrideDao,
+        sportEventDao: SportEventDao,
     ): SyncRestoreEngine {
         val httpClient = HttpClient(OkHttp) {
             install(ContentNegotiation) {
@@ -58,6 +60,7 @@ object SyncRestoreModule {
             journalEntryDao = journalEntryDao,
             mediaItemDao = mediaItemDao,
             dailyHealthOverrideDao = dailyHealthOverrideDao,
+            sportEventDao = sportEventDao,
         )
     }
 }

@@ -27,6 +27,7 @@ data class SportsUiState(
     val watchlistedEvents: List<SportEventWithDetails> = emptyList(),
     val competitionEvents: List<SportEventWithDetails> = emptyList(),
     val selectedEvent: SportEventWithDetails? = null,
+    val selectedEventWatchnotes: String? = null,
     val eventParticipants: List<EventParticipantEntity> = emptyList(),
     val competitorNames: Map<String, String> = emptyMap(),
     val standings: List<StandingRow> = emptyList(),

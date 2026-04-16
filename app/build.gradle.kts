@@ -34,8 +34,8 @@ android {
         applicationId = "com.daysync.app"
         minSdk = 28
         targetSdk = 36
-        versionCode = 20301
-        versionName = "2.3.1"
+        versionCode = 20400
+        versionName = "2.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -54,6 +54,7 @@ android {
         buildConfigField("String", "NOTION_MEAL_DATABASE_ID", "\"${localProperties.getProperty("NOTION_MEAL_DATABASE_ID", "")}\"")
         buildConfigField("String", "NOTION_JOURNAL_DATABASE_ID", "\"${localProperties.getProperty("NOTION_JOURNAL_DATABASE_ID", "")}\"")
         buildConfigField("String", "NOTION_MEDIA_DATABASE_ID", "\"${localProperties.getProperty("NOTION_MEDIA_DATABASE_ID", "")}\"")
+        buildConfigField("int", "CALORIE_DEFICIT_BASELINE", localProperties.getProperty("CALORIE_DEFICIT_BASELINE", "0"))
     }
 
     buildTypes {

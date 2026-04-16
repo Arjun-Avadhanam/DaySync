@@ -37,8 +37,10 @@ fun SportsScreen(
                 event = state.selectedEvent,
                 participants = state.eventParticipants,
                 competitorNames = state.competitorNames,
+                watchnotes = state.selectedEventWatchnotes,
                 onBack = viewModel::navigateBack,
                 onWatchlistToggle = viewModel::toggleWatchlist,
+                onWatchnotesChange = { id, notes -> viewModel.updateWatchnotes(id, notes) },
                 modifier = modifier,
             )
         }

@@ -35,9 +35,11 @@
 
     <!-- Background work -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
@@ -92,7 +94,7 @@
             </intent-filter>
         </service>
 
-        <!-- Boot Completed Receiver (reschedule sync after reboot) -->
+        <!-- Boot Completed Receiver (reschedule sync + reminder alarm after reboot) -->
         <receiver
             android:name=".core.sync.BootCompletedReceiver"
             android:exported="true">
@@ -100,6 +102,17 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <!-- Reminder Alarm Receiver (exact 11:30 PM IST daily) -->
+        <receiver
+            android:name=".core.sync.ReminderAlarmReceiver"
+            android:exported="false" />
+
+        <!-- Override WorkManager's SystemForegroundService to declare dataSync type (required on SDK 34+) -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
 
         <!-- FileProvider for camera image capture -->
         <provider

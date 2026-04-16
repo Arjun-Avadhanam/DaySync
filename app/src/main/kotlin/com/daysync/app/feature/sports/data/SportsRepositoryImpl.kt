@@ -36,6 +36,7 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -156,6 +157,33 @@ class SportsRepositoryImpl @Inject constructor(
                     id = UUID.randomUUID().toString(),
                     eventId = eventId,
                     addedAt = Clock.System.now(),
+                )
+            )
+        }
+    }
+
+    override fun observeWatchnotes(eventId: String): Flow<String?> =
+        dao.observeWatchlistByEventId(eventId).map { it?.watchnotes }
+
+    override suspend fun updateWatchnotes(eventId: String, watchnotes: String?) {
+        val existing = dao.getWatchlistByEventId(eventId)
+        val trimmed = watchnotes?.trim()?.takeIf { it.isNotEmpty() }
+        if (existing != null) {
+            dao.insertWatchlistEntry(
+                existing.copy(
+                    watchnotes = trimmed,
+                    syncStatus = com.daysync.app.core.sync.SyncStatus.PENDING,
+                    lastModified = Clock.System.now(),
+                )
+            )
+        } else {
+            // Auto-create watchlist entry if adding notes to a non-watchlisted event
+            dao.insertWatchlistEntry(
+                WatchlistEntryEntity(
+                    id = UUID.randomUUID().toString(),
+                    eventId = eventId,
+                    addedAt = Clock.System.now(),
+                    watchnotes = trimmed,
                 )
             )
         }

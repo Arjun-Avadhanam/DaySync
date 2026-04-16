@@ -197,6 +197,7 @@ fun WatchlistEntryEntity.toDto() = WatchlistEntryDto(
     addedAt = addedAt.toEpochMilliseconds(),
     notify = notify,
     notes = notes,
+    watchnotes = watchnotes,
     lastModified = lastModified.toEpochMilliseconds(),
     isDeleted = isDeleted,
 )

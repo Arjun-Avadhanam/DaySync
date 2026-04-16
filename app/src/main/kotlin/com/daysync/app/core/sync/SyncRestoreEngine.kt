@@ -10,6 +10,7 @@ import com.daysync.app.core.database.dao.JournalEntryDao
 import com.daysync.app.core.database.dao.MediaItemDao
 import com.daysync.app.core.database.dao.MealTemplateDao
 import com.daysync.app.core.database.dao.MealTemplateItemDao
+import com.daysync.app.core.database.dao.SportEventDao
 import com.daysync.app.core.database.entity.*
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -46,6 +47,7 @@ class SyncRestoreEngine @Inject constructor(
     private val journalEntryDao: JournalEntryDao,
     private val mediaItemDao: MediaItemDao,
     private val dailyHealthOverrideDao: DailyHealthOverrideDao,
+    private val sportEventDao: SportEventDao,
 ) {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
@@ -70,6 +72,7 @@ class SyncRestoreEngine @Inject constructor(
             "journal_entries" to ::restoreJournalEntries,
             "media_items" to ::restoreMediaItems,
             "daily_health_overrides" to ::restoreHealthOverrides,
+            "watchlist_entries" to ::restoreWatchlistEntries,
         )
 
         for ((name, fn) in steps) {
@@ -158,6 +161,21 @@ class SyncRestoreEngine @Inject constructor(
         val entities = rows.map { it.toEntity() }
         entities.forEach { dailyHealthOverrideDao.upsert(it) }
         return entities.size
+    }
+
+    private suspend fun restoreWatchlistEntries(): Int {
+        // Watchlist entries have a FK to sport_events. Skip any whose event
+        // isn't present yet (sport events are re-fetched from external APIs
+        // on first sport screen load, so the restore may run before that).
+        val rows = fetchAll<WatchlistEntryRow>("watchlist_entries")
+        var restored = 0
+        for (row in rows) {
+            val eventExists = sportEventDao.getEventById(row.eventId) != null
+            if (!eventExists) continue
+            sportEventDao.insertWatchlistEntry(row.toEntity())
+            restored++
+        }
+        return restored
     }
 
     companion object {
@@ -314,6 +332,25 @@ class SyncRestoreEngine @Inject constructor(
         fun toEntity() = DailyMealEntryEntity(
             id = id, date = LocalDate.parse(date), foodId = foodId,
             mealTime = mealTime, amount = amount, notes = notes,
+            syncStatus = SyncStatus.SYNCED,
+            lastModified = Instant.fromEpochMilliseconds(lastModified),
+        )
+    }
+
+    @Serializable
+    data class WatchlistEntryRow(
+        val id: String,
+        @SerialName("event_id") val eventId: String,
+        @SerialName("added_at") val addedAt: Long,
+        val notify: Boolean = true,
+        val notes: String? = null,
+        val watchnotes: String? = null,
+        @SerialName("last_modified") val lastModified: Long,
+    ) {
+        fun toEntity() = WatchlistEntryEntity(
+            id = id, eventId = eventId,
+            addedAt = Instant.fromEpochMilliseconds(addedAt),
+            notify = notify, notes = notes, watchnotes = watchnotes,
             syncStatus = SyncStatus.SYNCED,
             lastModified = Instant.fromEpochMilliseconds(lastModified),
         )

@@ -77,7 +77,7 @@ import com.daysync.app.core.database.entity.WatchlistEntryEntity
         // Media (1)
         MediaItemEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

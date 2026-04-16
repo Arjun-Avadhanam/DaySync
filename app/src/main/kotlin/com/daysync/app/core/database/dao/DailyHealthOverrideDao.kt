@@ -25,6 +25,9 @@ interface DailyHealthOverrideDao {
     @Query("SELECT * FROM daily_health_overrides WHERE syncStatus = 'PENDING'")
     suspend fun getPendingSync(): List<DailyHealthOverrideEntity>
 
+    @Query("SELECT * FROM daily_health_overrides WHERE isDeleted = 0 AND totalCalories IS NOT NULL")
+    suspend fun getAllWithCalories(): List<DailyHealthOverrideEntity>
+
     @Query("UPDATE daily_health_overrides SET syncStatus = 'SYNCED' WHERE date IN (:dates)")
     suspend fun markAsSynced(dates: List<LocalDate>)
 }

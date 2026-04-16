@@ -38,6 +38,7 @@ data class HealthDailySummary(
     val floorsClimbed: Double? = null,
     val vo2Max: Double? = null,
     val weight: Double? = null,
+    val allTimeCalorieDeficit: Double? = null,
 )
 
 data class SleepSummary(

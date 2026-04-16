@@ -194,6 +194,12 @@ interface SportEventDao {
     @Query("SELECT * FROM watchlist_entries WHERE isDeleted = 0")
     fun getWatchlist(): Flow<List<WatchlistEntryEntity>>
 
+    @Query("SELECT * FROM watchlist_entries WHERE eventId = :eventId AND isDeleted = 0 LIMIT 1")
+    suspend fun getWatchlistByEventId(eventId: String): WatchlistEntryEntity?
+
+    @Query("SELECT * FROM watchlist_entries WHERE eventId = :eventId AND isDeleted = 0 LIMIT 1")
+    fun observeWatchlistByEventId(eventId: String): Flow<WatchlistEntryEntity?>
+
     @Query("SELECT eventId FROM watchlist_entries WHERE isDeleted = 0")
     fun getWatchlistedEventIds(): Flow<List<String>>
 

@@ -26,12 +26,7 @@ class DailyReminderWorker @AssistedInject constructor(
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
-        // Only post the reminder after 11 PM IST — WorkManager may fire
-        // earlier than the scheduled delay due to UPDATE re-enqueue.
-        val nowHour = java.time.ZonedDateTime.now(java.time.ZoneId.of("Asia/Kolkata")).hour
-        if (nowHour < 23) return Result.success()
-
-        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+        val today = Clock.System.todayIn(TimeZone.of("Asia/Kolkata"))
         val override = dailyHealthOverrideDao.get(today)
 
         val missingCalories = override?.totalCalories == null

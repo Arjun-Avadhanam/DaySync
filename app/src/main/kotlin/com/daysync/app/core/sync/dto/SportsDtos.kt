@@ -88,7 +88,8 @@ data class WatchlistEntryDto(
     @SerialName("event_id") val eventId: String,
     @SerialName("added_at") val addedAt: Long,
     val notify: Boolean,
-    val notes: String?,
+    val notes: String? = null,
+    val watchnotes: String? = null,
     @SerialName("last_modified") val lastModified: Long,
     @SerialName("is_deleted") val isDeleted: Boolean,
 )

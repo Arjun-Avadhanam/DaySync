@@ -22,6 +22,7 @@ data class WatchlistEntryEntity(
     val addedAt: Instant = Clock.System.now(),
     val notify: Boolean = true,
     val notes: String? = null,
+    val watchnotes: String? = null,
     override val syncStatus: SyncStatus = SyncStatus.PENDING,
     override val lastModified: Instant = Clock.System.now(),
     override val isDeleted: Boolean = false,

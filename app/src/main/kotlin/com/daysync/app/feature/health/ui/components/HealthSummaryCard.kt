@@ -162,6 +162,36 @@ fun HealthSummaryCard(
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                 )
             }
+
+            // All-time calorie deficit — always shown, baseline + accumulated deltas
+            summary.allTimeCalorieDeficit?.let { allTime ->
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "All-Time Calorie Deficit",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                    val sign = if (allTime >= 0) "+" else ""
+                    Text(
+                        text = "$sign${allTime.toInt()} kcal",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (allTime >= 0) {
+                            Color(0xFF4CAF50)
+                        } else {
+                            Color(0xFFEF5350)
+                        },
+                    )
+                }
+            }
         }
     }
 

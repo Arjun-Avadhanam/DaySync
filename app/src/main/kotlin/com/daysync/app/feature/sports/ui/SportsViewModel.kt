@@ -191,6 +191,12 @@ class SportsViewModel @Inject constructor(
         }
     }
 
+    fun updateWatchnotes(eventId: String, watchnotes: String?) {
+        viewModelScope.launch {
+            repository.updateWatchnotes(eventId, watchnotes)
+        }
+    }
+
     fun navigateTo(destination: SportsDestination) {
         _uiState.update { it.copy(destination = destination) }
         when (destination) {
@@ -202,7 +208,13 @@ class SportsViewModel @Inject constructor(
     }
 
     fun navigateBack() {
-        _uiState.update { it.copy(destination = SportsDestination.EventList, selectedEvent = null) }
+        _uiState.update {
+            it.copy(
+                destination = SportsDestination.EventList,
+                selectedEvent = null,
+                selectedEventWatchnotes = null,
+            )
+        }
     }
 
     private fun loadEventDetail(eventId: String) {
@@ -213,6 +225,12 @@ class SportsViewModel @Inject constructor(
                 val enriched = repository.enrichEvent(event, ids.toSet())
                 _uiState.update { it.copy(selectedEvent = enriched) }
                 return@collect
+            }
+        }
+        // Observe watchnotes for this event so UI updates as user types
+        viewModelScope.launch {
+            repository.observeWatchnotes(eventId).collect { notes ->
+                _uiState.update { it.copy(selectedEventWatchnotes = notes) }
             }
         }
         // Load participants (F1 drivers, etc.) with competitor names

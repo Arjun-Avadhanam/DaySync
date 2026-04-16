@@ -139,7 +139,8 @@ class HealthViewModel @Inject constructor(
             val dayMetrics = healthRepository.getMetricsByDateRange(dayStart, dayEnd).first()
             val currentOverride = healthRepository.observeDailyOverride(date).first()
             val caloriesConsumed = healthRepository.getCaloriesConsumed(date)
-            val dailySummary = buildDailySummary(dayMetrics, currentOverride, caloriesConsumed)
+            val allTimeDeficit = healthRepository.getAllTimeCalorieDeficit()
+            val dailySummary = buildDailySummary(dayMetrics, currentOverride, caloriesConsumed, allTimeDeficit)
 
             // Sleep sessions for the selected date
             val sleepSessions = healthRepository.getSleepSessions(dayStart, dayEnd).first()
@@ -303,6 +304,7 @@ class HealthViewModel @Inject constructor(
         metrics: List<com.daysync.app.core.database.entity.HealthMetricEntity>,
         override: com.daysync.app.core.database.entity.DailyHealthOverrideEntity?,
         caloriesConsumed: Double?,
+        allTimeCalorieDeficit: Double?,
     ): HealthDailySummary {
         val byType = metrics.associateBy { it.type }
         // Calories are always manual — HC total is unreliable (OHealth
@@ -324,6 +326,7 @@ class HealthViewModel @Inject constructor(
             floorsClimbed = byType["FLOORS"]?.value,
             vo2Max = byType["VO2MAX"]?.value,
             weight = byType["WEIGHT"]?.value,
+            allTimeCalorieDeficit = allTimeCalorieDeficit,
         )
     }
 
@@ -367,7 +370,7 @@ class HealthViewModel @Inject constructor(
     ): List<SleepTrendPoint> {
         val sessions = healthRepository.getSleepSessions(start, end).first()
         return sessions.reversed()
-            .groupBy { formatLabel(it.startTime, period) }
+            .groupBy { formatLabel(it.endTime, period) }
             .map { (label, group) ->
                 SleepTrendPoint(
                     label = label,
@@ -385,7 +388,7 @@ class HealthViewModel @Inject constructor(
         val sleepSessions = healthRepository.getSleepSessions(start, end).first()
         val zone = java.time.ZoneId.of("Asia/Kolkata")
         val dailySleepTotals = sleepSessions
-            .groupBy { java.time.Instant.ofEpochMilli(it.startTime.toEpochMilliseconds()).atZone(zone).toLocalDate() }
+            .groupBy { java.time.Instant.ofEpochMilli(it.endTime.toEpochMilliseconds()).atZone(zone).toLocalDate() }
             .map { (_, sessions) -> sessions.sumOf { it.totalMinutes } }
         val avgSleep = if (dailySleepTotals.isNotEmpty()) {
             dailySleepTotals.average().toInt()

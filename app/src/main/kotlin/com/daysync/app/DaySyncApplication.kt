@@ -9,6 +9,7 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.daysync.app.core.sync.DailySyncWorker
+import com.daysync.app.core.sync.ReminderAlarmReceiver
 import com.daysync.app.feature.expenses.service.ExpenseNotificationChannel
 import dagger.hilt.android.HiltAndroidApp
 import java.time.Duration
@@ -64,24 +65,9 @@ class DaySyncApplication : Application(), Configuration.Provider {
     }
 
     private fun scheduleDailyReminder() {
-        val now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"))
-        var reminderTime = now.withHour(23).withMinute(30).withSecond(0).withNano(0)
-        if (now.isAfter(reminderTime)) {
-            reminderTime = reminderTime.plusDays(1)
-        }
-        val delayMillis = Duration.between(now, reminderTime).toMillis()
-
-        val request = PeriodicWorkRequestBuilder<com.daysync.app.core.sync.DailyReminderWorker>(
-            24, TimeUnit.HOURS,
-        )
-            .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
-            .addTag("daily_reminder")
-            .build()
-
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "daysync_daily_reminder",
-            ExistingPeriodicWorkPolicy.UPDATE,
-            request,
-        )
+        // Cancel old WorkManager-based reminder if it exists
+        WorkManager.getInstance(this).cancelUniqueWork("daysync_daily_reminder")
+        // Use AlarmManager for exact 11:30 PM IST scheduling
+        ReminderAlarmReceiver.scheduleReminder(this)
     }
 }

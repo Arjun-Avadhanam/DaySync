@@ -43,6 +43,8 @@ interface SportsRepository {
     // Watchlist
     fun getWatchlistedEventIds(): Flow<List<String>>
     suspend fun toggleWatchlist(eventId: String)
+    fun observeWatchnotes(eventId: String): Flow<String?>
+    suspend fun updateWatchnotes(eventId: String, watchnotes: String?)
 
     // Following
     fun getFollowedCompetitions(): Flow<List<FollowedCompetitionEntity>>
