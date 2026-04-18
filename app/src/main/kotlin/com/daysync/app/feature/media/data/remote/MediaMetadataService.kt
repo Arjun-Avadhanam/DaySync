@@ -8,7 +8,7 @@ class MediaMetadataService @Inject constructor(
     private val googleBooksClient: GoogleBooksApiClient,
     private val jikanClient: JikanApiClient,
     private val steamClient: SteamApiClient,
-    private val itunesClient: ItunesApiClient,
+    private val musicBrainzClient: MusicBrainzApiClient,
     private val openLibraryClient: OpenLibraryApiClient,
 ) {
     suspend fun search(query: String, mediaType: MediaType): List<MediaMetadataResult> {
@@ -21,8 +21,8 @@ class MediaMetadataService @Inject constructor(
             MediaType.BOOK, MediaType.ARTICLE -> googleBooksClient.searchBooks(query)
             MediaType.COMIC -> openLibraryClient.searchComics(query)
             MediaType.GAME -> steamClient.searchGames(query)
-            MediaType.MUSIC -> itunesClient.searchMusic(query)
-            MediaType.PODCAST -> itunesClient.searchPodcasts(query)
+            MediaType.MUSIC -> musicBrainzClient.searchMusic(query)
+            MediaType.PODCAST -> emptyList() // No podcast source currently
         }
     }
 

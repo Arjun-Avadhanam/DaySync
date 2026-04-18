@@ -4,7 +4,7 @@ import com.daysync.app.BuildConfig
 import com.daysync.app.feature.media.data.MediaRepository
 import com.daysync.app.feature.media.data.MediaRepositoryImpl
 import com.daysync.app.feature.media.data.remote.GoogleBooksApiClient
-import com.daysync.app.feature.media.data.remote.ItunesApiClient
+import com.daysync.app.feature.media.data.remote.MusicBrainzApiClient
 import com.daysync.app.feature.media.data.remote.JikanApiClient
 import com.daysync.app.feature.media.data.remote.MediaMetadataService
 import com.daysync.app.feature.media.data.remote.OmdbApiClient
@@ -71,8 +71,8 @@ object MediaNetworkModule {
 
     @Provides
     @Singleton
-    fun provideItunesApiClient(@MediaHttpClient httpClient: HttpClient): ItunesApiClient {
-        return ItunesApiClient(httpClient)
+    fun provideMusicBrainzApiClient(@MediaHttpClient httpClient: HttpClient): MusicBrainzApiClient {
+        return MusicBrainzApiClient(httpClient)
     }
 
     @Provides
@@ -88,10 +88,10 @@ object MediaNetworkModule {
         googleBooksClient: GoogleBooksApiClient,
         jikanClient: JikanApiClient,
         steamClient: SteamApiClient,
-        itunesClient: ItunesApiClient,
+        musicBrainzClient: MusicBrainzApiClient,
         openLibraryClient: OpenLibraryApiClient,
     ): MediaMetadataService {
-        return MediaMetadataService(omdbClient, googleBooksClient, jikanClient, steamClient, itunesClient, openLibraryClient)
+        return MediaMetadataService(omdbClient, googleBooksClient, jikanClient, steamClient, musicBrainzClient, openLibraryClient)
     }
 }
 
