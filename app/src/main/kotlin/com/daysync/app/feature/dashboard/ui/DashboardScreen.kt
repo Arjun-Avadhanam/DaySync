@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
@@ -37,12 +38,16 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.daysync.app.core.notion.WeeklySummary
 import com.daysync.app.core.sync.SyncState
 import java.text.NumberFormat
 
@@ -55,6 +60,7 @@ fun DashboardScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val summary by viewModel.summary.collectAsState()
+    val weeklySummary by viewModel.weeklySummary.collectAsState()
     val syncState by viewModel.syncState.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
     val isRestoring by viewModel.isRestoring.collectAsState()
@@ -77,6 +83,12 @@ fun DashboardScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // Weekly AI Summary (from Claude via Notion)
+            weeklySummary?.let { ws ->
+                WeeklySummaryCard(summary = ws)
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+
             // Section summary cards
             SectionCard(
                 icon = Icons.Default.FavoriteBorder,
@@ -263,6 +275,65 @@ private fun SyncSection(
             Icon(Icons.Default.Sync, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(4.dp))
             Text("Sync Now")
+        }
+    }
+}
+
+@Composable
+private fun WeeklySummaryCard(
+    summary: WeeklySummary,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded },
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+        ),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Weekly Insights",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                    Text(
+                        text = summary.title,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
+                    )
+                }
+                Text(
+                    text = if (expanded) "Collapse" else "View",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+
+            AnimatedVisibility(visible = expanded) {
+                Column(modifier = Modifier.padding(top = 12.dp)) {
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.2f),
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = summary.content,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                }
+            }
         }
     }
 }

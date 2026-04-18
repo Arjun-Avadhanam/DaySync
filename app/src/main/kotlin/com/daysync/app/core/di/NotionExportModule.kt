@@ -5,6 +5,7 @@ import com.daysync.app.core.notion.NotionExportClient
 import com.daysync.app.core.notion.NotionFoodExporter
 import com.daysync.app.core.notion.NotionJournalExporter
 import com.daysync.app.core.notion.NotionMediaExporter
+import com.daysync.app.core.notion.NotionSummaryReader
 import com.daysync.app.feature.nutrition.di.NotionHttpClient
 import dagger.Module
 import dagger.Provides
@@ -41,5 +42,13 @@ object NotionExportModule {
     @Singleton
     fun provideNotionMediaExporter(client: NotionExportClient): NotionMediaExporter {
         return NotionMediaExporter(client, BuildConfig.NOTION_MEDIA_DATABASE_ID)
+    }
+
+    @Provides
+    @Singleton
+    fun provideNotionSummaryReader(
+        @NotionHttpClient httpClient: HttpClient,
+    ): NotionSummaryReader {
+        return NotionSummaryReader(httpClient, BuildConfig.NOTION_API_KEY)
     }
 }

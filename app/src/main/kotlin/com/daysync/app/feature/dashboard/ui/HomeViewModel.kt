@@ -9,6 +9,8 @@ import com.daysync.app.core.database.dao.JournalEntryDao
 import com.daysync.app.core.database.dao.MediaItemDao
 import com.daysync.app.core.database.dao.SleepSessionDao
 import com.daysync.app.core.database.dao.SportEventDao
+import com.daysync.app.core.notion.NotionSummaryReader
+import com.daysync.app.core.notion.WeeklySummary
 import com.daysync.app.core.sync.SyncEngine
 import com.daysync.app.core.sync.SyncRestoreEngine
 import com.daysync.app.core.sync.SyncState
@@ -52,6 +54,7 @@ class HomeViewModel @Inject constructor(
     private val mediaItemDao: MediaItemDao,
     private val syncEngine: SyncEngine,
     private val restoreEngine: SyncRestoreEngine,
+    private val notionSummaryReader: NotionSummaryReader,
 ) : ViewModel() {
 
     private val _summary = MutableStateFlow(HomeSummary())
@@ -63,8 +66,18 @@ class HomeViewModel @Inject constructor(
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
 
+    private val _weeklySummary = MutableStateFlow<WeeklySummary?>(null)
+    val weeklySummary: StateFlow<WeeklySummary?> = _weeklySummary.asStateFlow()
+
     init {
         loadSummary()
+        loadWeeklySummary()
+    }
+
+    private fun loadWeeklySummary() {
+        viewModelScope.launch {
+            _weeklySummary.value = notionSummaryReader.fetchLatestSummary()
+        }
     }
 
     fun loadSummary() {
