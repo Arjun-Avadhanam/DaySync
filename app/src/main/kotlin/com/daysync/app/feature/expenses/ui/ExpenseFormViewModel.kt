@@ -123,7 +123,7 @@ class ExpenseFormViewModel @Inject constructor(
                 repository.addPayeeRule(
                     payeeName = state.merchantName,
                     category = state.category,
-                    defaultTitle = state.title.ifBlank { null },
+                    defaultTitle = null,
                 )
             }
 

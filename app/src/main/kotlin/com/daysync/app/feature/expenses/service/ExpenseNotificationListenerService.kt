@@ -18,10 +18,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class ExpenseNotificationListenerService : NotificationListenerService() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val processingMutex = Mutex()
     private lateinit var repository: ExpenseRepository
 
     override fun onCreate() {
@@ -47,7 +50,10 @@ class ExpenseNotificationListenerService : NotificationListenerService() {
 
         scope.launch {
             try {
-                when (val result = repository.processNotification(parsed)) {
+                // Mutex ensures only one notification processes at a time,
+                // preventing the race where two identical notifications both
+                // pass dedup check before either inserts.
+                when (val result = processingMutex.withLock { repository.processNotification(parsed) }) {
                     is ProcessResult.Saved -> {
                         Log.d(TAG, "Saved expense: ${result.expense.formattedAmount}")
                     }

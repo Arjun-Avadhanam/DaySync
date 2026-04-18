@@ -186,14 +186,6 @@ private fun AddPayeeRuleDialog(
                     singleLine = true,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = defaultTitle,
-                    onValueChange = { defaultTitle = it },
-                    label = { Text("Default Title (optional)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
                 Text("Category", style = MaterialTheme.typography.labelLarge)
                 Spacer(modifier = Modifier.height(4.dp))
                 // Simplified category selection for dialog

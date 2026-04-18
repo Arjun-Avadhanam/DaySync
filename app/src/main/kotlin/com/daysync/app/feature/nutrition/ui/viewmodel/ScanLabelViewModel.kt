@@ -87,7 +87,18 @@ class ScanLabelViewModel @Inject constructor(
                 val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
                     ?: throw IllegalStateException("Cannot read image")
 
-                val result = extractor.extractFromImage(bytes)
+                val result = try {
+                    extractor.extractFromImage(bytes)
+                } catch (first: Exception) {
+                    // Retry once after a brief pause — handles transient
+                    // Gemini errors (socket timeout, model high demand)
+                    kotlinx.coroutines.delay(2000)
+                    try {
+                        extractor.extractFromImage(bytes)
+                    } catch (second: Exception) {
+                        throw Exception("Scan failed after retry: ${second.message}", second)
+                    }
+                }
                 _extractionState.value = ExtractionState.Success(result)
 
                 // Pre-fill form fields

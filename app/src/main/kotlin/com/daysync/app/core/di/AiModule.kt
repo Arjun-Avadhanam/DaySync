@@ -2,9 +2,12 @@ package com.daysync.app.core.di
 
 import com.daysync.app.BuildConfig
 import com.daysync.app.core.ai.GeminiRestClient
+import com.daysync.app.core.database.dao.DailyHealthOverrideDao
+import com.daysync.app.core.database.dao.DailyMealEntryDao
 import com.daysync.app.core.database.dao.DailyNutritionSummaryDao
 import com.daysync.app.core.database.dao.ExerciseSessionDao
 import com.daysync.app.core.database.dao.ExpenseDao
+import com.daysync.app.core.database.dao.FoodItemDao
 import com.daysync.app.core.database.dao.HealthMetricDao
 import com.daysync.app.core.database.dao.JournalEntryDao
 import com.daysync.app.core.database.dao.MediaItemDao
@@ -21,6 +24,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
@@ -44,7 +48,12 @@ object AiModule {
     @Singleton
     @Named("gemini")
     fun provideGeminiHttpClient(): HttpClient {
-        return HttpClient(OkHttp)
+        return HttpClient(OkHttp) {
+            install(HttpTimeout) {
+                connectTimeoutMillis = 30_000
+                requestTimeoutMillis = 60_000
+            }
+        }
     }
 
     @Provides
@@ -68,20 +77,26 @@ object AiModule {
         sleepSessionDao: SleepSessionDao,
         exerciseSessionDao: ExerciseSessionDao,
         dailyNutritionSummaryDao: DailyNutritionSummaryDao,
+        dailyMealEntryDao: DailyMealEntryDao,
+        foodItemDao: FoodItemDao,
         expenseDao: ExpenseDao,
         journalEntryDao: JournalEntryDao,
         mediaItemDao: MediaItemDao,
         sportEventDao: SportEventDao,
+        dailyHealthOverrideDao: DailyHealthOverrideDao,
     ): DataContextBuilder {
         return DataContextBuilder(
             healthMetricDao = healthMetricDao,
             sleepSessionDao = sleepSessionDao,
             exerciseSessionDao = exerciseSessionDao,
             nutritionSummaryDao = dailyNutritionSummaryDao,
+            dailyMealEntryDao = dailyMealEntryDao,
+            foodItemDao = foodItemDao,
             expenseDao = expenseDao,
             journalEntryDao = journalEntryDao,
             mediaItemDao = mediaItemDao,
             sportEventDao = sportEventDao,
+            dailyHealthOverrideDao = dailyHealthOverrideDao,
         )
     }
 

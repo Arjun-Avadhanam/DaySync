@@ -31,11 +31,13 @@ class NotionJournalExporter(
     }
 
     private fun mapMood(mood: Int): List<String> = when (mood) {
-        1 -> listOf("Demotivated")
-        2 -> listOf("Sad")
-        3 -> listOf("Neutral")
-        4 -> listOf("Happy")
-        5 -> listOf("Motivated")
+        1 -> listOf("Sad")
+        2 -> listOf("Guilty")
+        3 -> listOf("Stressed")
+        4 -> listOf("Unmotivated")
+        5 -> listOf("Neutral")
+        6 -> listOf("Motivated")
+        7 -> listOf("Happy")
         else -> emptyList()
     }
 

@@ -104,7 +104,7 @@ class ExpenseRepositoryImpl(
         val rule = parsed.merchantName?.let { payeeRuleDao.getByPayeeName(it) }
         val category: String? = rule?.category
             ?: ExpenseCategory.suggestFromMerchant(parsed.merchantName, parsed.packageName)
-        val title: String? = rule?.defaultTitle ?: parsed.merchantName
+        val title: String? = parsed.merchantName
 
         // 3. Save (or prompt for classification if we still don't know the category)
         val expense = createExpenseFromParsed(parsed, today, category, title)

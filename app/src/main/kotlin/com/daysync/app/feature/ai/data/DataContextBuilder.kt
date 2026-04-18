@@ -1,8 +1,11 @@
 package com.daysync.app.feature.ai.data
 
+import com.daysync.app.core.database.dao.DailyHealthOverrideDao
+import com.daysync.app.core.database.dao.DailyMealEntryDao
 import com.daysync.app.core.database.dao.DailyNutritionSummaryDao
 import com.daysync.app.core.database.dao.ExerciseSessionDao
 import com.daysync.app.core.database.dao.ExpenseDao
+import com.daysync.app.core.database.dao.FoodItemDao
 import com.daysync.app.core.database.dao.HealthMetricDao
 import com.daysync.app.core.database.dao.JournalEntryDao
 import com.daysync.app.core.database.dao.MediaItemDao
@@ -11,6 +14,7 @@ import com.daysync.app.core.database.dao.SportEventDao
 import com.daysync.app.core.database.entity.ExerciseSessionEntity
 import com.daysync.app.core.database.entity.HealthMetricEntity
 import com.daysync.app.core.database.entity.SleepSessionEntity
+import kotlinx.coroutines.flow.first
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -24,10 +28,13 @@ class DataContextBuilder(
     private val sleepSessionDao: SleepSessionDao,
     private val exerciseSessionDao: ExerciseSessionDao,
     private val nutritionSummaryDao: DailyNutritionSummaryDao,
+    private val dailyMealEntryDao: DailyMealEntryDao,
+    private val foodItemDao: FoodItemDao,
     private val expenseDao: ExpenseDao,
     private val journalEntryDao: JournalEntryDao,
     private val mediaItemDao: MediaItemDao,
     private val sportEventDao: SportEventDao,
+    private val dailyHealthOverrideDao: DailyHealthOverrideDao,
 ) {
     private val tz = TimeZone.of("Asia/Kolkata")
 
@@ -72,9 +79,9 @@ class DataContextBuilder(
             }
             sb.appendLine("Health: ${formatHealthMetrics(dayMetrics)}")
 
-            // Sleep
+            // Sleep (group by endTime — Wed night→Thu morning counts as Thursday)
             val daySleep = sleepSessions.filter {
-                it.startTime.toEpochMilliseconds() in dayMillisStart..dayMillisEnd
+                it.endTime.toEpochMilliseconds() in dayMillisStart..dayMillisEnd
             }
             sb.appendLine("Sleep: ${formatSleep(daySleep)}")
 
@@ -84,16 +91,57 @@ class DataContextBuilder(
             }
             sb.appendLine("Workouts: ${formatExercises(dayExercises)}")
 
+            // Weight & calories burned (from daily health overrides)
+            val override = dailyHealthOverrideDao.get(date)
+            val weightParts = listOfNotNull(
+                override?.weightMorning?.let { "Morning ${it}kg" },
+                override?.weightEvening?.let { "Evening ${it}kg" },
+                override?.weightNight?.let { "Night ${it}kg" },
+            )
+            if (weightParts.isNotEmpty()) {
+                sb.appendLine("Weight: ${weightParts.joinToString(", ")}")
+            }
+
             // Nutrition
             val dayNutrition = nutritionSummaries.find { it.date.toString() == dateStr }
             if (dayNutrition != null) {
-                sb.appendLine("Nutrition: ${dayNutrition.totalCalories.toInt()} cal, " +
+                sb.appendLine("Nutrition consumed: ${dayNutrition.totalCalories.toInt()} cal, " +
                     "${dayNutrition.totalProtein.toInt()}g protein, " +
                     "${dayNutrition.totalCarbs.toInt()}g carbs, " +
                     "${dayNutrition.totalFat.toInt()}g fat, " +
                     "${dayNutrition.waterLiters}L water")
             } else {
-                sb.appendLine("Nutrition: No data")
+                sb.appendLine("Nutrition consumed: No data")
+            }
+
+            // Calorie deficit
+            val burned = override?.totalCalories
+            val consumed = dayNutrition?.totalCalories
+            if (burned != null && consumed != null) {
+                val deficit = burned - consumed
+                val label = if (deficit >= 0) "deficit" else "surplus"
+                sb.appendLine("Calories burned: ${burned.toInt()} kcal, $label: ${deficit.toInt()} kcal")
+            } else if (burned != null) {
+                sb.appendLine("Calories burned: ${burned.toInt()} kcal")
+            }
+
+            // Individual food items per meal
+            val dayMealEntries = dailyMealEntryDao.getByDate(date).first()
+            if (dayMealEntries.isNotEmpty()) {
+                // Pre-fetch food names to avoid suspend calls inside lambdas
+                val foodIds = dayMealEntries.map { it.foodId }.distinct()
+                val foodNames = mutableMapOf<String, String>()
+                for (id in foodIds) {
+                    foodItemDao.getById(id)?.let { foodNames[id] = it.name }
+                }
+                val mealGroups = dayMealEntries.groupBy { it.mealTime }
+                val mealStr = mealGroups.entries.joinToString("; ") { (time, entries) ->
+                    val items = entries.mapNotNull { entry ->
+                        foodNames[entry.foodId]?.let { "$it x${entry.amount}" }
+                    }
+                    "$time: ${items.joinToString(", ")}"
+                }
+                sb.appendLine("Meals: $mealStr")
             }
 
             // Expenses
@@ -241,8 +289,9 @@ class DataContextBuilder(
         if (sessions.isEmpty()) return "No data"
         val session = sessions.first()
         val hours = session.totalMinutes / 60.0
-        return "%.1fh total (deep %dmin, REM %dmin, light %dmin, awake %dmin)".format(
-            hours, session.deepMinutes, session.remMinutes, session.lightMinutes, session.awakeMinutes
+        val scoreStr = session.score?.let { ", score $it/100" } ?: ""
+        return "%.1fh total (deep %dmin, REM %dmin, light %dmin, awake %dmin%s)".format(
+            hours, session.deepMinutes, session.remMinutes, session.lightMinutes, session.awakeMinutes, scoreStr
         )
     }
 
