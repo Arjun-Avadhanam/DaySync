@@ -3,10 +3,20 @@ package com.daysync.app.feature.nutrition.data
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
+import android.util.Log
 import com.daysync.app.core.ai.GeminiRestClient
+import com.daysync.app.feature.ai.data.GroqChatService
+import com.daysync.app.feature.ai.model.ChatMessage
+import com.daysync.app.feature.ai.model.Role
 import com.daysync.app.feature.nutrition.domain.model.NutritionLabelResult
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
 import javax.inject.Inject
@@ -15,6 +25,7 @@ import javax.inject.Singleton
 @Singleton
 class NutritionLabelExtractor @Inject constructor(
     private val geminiClient: GeminiRestClient,
+    private val groqChatService: GroqChatService,
 ) {
     private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
 
@@ -23,17 +34,62 @@ class NutritionLabelExtractor @Inject constructor(
             val compressed = compressBitmapForApi(imageBytes, maxDim = 1024)
             val base64 = Base64.encodeToString(compressed, Base64.NO_WRAP)
 
-            val text = geminiClient.generateWithImage(
-                prompt = PROMPT,
-                imageBase64 = base64,
-                mimeType = "image/jpeg",
-                jsonMode = true,
-            )
+            val text = try {
+                geminiClient.generateWithImage(
+                    prompt = VISION_PROMPT,
+                    imageBase64 = base64,
+                    mimeType = "image/jpeg",
+                    jsonMode = true,
+                )
+            } catch (e: Exception) {
+                Log.w(TAG, "Gemini failed, falling back to ML Kit OCR + Groq", e)
+                ocrThenGroq(compressed)
+            }
 
-            json.decodeFromString<NutritionLabelResult>(text)
+            val cleaned = text.trim()
+                .removePrefix("```json").removePrefix("```")
+                .removeSuffix("```")
+                .trim()
+
+            json.decodeFromString<NutritionLabelResult>(cleaned)
         }
 
+    /**
+     * Fallback: ML Kit OCR extracts raw text from the label image,
+     * then Groq parses the text into structured nutrition JSON.
+     */
+    private suspend fun ocrThenGroq(imageBytes: ByteArray): String {
+        val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+            ?: throw IllegalStateException("Cannot decode image for OCR")
+        val inputImage = InputImage.fromBitmap(bitmap, 0)
+        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+
+        val visionText = suspendCoroutine { cont ->
+            recognizer.process(inputImage)
+                .addOnSuccessListener { cont.resume(it) }
+                .addOnFailureListener { cont.resumeWithException(it) }
+        }
+        bitmap.recycle()
+
+        val ocrText = visionText.text
+        if (ocrText.isBlank()) {
+            throw IllegalStateException("OCR extracted no text from label image")
+        }
+        Log.d(TAG, "OCR extracted ${ocrText.length} chars, sending to Groq")
+
+        return groqChatService.generate(
+            messages = listOf(ChatMessage(
+                id = java.util.UUID.randomUUID().toString(),
+                role = Role.USER,
+                content = "Here is the text extracted from a nutrition facts label via OCR:\n\n$ocrText\n\n$TEXT_PARSE_PROMPT",
+            )),
+            systemPrompt = "You are a nutrition data extraction assistant. Always respond with valid JSON only, no markdown fences or explanations.",
+        )
+    }
+
     companion object {
+        private const val TAG = "NutritionLabelExtractor"
+
         fun compressBitmapForApi(imageBytes: ByteArray, maxDim: Int = 1024): ByteArray {
             val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size, options)
@@ -72,7 +128,7 @@ class NutritionLabelExtractor @Inject constructor(
             return out.toByteArray()
         }
 
-        private val PROMPT = """
+        private val VISION_PROMPT = """
 Extract ALL nutritional information from this nutrition facts label image.
 
 Rules:
@@ -107,6 +163,23 @@ Return ONLY valid JSON with this exact structure:
 }
 
 Use 0 for any nutrient not found on the label. All numeric values should be plain numbers (no units).
+""".trimIndent()
+
+        private val TEXT_PARSE_PROMPT = """
+Parse the OCR text above into this exact JSON structure:
+{
+  "product_name": "string",
+  "category": "string or null",
+  "per_100": {"calories": number, "protein_g": number, "carbs_g": number, "fat_g": number, "sugar_g": number},
+  "per_serving": null or {"calories": number, "protein_g": number, "carbs_g": number, "fat_g": number, "sugar_g": number},
+  "serving_size": "string or null",
+  "serving_amount": number or null,
+  "serving_unit": "string or null",
+  "detected_unit": "g" or "ml"
+}
+
+Rules: Extract per-100g/100ml values. If label shows a different amount, divide to get per-100.
+Use 0 for missing nutrients. Return ONLY valid JSON.
 """.trimIndent()
     }
 }
