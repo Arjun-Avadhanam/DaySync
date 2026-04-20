@@ -77,20 +77,22 @@ fun NutritionAddEditFoodScreen(
         mutableStateOf(existingFood?.servingDescription ?: "")
     }
     var unitTypeExpanded by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
                 is FoodLibraryEvent.FoodSaved -> onNavigateBack()
                 is FoodLibraryEvent.FoodDeleted -> onNavigateBack()
-                is FoodLibraryEvent.ImportComplete -> { /* Handled in library screen */ }
-                is FoodLibraryEvent.ImportFailed -> { /* Handled in library screen */ }
-                is FoodLibraryEvent.Error -> { /* Could show snackbar */ }
+                is FoodLibraryEvent.ImportComplete -> snackbarHostState.showSnackbar("Saved to Notion")
+                is FoodLibraryEvent.ImportFailed -> snackbarHostState.showSnackbar("Notion import failed: ${event.message}")
+                is FoodLibraryEvent.Error -> snackbarHostState.showSnackbar(event.message)
             }
         }
     }
 
     Scaffold(
+        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(if (isEdit) "Edit Food" else "Add Food") },

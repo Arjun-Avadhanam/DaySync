@@ -39,6 +39,12 @@ object NotificationParser {
         """Rs\.([\d,]+(?:\.\d{1,2})?)\s+spent\s+on\s+HDFC Bank Card.*?at\s+(.+?)\s+on\s+\d""",
     )
 
+    // HDFC Card spend (alt): "spent Rs.1504 From HDFC Bank Card x1279 At AMAZONIN On 2026-04-18:23:35:42"
+    private val HDFC_CARD_SPENT_ALT = Regex(
+        """spent\s+Rs\.([\d,]+(?:\.\d{1,2})?)\s+From\s+HDFC Bank Card.*?At\s+(.+?)\s+On\s+\d""",
+        RegexOption.IGNORE_CASE,
+    )
+
     // HDFC Card foreign currency debit: "USD.118.00 has been debited from Card 1279 for Anthropic"
     // Note: "will be debited" (pre-debit alerts) are SKIPPED to avoid duplicates
     private val HDFC_CARD_FOREIGN = Regex(
@@ -114,6 +120,20 @@ object NotificationParser {
 
         // Try HDFC Card spend pattern
         HDFC_CARD_SPENT.find(text)?.let { match ->
+            val amount = parseAmount(match.groupValues[1]) ?: return null
+            val merchant = match.groupValues[2].trim()
+            return ParsedTransaction(
+                amount = amount,
+                merchantName = cleanMerchantName(merchant),
+                isDebit = true,
+                referenceId = REF_REGEX.find(text)?.groupValues?.get(1),
+                rawText = text,
+                packageName = pkg,
+            )
+        }
+
+        // Try HDFC Card spend (alt format: "spent Rs.X From ... At MERCHANT On DATE")
+        HDFC_CARD_SPENT_ALT.find(text)?.let { match ->
             val amount = parseAmount(match.groupValues[1]) ?: return null
             val merchant = match.groupValues[2].trim()
             return ParsedTransaction(

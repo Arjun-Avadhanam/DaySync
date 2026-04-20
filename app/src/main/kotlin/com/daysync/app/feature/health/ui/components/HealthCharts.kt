@@ -31,6 +31,8 @@ import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.marker.rememberDefaultCartesianMarker
+import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.common.fill
 import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
@@ -42,6 +44,7 @@ import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
 import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.common.component.LineComponent
+import java.text.NumberFormat
 
 @Composable
 fun StepsTrendChart(
@@ -50,8 +53,6 @@ fun StepsTrendChart(
 ) {
     if (data.isEmpty()) return
 
-    // One producer for the lifetime of this composable; data updates flow
-    // through runTransaction inside a coroutine, never on the main thread.
     val modelProducer = remember { CartesianChartModelProducer() }
     LaunchedEffect(data) {
         modelProducer.runTransaction {
@@ -63,6 +64,12 @@ fun StepsTrendChart(
             data.getOrNull(x.toInt())?.label ?: " "
         }
     }
+    val yFormatter = remember {
+        CartesianValueFormatter { _, y, _ ->
+            NumberFormat.getIntegerInstance().format(y.toLong())
+        }
+    }
+    val marker = rememberDefaultCartesianMarker(label = rememberTextComponent())
 
     ChartCard(title = "Steps Trend", modifier = modifier) {
         CartesianChartHost(
@@ -75,11 +82,12 @@ fun StepsTrendChart(
                         ),
                     ),
                 ),
-                startAxis = VerticalAxis.rememberStart(),
+                startAxis = VerticalAxis.rememberStart(valueFormatter = yFormatter),
                 bottomAxis = HorizontalAxis.rememberBottom(
                     valueFormatter = labelFormatter,
                     itemPlacer = HorizontalAxis.ItemPlacer.aligned(),
                 ),
+                marker = marker,
             ),
             modelProducer = modelProducer,
             modifier = Modifier
@@ -98,8 +106,6 @@ fun HeartRateTrendChart(
     data: List<HeartRateTrendPoint>,
     modifier: Modifier = Modifier,
 ) {
-    // Line charts need ≥2 points to draw a segment (unlike column charts
-    // which can render a single bar).
     if (data.size < 2) return
 
     val modelProducer = remember { CartesianChartModelProducer() }
@@ -117,6 +123,10 @@ fun HeartRateTrendChart(
             data.getOrNull(x.toInt())?.label ?: " "
         }
     }
+    val yFormatter = remember {
+        CartesianValueFormatter { _, y, _ -> "${y.toInt()} bpm" }
+    }
+    val marker = rememberDefaultCartesianMarker(label = rememberTextComponent())
 
     ChartCard(title = "Heart Rate Trend", modifier = modifier) {
         CartesianChartHost(
@@ -128,11 +138,12 @@ fun HeartRateTrendChart(
                         LineCartesianLayer.rememberLine(fill = remember { LineCartesianLayer.LineFill.single(fill(MinHrColor)) }),
                     ),
                 ),
-                startAxis = VerticalAxis.rememberStart(),
+                startAxis = VerticalAxis.rememberStart(valueFormatter = yFormatter),
                 bottomAxis = HorizontalAxis.rememberBottom(
                     valueFormatter = labelFormatter,
                     itemPlacer = HorizontalAxis.ItemPlacer.aligned(),
                 ),
+                marker = marker,
             ),
             modelProducer = modelProducer,
             modifier = Modifier
@@ -188,6 +199,10 @@ fun SleepTrendChart(
             data.getOrNull(x.toInt())?.label ?: " "
         }
     }
+    val yFormatter = remember {
+        CartesianValueFormatter { _, y, _ -> "%.1fh".format(y) }
+    }
+    val marker = rememberDefaultCartesianMarker(label = rememberTextComponent())
 
     ChartCard(title = "Sleep Trend", modifier = modifier) {
         CartesianChartHost(
@@ -200,11 +215,12 @@ fun SleepTrendChart(
                         ),
                     ),
                 ),
-                startAxis = VerticalAxis.rememberStart(),
+                startAxis = VerticalAxis.rememberStart(valueFormatter = yFormatter),
                 bottomAxis = HorizontalAxis.rememberBottom(
                     valueFormatter = labelFormatter,
                     itemPlacer = HorizontalAxis.ItemPlacer.aligned(),
                 ),
+                marker = marker,
             ),
             modelProducer = modelProducer,
             modifier = Modifier
@@ -223,8 +239,6 @@ fun WorkoutTrendChart(
     title: String = "Workout Trend",
     modifier: Modifier = Modifier,
 ) {
-    // Producer lives across data transitions so Vico doesn't crash when
-    // a sub-type filter empties the data after the chart was already shown.
     val modelProducer = remember { CartesianChartModelProducer() }
     LaunchedEffect(data) {
         if (data.isNotEmpty()) {
@@ -244,6 +258,7 @@ fun WorkoutTrendChart(
             data.getOrNull(x.toInt())?.label ?: " "
         }
     }
+    val marker = rememberDefaultCartesianMarker(label = rememberTextComponent())
 
     ChartCard(title = title, modifier = modifier) {
         CartesianChartHost(
@@ -259,6 +274,7 @@ fun WorkoutTrendChart(
                     valueFormatter = labelFormatter,
                     itemPlacer = HorizontalAxis.ItemPlacer.aligned(),
                 ),
+                marker = marker,
             ),
             modelProducer = modelProducer,
             modifier = Modifier

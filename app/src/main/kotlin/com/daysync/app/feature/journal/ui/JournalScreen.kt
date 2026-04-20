@@ -90,6 +90,8 @@ fun JournalScreen(
                     onArchive = { viewModel.toggleArchive(screenState.entryId) },
                     onDelete = { viewModel.deleteEntry(screenState.entryId) },
                     onExportToNotion = { viewModel.exportToNotion(screenState.entryId) },
+                    snackbarMessage = uiState.snackbarMessage,
+                    onClearSnackbar = viewModel::clearSnackbar,
                 )
             }
 
