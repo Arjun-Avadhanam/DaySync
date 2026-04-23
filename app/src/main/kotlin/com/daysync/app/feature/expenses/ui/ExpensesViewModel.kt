@@ -28,9 +28,10 @@ sealed interface ExpensePeriod {
 @HiltViewModel
 class ExpensesViewModel @Inject constructor(
     private val repository: ExpenseRepository,
+    private val userPreferences: com.daysync.app.core.config.UserPreferences,
 ) : ViewModel() {
 
-    private val today = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Kolkata")).date
+    private val today = Clock.System.now().toLocalDateTime(userPreferences.kotlinTimeZone).date
 
     private val _period = MutableStateFlow<ExpensePeriod>(
         ExpensePeriod.Monthly(today.year, today.monthNumber)

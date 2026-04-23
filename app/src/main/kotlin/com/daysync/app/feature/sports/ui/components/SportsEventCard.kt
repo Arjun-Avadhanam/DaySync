@@ -216,14 +216,14 @@ private fun TeamMatchupRow(event: SportEventWithDetails) {
 private fun formatEventTime(event: SportEventWithDetails): String {
     if (event.status == "LIVE") return "In Progress"
     if (event.status == "COMPLETED") {
-        val tz = TimeZone.of("Asia/Kolkata")
+        val tz = TimeZone.currentSystemDefault()
         val local = event.scheduledAt.toLocalDateTime(tz)
         return "Completed - ${local.date.day} ${local.month.name.take(3)} ${local.year}"
     }
 
     val now = Clock.System.now()
     val diff = event.scheduledAt - now
-    val tz = TimeZone.of("Asia/Kolkata")
+    val tz = TimeZone.currentSystemDefault()
     val local = event.scheduledAt.toLocalDateTime(tz)
     val timeStr = "%02d:%02d".format(local.hour, local.minute)
 

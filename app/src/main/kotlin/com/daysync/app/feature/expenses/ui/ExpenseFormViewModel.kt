@@ -20,6 +20,7 @@ import kotlinx.datetime.toLocalDateTime
 @HiltViewModel
 class ExpenseFormViewModel @Inject constructor(
     private val repository: ExpenseRepository,
+    private val userPreferences: com.daysync.app.core.config.UserPreferences,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -92,7 +93,7 @@ class ExpenseFormViewModel @Inject constructor(
         val state = _formState.value
         val amount = state.amount.toDoubleOrNull() ?: return
         val date = state.date
-            ?: Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Kolkata")).date
+            ?: Clock.System.now().toLocalDateTime(userPreferences.kotlinTimeZone).date
 
         _formState.value = state.copy(isSaving = true)
 

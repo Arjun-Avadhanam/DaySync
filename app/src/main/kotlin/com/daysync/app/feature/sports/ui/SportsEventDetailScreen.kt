@@ -147,7 +147,7 @@ fun SportsEventDetailScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Date/time
-            val tz = TimeZone.of("Asia/Kolkata")
+            val tz = TimeZone.currentSystemDefault()
             val local = event.scheduledAt.toLocalDateTime(tz)
             Card(
                 modifier = Modifier.fillMaxWidth(),

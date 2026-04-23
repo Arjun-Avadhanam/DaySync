@@ -41,7 +41,8 @@ object ExpenseModule {
         expenseDao: ExpenseDao,
         payeeRuleDao: PayeeRuleDao,
         deduplicator: TransactionDeduplicator,
+        userPreferences: com.daysync.app.core.config.UserPreferences,
     ): ExpenseRepository {
-        return ExpenseRepositoryImpl(expenseDao, payeeRuleDao, deduplicator)
+        return ExpenseRepositoryImpl(expenseDao, payeeRuleDao, deduplicator, userPreferences)
     }
 }

@@ -35,8 +35,9 @@ class DataContextBuilder(
     private val mediaItemDao: MediaItemDao,
     private val sportEventDao: SportEventDao,
     private val dailyHealthOverrideDao: DailyHealthOverrideDao,
+    private val userPreferences: com.daysync.app.core.config.UserPreferences,
 ) {
-    private val tz = TimeZone.of("Asia/Kolkata")
+    private val tz: TimeZone get() = userPreferences.kotlinTimeZone
 
     suspend fun buildContextForQuestion(question: String): String {
         val (startDate, endDate) = inferDateRange(question)

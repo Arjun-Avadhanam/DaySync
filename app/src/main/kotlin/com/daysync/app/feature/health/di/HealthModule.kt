@@ -49,6 +49,7 @@ object HealthModule {
         workoutMetadataDao: WorkoutMetadataDao,
         nutritionSummaryDao: DailyNutritionSummaryDao,
         zoneConfig: HeartRateZoneConfig,
+        userPreferences: com.daysync.app.core.config.UserPreferences,
     ): HealthRepository = HealthRepositoryImpl(
         healthConnectManager,
         healthMetricDao,
@@ -58,5 +59,6 @@ object HealthModule {
         workoutMetadataDao,
         nutritionSummaryDao,
         zoneConfig,
+        userPreferences,
     )
 }

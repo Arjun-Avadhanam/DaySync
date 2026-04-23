@@ -26,6 +26,7 @@ class ExpenseRepositoryImpl(
     private val expenseDao: ExpenseDao,
     private val payeeRuleDao: PayeeRuleDao,
     private val deduplicator: TransactionDeduplicator,
+    private val userPreferences: com.daysync.app.core.config.UserPreferences,
 ) : ExpenseRepository {
 
     override fun getExpensesForDate(date: LocalDate): Flow<List<Expense>> {
@@ -84,7 +85,7 @@ class ExpenseRepositoryImpl(
 
     override suspend fun processNotification(parsed: ParsedTransaction): ProcessResult {
         val now = Clock.System.now()
-        val today = now.toLocalDateTime(TimeZone.of("Asia/Kolkata")).date
+        val today = now.toLocalDateTime(userPreferences.kotlinTimeZone).date
 
         // 1. Dedup check — strictly by reference ID
         val existing = deduplicator.findDuplicate(parsed.referenceId)
@@ -163,7 +164,7 @@ class ExpenseRepositoryImpl(
     ): Expense {
         val date = receiptDate
             ?: receiptData.date?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-            ?: Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Kolkata")).date
+            ?: Clock.System.now().toLocalDateTime(userPreferences.kotlinTimeZone).date
 
         val category = receiptData.category?.let { cat ->
             if (ExpenseCategory.fromCategoryString(cat) != null) cat else null

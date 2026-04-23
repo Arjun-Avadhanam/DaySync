@@ -436,8 +436,8 @@ fun MediaAddEditScreen(
                 Text(if (isEditing) "Save Changes" else "Add Media")
             }
 
-            // Save to Notion (edit mode only)
-            if (isEditing) {
+            // Save to Notion (edit mode only, hidden if Notion not configured)
+            if (isEditing && com.daysync.app.BuildConfig.NOTION_API_KEY.isNotBlank()) {
                 val notionStatus by viewModel.notionExportStatus.collectAsState()
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(

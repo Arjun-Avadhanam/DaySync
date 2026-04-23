@@ -170,7 +170,7 @@ fun ExpensesScreen(
                                     fontWeight = FontWeight.Bold,
                                 )
                                 Text(
-                                    text = "Total: ${java.text.NumberFormat.getCurrencyInstance(java.util.Locale("en", "IN")).format(state.monthlyTotal)}",
+                                    text = "Total: ${com.daysync.app.core.config.UserPreferences(context).formatCurrency(state.monthlyTotal)}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -220,7 +220,7 @@ fun ExpensesScreen(
                                     label = {
                                         val label = cat.category.substringBefore(" > ")
                                         Text(
-                                            "$label: ${formatIndianCurrency(cat.total)}",
+                                            "$label: ${com.daysync.app.core.config.UserPreferences(context).formatCurrency(cat.total)}",
                                             style = MaterialTheme.typography.labelSmall,
                                         )
                                     },
@@ -308,7 +308,7 @@ private fun MonthSelector(
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Text(
-                    text = formatIndianCurrency(monthlyTotal),
+                    text = com.daysync.app.core.config.UserPreferences(LocalContext.current).formatCurrency(monthlyTotal),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -336,7 +336,7 @@ private fun DayHeader(date: LocalDate, total: Double) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = formatIndianCurrency(total),
+            text = com.daysync.app.core.config.UserPreferences(LocalContext.current).formatCurrency(total),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
         )
@@ -440,7 +440,7 @@ private fun CustomDateRangeDialog(
                     val startMillis = pickerState.selectedStartDateMillis
                     val endMillis = pickerState.selectedEndDateMillis
                     if (startMillis != null && endMillis != null) {
-                        val zone = java.time.ZoneId.of("Asia/Kolkata")
+                        val zone = java.time.ZoneId.systemDefault()
                         val start = java.time.Instant.ofEpochMilli(startMillis).atZone(zone).toLocalDate()
                             .let { kotlinx.datetime.LocalDate(it.year, it.monthValue, it.dayOfMonth) }
                         val end = java.time.Instant.ofEpochMilli(endMillis).atZone(zone).toLocalDate()

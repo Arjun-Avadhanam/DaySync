@@ -30,6 +30,7 @@ class HealthRepositoryImpl @Inject constructor(
     private val workoutMetadataDao: WorkoutMetadataDao,
     private val nutritionSummaryDao: DailyNutritionSummaryDao,
     private val zoneConfig: HeartRateZoneConfig,
+    private val userPreferences: com.daysync.app.core.config.UserPreferences,
 ) : HealthRepository {
 
     override suspend fun syncHealthData(start: Instant, end: Instant) {
@@ -38,7 +39,7 @@ class HealthRepositoryImpl @Inject constructor(
 
         // Metrics use HC's aggregate API which collapses the entire time range
         // into one value. To get per-day data we must query each day separately.
-        val zone = java.time.ZoneId.of("Asia/Kolkata")
+        val zone = userPreferences.javaZoneId
         var cursor = javaStart.atZone(zone).toLocalDate()
         val lastDay = javaEnd.atZone(zone).toLocalDate()
         while (!cursor.isAfter(lastDay)) {

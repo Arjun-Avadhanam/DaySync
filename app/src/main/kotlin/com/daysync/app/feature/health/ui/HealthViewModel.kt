@@ -32,13 +32,14 @@ import kotlinx.datetime.LocalDate as KLocalDate
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 
-private val IST = ZoneId.of("Asia/Kolkata")
-
 @HiltViewModel
 class HealthViewModel @Inject constructor(
     private val healthConnectManager: HealthConnectManager,
     private val healthRepository: HealthRepository,
+    private val userPreferences: com.daysync.app.core.config.UserPreferences,
 ) : ViewModel() {
+
+    private val IST: ZoneId get() = userPreferences.javaZoneId
 
     val healthPermissions: Set<String> get() = healthConnectManager.permissions
 
@@ -391,7 +392,7 @@ class HealthViewModel @Inject constructor(
     private suspend fun buildPeriodStats(start: Instant, end: Instant): PeriodStats {
         // Average sleep — sum sessions per day, then average across days
         val sleepSessions = healthRepository.getSleepSessions(start, end).first()
-        val zone = java.time.ZoneId.of("Asia/Kolkata")
+        val zone = IST
         val dailySleepTotals = sleepSessions
             .groupBy { java.time.Instant.ofEpochMilli(it.endTime.toEpochMilliseconds()).atZone(zone).toLocalDate() }
             .map { (_, sessions) -> sessions.sumOf { it.totalMinutes } }

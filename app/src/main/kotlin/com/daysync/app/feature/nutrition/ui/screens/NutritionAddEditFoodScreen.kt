@@ -221,8 +221,8 @@ fun NutritionAddEditFoodScreen(
                 Text(if (isEdit) "Update Food" else "Add Food")
             }
 
-            // Save to Notion (edit mode only)
-            if (isEdit && foodId != null) {
+            // Save to Notion (edit mode only, hidden if Notion not configured)
+            if (isEdit && foodId != null && com.daysync.app.BuildConfig.NOTION_API_KEY.isNotBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(
                     onClick = { viewModel.exportFoodToNotion(foodId) },

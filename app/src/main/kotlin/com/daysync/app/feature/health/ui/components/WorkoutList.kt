@@ -91,7 +91,9 @@ private fun WorkoutItem(
     onClick: (() -> Unit)?,
 ) {
     val dateFormatter = DateTimeFormatter.ofPattern("EEE, d MMM")
-    val zone = ZoneId.of("Asia/Kolkata")
+    val zone = com.daysync.app.core.config.UserPreferences(
+        androidx.compose.ui.platform.LocalContext.current
+    ).javaZoneId
     val date = java.time.Instant.ofEpochMilli(workout.session.startTime.toEpochMilliseconds())
         .atZone(zone).toLocalDate()
 

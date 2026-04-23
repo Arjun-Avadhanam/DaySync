@@ -140,8 +140,8 @@ fun NutritionFoodLibraryScreen(
                 }
             }
 
-            // Import from Notion button
-            item {
+            // Import from Notion button (hidden if Notion not configured)
+            if (com.daysync.app.BuildConfig.NOTION_API_KEY.isNotBlank()) item {
                 OutlinedButton(
                     onClick = { viewModel.importFromNotion() },
                     enabled = !isImporting,

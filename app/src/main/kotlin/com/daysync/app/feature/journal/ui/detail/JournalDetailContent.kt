@@ -111,16 +111,18 @@ fun JournalDetailContent(
                                         onArchive()
                                     },
                                 )
-                                DropdownMenuItem(
-                                    text = { Text("Save to Notion") },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Share, contentDescription = null)
-                                    },
-                                    onClick = {
-                                        showMenu = false
-                                        onExportToNotion()
-                                    },
-                                )
+                                if (com.daysync.app.BuildConfig.NOTION_API_KEY.isNotBlank()) {
+                                    DropdownMenuItem(
+                                        text = { Text("Save to Notion") },
+                                        leadingIcon = {
+                                            Icon(Icons.Default.Share, contentDescription = null)
+                                        },
+                                        onClick = {
+                                            showMenu = false
+                                            onExportToNotion()
+                                        },
+                                    )
+                                }
                                 DropdownMenuItem(
                                     text = { Text("Delete") },
                                     leadingIcon = {

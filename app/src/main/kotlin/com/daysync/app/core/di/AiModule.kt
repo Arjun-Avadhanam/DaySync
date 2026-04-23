@@ -84,6 +84,7 @@ object AiModule {
         mediaItemDao: MediaItemDao,
         sportEventDao: SportEventDao,
         dailyHealthOverrideDao: DailyHealthOverrideDao,
+        userPreferences: com.daysync.app.core.config.UserPreferences,
     ): DataContextBuilder {
         return DataContextBuilder(
             healthMetricDao = healthMetricDao,
@@ -97,6 +98,7 @@ object AiModule {
             mediaItemDao = mediaItemDao,
             sportEventDao = sportEventDao,
             dailyHealthOverrideDao = dailyHealthOverrideDao,
+            userPreferences = userPreferences,
         )
     }
 

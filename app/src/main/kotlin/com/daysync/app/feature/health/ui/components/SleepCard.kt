@@ -21,7 +21,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-private val zone = ZoneId.of("Asia/Kolkata")
 
 @Composable
 fun SleepCard(
@@ -29,6 +28,9 @@ fun SleepCard(
     modifier: Modifier = Modifier,
 ) {
     if (sessions.isEmpty()) return
+    val zone = com.daysync.app.core.config.UserPreferences(
+        androidx.compose.ui.platform.LocalContext.current
+    ).javaZoneId
 
     val totalMinutes = sessions.sumOf { it.session.totalMinutes }
 
@@ -99,6 +101,9 @@ fun SleepCard(
 @Composable
 private fun SleepSessionRow(sleep: SleepSummary) {
     val session = sleep.session
+    val zone = com.daysync.app.core.config.UserPreferences(
+        androidx.compose.ui.platform.LocalContext.current
+    ).javaZoneId
     val start = java.time.Instant.ofEpochMilli(session.startTime.toEpochMilliseconds())
         .atZone(zone).toLocalTime()
     val end = java.time.Instant.ofEpochMilli(session.endTime.toEpochMilliseconds())

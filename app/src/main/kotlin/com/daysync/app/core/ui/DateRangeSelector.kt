@@ -76,7 +76,7 @@ fun DateRangeSelector(
                         val startMillis = pickerState.selectedStartDateMillis
                         val endMillis = pickerState.selectedEndDateMillis
                         if (startMillis != null && endMillis != null) {
-                            val tz = TimeZone.of("Asia/Kolkata")
+                            val tz = TimeZone.currentSystemDefault()
                             val start = Instant.fromEpochMilliseconds(startMillis)
                                 .toLocalDateTime(tz).date
                             val end = Instant.fromEpochMilliseconds(endMillis)

@@ -26,7 +26,8 @@ class DailyReminderWorker @AssistedInject constructor(
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
-        val today = Clock.System.todayIn(TimeZone.of("Asia/Kolkata"))
+        val prefs = com.daysync.app.core.config.UserPreferences(applicationContext)
+        val today = Clock.System.todayIn(prefs.kotlinTimeZone)
         val override = dailyHealthOverrideDao.get(today)
 
         val missingCalories = override?.totalCalories == null
