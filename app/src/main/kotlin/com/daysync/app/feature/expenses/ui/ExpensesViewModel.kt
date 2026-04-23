@@ -19,6 +19,11 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
+sealed interface ExpensePeriod {
+    data class Monthly(val year: Int, val month: Int) : ExpensePeriod
+    data class Custom(val start: LocalDate, val end: LocalDate) : ExpensePeriod
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class ExpensesViewModel @Inject constructor(
@@ -26,13 +31,22 @@ class ExpensesViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val today = Clock.System.now().toLocalDateTime(TimeZone.of("Asia/Kolkata")).date
-    private val _selectedYear = MutableStateFlow(today.year)
-    private val _selectedMonth = MutableStateFlow(today.monthNumber)
 
-    private val dateRange = combine(_selectedYear, _selectedMonth) { year, month ->
-        val start = LocalDate(year, month, 1)
-        val end = LocalDate(year, month, daysInMonth(year, month))
-        start to end
+    private val _period = MutableStateFlow<ExpensePeriod>(
+        ExpensePeriod.Monthly(today.year, today.monthNumber)
+    )
+    val period: StateFlow<ExpensePeriod> = _period
+
+    private val dateRange = _period.flatMapLatest { period ->
+        val (start, end) = when (period) {
+            is ExpensePeriod.Monthly -> {
+                val s = LocalDate(period.year, period.month, 1)
+                val e = LocalDate(period.year, period.month, daysInMonth(period.year, period.month))
+                s to e
+            }
+            is ExpensePeriod.Custom -> period.start to period.end
+        }
+        kotlinx.coroutines.flow.flowOf(start to end)
     }
 
     val uiState: StateFlow<ExpensesListUiState> = dateRange.flatMapLatest { (start, end) ->
@@ -50,30 +64,43 @@ class ExpensesViewModel @Inject constructor(
                 selectedYear = start.year,
                 selectedMonth = start.monthNumber,
                 categoryTotals = cats,
+                isCustomRange = _period.value is ExpensePeriod.Custom,
+                rangeLabel = when (val p = _period.value) {
+                    is ExpensePeriod.Custom -> com.daysync.app.core.ui.formatRangeLabel(p.start, p.end)
+                    is ExpensePeriod.Monthly -> null
+                },
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ExpensesListUiState.Loading)
 
     fun previousMonth() {
-        val year = _selectedYear.value
-        val month = _selectedMonth.value
-        if (month == 1) {
-            _selectedYear.value = year - 1
-            _selectedMonth.value = 12
+        val current = _period.value
+        if (current !is ExpensePeriod.Monthly) return
+        val (year, month) = if (current.month == 1) {
+            current.year - 1 to 12
         } else {
-            _selectedMonth.value = month - 1
+            current.year to current.month - 1
         }
+        _period.value = ExpensePeriod.Monthly(year, month)
     }
 
     fun nextMonth() {
-        val year = _selectedYear.value
-        val month = _selectedMonth.value
-        if (month == 12) {
-            _selectedYear.value = year + 1
-            _selectedMonth.value = 1
+        val current = _period.value
+        if (current !is ExpensePeriod.Monthly) return
+        val (year, month) = if (current.month == 12) {
+            current.year + 1 to 1
         } else {
-            _selectedMonth.value = month + 1
+            current.year to current.month + 1
         }
+        _period.value = ExpensePeriod.Monthly(year, month)
+    }
+
+    fun setCustomRange(start: LocalDate, end: LocalDate) {
+        _period.value = ExpensePeriod.Custom(start, end)
+    }
+
+    fun resetToMonthly() {
+        _period.value = ExpensePeriod.Monthly(today.year, today.monthNumber)
     }
 
     fun deleteExpense(expense: Expense) {

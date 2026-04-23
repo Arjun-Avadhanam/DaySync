@@ -166,9 +166,17 @@ sealed interface HealthUiState {
     data class Error(val message: String) : HealthUiState
 }
 
-enum class HealthPeriod(val label: String, val days: Int) {
-    WEEKLY("7 Days", 7),
-    MONTHLY("30 Days", 30),
+sealed interface HealthPeriod {
+    val label: String
+    data object WEEKLY : HealthPeriod { override val label = "7 Days" }
+    data object MONTHLY : HealthPeriod { override val label = "30 Days" }
+    data class CUSTOM(
+        val startDate: kotlinx.datetime.LocalDate,
+        val endDate: kotlinx.datetime.LocalDate,
+    ) : HealthPeriod {
+        override val label: String
+            get() = com.daysync.app.core.ui.formatRangeLabel(startDate, endDate)
+    }
 }
 
 private fun formatExerciseType(type: String): String = when (type) {

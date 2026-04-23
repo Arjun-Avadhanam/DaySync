@@ -25,22 +25,42 @@ enum class HistoryRange(val label: String, val days: Int) {
     THREE_MONTHS("90 days", 90),
 }
 
+sealed interface NutritionPeriod {
+    data class Preset(val range: HistoryRange) : NutritionPeriod
+    data class Custom(val start: LocalDate, val end: LocalDate) : NutritionPeriod
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class NutritionHistoryViewModel @Inject constructor(
     private val repository: NutritionRepository,
 ) : ViewModel() {
 
-    private val _selectedRange = MutableStateFlow(HistoryRange.WEEK)
-    val selectedRange: StateFlow<HistoryRange> = _selectedRange
+    private val _period = MutableStateFlow<NutritionPeriod>(NutritionPeriod.Preset(HistoryRange.WEEK))
+    val period: StateFlow<NutritionPeriod> = _period
 
-    val summaries: StateFlow<List<DailyNutritionSummary>> = _selectedRange.flatMapLatest { range ->
-        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-        val startDate = today.minus(range.days, DateTimeUnit.DAY)
-        repository.getDailySummariesInRange(startDate, today)
+    val summaries: StateFlow<List<DailyNutritionSummary>> = _period.flatMapLatest { period ->
+        val (start, end) = when (period) {
+            is NutritionPeriod.Preset -> {
+                val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+                today.minus(period.range.days, DateTimeUnit.DAY) to today
+            }
+            is NutritionPeriod.Custom -> period.start to period.end
+        }
+        repository.getDailySummariesInRange(start, end)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // Backward-compatible accessor
+    val selectedRange: StateFlow<HistoryRange>
+        get() = MutableStateFlow(
+            (_period.value as? NutritionPeriod.Preset)?.range ?: HistoryRange.WEEK
+        )
+
     fun setRange(range: HistoryRange) {
-        _selectedRange.value = range
+        _period.value = NutritionPeriod.Preset(range)
+    }
+
+    fun setCustomRange(start: LocalDate, end: LocalDate) {
+        _period.value = NutritionPeriod.Custom(start, end)
     }
 }

@@ -32,6 +32,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.daysync.app.feature.nutrition.ui.viewmodel.HistoryRange
 import com.daysync.app.feature.nutrition.ui.viewmodel.NutritionHistoryViewModel
+import com.daysync.app.feature.nutrition.ui.viewmodel.NutritionPeriod
 import com.daysync.app.feature.nutrition.ui.util.fmtNutrition
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,7 +41,7 @@ fun NutritionHistoryScreen(
     onNavigateBack: () -> Unit,
     viewModel: NutritionHistoryViewModel = hiltViewModel(),
 ) {
-    val selectedRange by viewModel.selectedRange.collectAsStateWithLifecycle()
+    val period by viewModel.period.collectAsStateWithLifecycle()
     val summaries by viewModel.summaries.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -66,18 +67,20 @@ fun NutritionHistoryScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             // Range selector
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                HistoryRange.entries.forEach { range ->
-                    FilterChip(
-                        selected = selectedRange == range,
-                        onClick = { viewModel.setRange(range) },
-                        label = { Text(range.label) },
-                    )
-                }
-            }
+            com.daysync.app.core.ui.DateRangeSelector(
+                presets = HistoryRange.entries.map {
+                    com.daysync.app.core.ui.PeriodPreset(it.label, it.days)
+                },
+                selectedPresetIndex = when (val p = period) {
+                    is NutritionPeriod.Preset -> p.range.ordinal
+                    is NutritionPeriod.Custom -> -1
+                },
+                onPresetSelected = { index -> viewModel.setRange(HistoryRange.entries[index]) },
+                onCustomRangeSelected = { start, end -> viewModel.setCustomRange(start, end) },
+                customRangeLabel = (period as? NutritionPeriod.Custom)?.let {
+                    com.daysync.app.core.ui.formatRangeLabel(it.start, it.end)
+                },
+            )
 
             if (summaries.isEmpty()) {
                 Column(

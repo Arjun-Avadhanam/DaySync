@@ -16,6 +16,8 @@ sealed interface ExpensesListUiState {
         val selectedYear: Int,
         val selectedMonth: Int,
         val categoryTotals: List<CategoryTotal>,
+        val isCustomRange: Boolean = false,
+        val rangeLabel: String? = null,
     ) : ExpensesListUiState
     data class Error(val message: String) : ExpensesListUiState
 }

@@ -34,8 +34,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -150,14 +154,56 @@ fun ExpensesScreen(
                 is ExpensesListUiState.Loading -> LoadingIndicator()
                 is ExpensesListUiState.Error -> ErrorMessage(state.message)
                 is ExpensesListUiState.Success -> {
-                    // Month selector
-                    MonthSelector(
-                        year = state.selectedYear,
-                        month = state.selectedMonth,
-                        monthlyTotal = state.monthlyTotal,
-                        onPrevious = viewModel::previousMonth,
-                        onNext = viewModel::nextMonth,
-                    )
+                    if (state.isCustomRange) {
+                        // Custom range header — show label + reset button
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column {
+                                Text(
+                                    text = state.rangeLabel ?: "Custom Range",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Text(
+                                    text = "Total: ${java.text.NumberFormat.getCurrencyInstance(java.util.Locale("en", "IN")).format(state.monthlyTotal)}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            TextButton(onClick = viewModel::resetToMonthly) {
+                                Text("Back to Monthly")
+                            }
+                        }
+                    } else {
+                        // Month selector
+                        MonthSelector(
+                            year = state.selectedYear,
+                            month = state.selectedMonth,
+                            monthlyTotal = state.monthlyTotal,
+                            onPrevious = viewModel::previousMonth,
+                            onNext = viewModel::nextMonth,
+                        )
+                        // Custom range option
+                        var showCustomPicker by remember { mutableStateOf(false) }
+                        TextButton(
+                            onClick = { showCustomPicker = true },
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        ) { Text("Select Custom Date Range") }
+                        if (showCustomPicker) {
+                            CustomDateRangeDialog(
+                                onConfirm = { start, end ->
+                                    viewModel.setCustomRange(start, end)
+                                    showCustomPicker = false
+                                },
+                                onDismiss = { showCustomPicker = false },
+                            )
+                        }
+                    }
 
                     // Category chips
                     if (state.categoryTotals.isNotEmpty()) {
@@ -376,5 +422,40 @@ private fun ExpenseItem(
                 )
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CustomDateRangeDialog(
+    onConfirm: (kotlinx.datetime.LocalDate, kotlinx.datetime.LocalDate) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val pickerState = rememberDateRangePickerState()
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val startMillis = pickerState.selectedStartDateMillis
+                    val endMillis = pickerState.selectedEndDateMillis
+                    if (startMillis != null && endMillis != null) {
+                        val zone = java.time.ZoneId.of("Asia/Kolkata")
+                        val start = java.time.Instant.ofEpochMilli(startMillis).atZone(zone).toLocalDate()
+                            .let { kotlinx.datetime.LocalDate(it.year, it.monthValue, it.dayOfMonth) }
+                        val end = java.time.Instant.ofEpochMilli(endMillis).atZone(zone).toLocalDate()
+                            .let { kotlinx.datetime.LocalDate(it.year, it.monthValue, it.dayOfMonth) }
+                        onConfirm(start, end)
+                    }
+                },
+                enabled = pickerState.selectedStartDateMillis != null &&
+                    pickerState.selectedEndDateMillis != null,
+            ) { Text("Apply") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    ) {
+        DateRangePicker(state = pickerState)
     }
 }

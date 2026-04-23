@@ -127,6 +127,7 @@ fun HealthScreen(
                     onNextDay = viewModel::navigateToNextDay,
                     onToday = viewModel::navigateToToday,
                     onPeriodSelected = viewModel::onPeriodSelected,
+                    onCustomRange = viewModel::setCustomRange,
                     onCaloriesOverride = viewModel::setCalorieOverride,
                     onWeightChange = viewModel::setWeight,
                     onWorkoutSubTypeChange = viewModel::setWorkoutSubType,
@@ -147,6 +148,7 @@ private fun HealthDashboard(
     onNextDay: () -> Unit,
     onToday: () -> Unit,
     onPeriodSelected: (HealthPeriod) -> Unit,
+    onCustomRange: (kotlinx.datetime.LocalDate, kotlinx.datetime.LocalDate) -> Unit,
     onCaloriesOverride: (Double?) -> Unit,
     onWeightChange: (Double?, Double?, Double?) -> Unit,
     onWorkoutSubTypeChange: (String, String?) -> Unit,
@@ -187,18 +189,22 @@ private fun HealthDashboard(
         )
 
         // Period selector (charts are independent of selectedDate)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            HealthPeriod.entries.forEach { period ->
-                FilterChip(
-                    selected = period == selectedPeriod,
-                    onClick = { onPeriodSelected(period) },
-                    label = { Text(period.label) },
-                )
-            }
-        }
+        com.daysync.app.core.ui.DateRangeSelector(
+            presets = listOf(
+                com.daysync.app.core.ui.PeriodPreset("7 Days", 7),
+                com.daysync.app.core.ui.PeriodPreset("30 Days", 30),
+            ),
+            selectedPresetIndex = when (selectedPeriod) {
+                is HealthPeriod.WEEKLY -> 0
+                is HealthPeriod.MONTHLY -> 1
+                is HealthPeriod.CUSTOM -> -1
+            },
+            onPresetSelected = { index ->
+                onPeriodSelected(if (index == 0) HealthPeriod.WEEKLY else HealthPeriod.MONTHLY)
+            },
+            onCustomRangeSelected = { start, end -> onCustomRange(start, end) },
+            customRangeLabel = (selectedPeriod as? HealthPeriod.CUSTOM)?.label,
+        )
 
         // Periodic statistics
         val stats = state.periodStats

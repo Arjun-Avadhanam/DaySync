@@ -48,7 +48,7 @@ class HealthViewModel @Inject constructor(
     private val _selectedDate = MutableStateFlow(todayKLocalDate())
     val selectedDate: StateFlow<KLocalDate> = _selectedDate.asStateFlow()
 
-    private val _selectedPeriod = MutableStateFlow(HealthPeriod.WEEKLY)
+    private val _selectedPeriod = MutableStateFlow<HealthPeriod>(HealthPeriod.WEEKLY)
     val selectedPeriod: StateFlow<HealthPeriod> = _selectedPeriod.asStateFlow()
 
     private val _isRefreshing = MutableStateFlow(false)
@@ -104,6 +104,11 @@ class HealthViewModel @Inject constructor(
 
     fun onPeriodSelected(period: HealthPeriod) {
         _selectedPeriod.value = period
+        viewModelScope.launch { loadData() }
+    }
+
+    fun setCustomRange(start: kotlinx.datetime.LocalDate, end: kotlinx.datetime.LocalDate) {
+        _selectedPeriod.value = HealthPeriod.CUSTOM(start, end)
         viewModelScope.launch { loadData() }
     }
 
@@ -475,11 +480,22 @@ class HealthViewModel @Inject constructor(
     }
 
     private fun periodRange(period: HealthPeriod): Pair<Instant, Instant> {
-        val todayEnd = LocalDate.now(IST).atTime(LocalTime.MAX).atZone(IST).toInstant()
-        val periodStart = LocalDate.now(IST).minusDays(period.days.toLong() - 1)
-            .atStartOfDay(IST).toInstant()
-        return Instant.fromEpochMilliseconds(periodStart.toEpochMilli()) to
-            Instant.fromEpochMilliseconds(todayEnd.toEpochMilli())
+        return when (period) {
+            is HealthPeriod.WEEKLY, is HealthPeriod.MONTHLY -> {
+                val days = if (period is HealthPeriod.WEEKLY) 7L else 30L
+                val todayEnd = LocalDate.now(IST).atTime(LocalTime.MAX).atZone(IST).toInstant()
+                val periodStart = LocalDate.now(IST).minusDays(days - 1)
+                    .atStartOfDay(IST).toInstant()
+                Instant.fromEpochMilliseconds(periodStart.toEpochMilli()) to
+                    Instant.fromEpochMilliseconds(todayEnd.toEpochMilli())
+            }
+            is HealthPeriod.CUSTOM -> {
+                val s = LocalDate.of(period.startDate.year, period.startDate.monthNumber, period.startDate.dayOfMonth)
+                val e = LocalDate.of(period.endDate.year, period.endDate.monthNumber, period.endDate.dayOfMonth)
+                Instant.fromEpochMilliseconds(s.atStartOfDay(IST).toInstant().toEpochMilli()) to
+                    Instant.fromEpochMilliseconds(e.atTime(LocalTime.MAX).atZone(IST).toInstant().toEpochMilli())
+            }
+        }
     }
 
     private fun todayKLocalDate(): KLocalDate {
@@ -491,8 +507,9 @@ class HealthViewModel @Inject constructor(
         val dateTime = java.time.Instant.ofEpochMilli(instant.toEpochMilliseconds())
             .atZone(IST).toLocalDateTime()
         return when (period) {
-            HealthPeriod.WEEKLY -> dateTime.format(java.time.format.DateTimeFormatter.ofPattern("EEE"))
-            HealthPeriod.MONTHLY -> dateTime.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM"))
+            is HealthPeriod.WEEKLY -> dateTime.format(java.time.format.DateTimeFormatter.ofPattern("EEE"))
+            is HealthPeriod.MONTHLY, is HealthPeriod.CUSTOM ->
+                dateTime.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM"))
         }
     }
 }
