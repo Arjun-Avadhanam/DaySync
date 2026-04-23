@@ -39,14 +39,15 @@ class ReminderAlarmReceiver : BroadcastReceiver() {
                 return
             }
 
+            val prefs = com.daysync.app.core.config.UserPreferences(context)
             val intent = Intent(context, ReminderAlarmReceiver::class.java)
             val pendingIntent = PendingIntent.getBroadcast(
                 context, REQUEST_CODE, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
-            val now = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"))
-            var target = now.withHour(23).withMinute(30).withSecond(0).withNano(0)
+            val now = ZonedDateTime.now(prefs.javaZoneId)
+            var target = now.withHour(prefs.reminderHour).withMinute(prefs.reminderMinute).withSecond(0).withNano(0)
             if (now.isAfter(target)) {
                 target = target.plusDays(1)
             }

@@ -23,16 +23,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -171,6 +180,105 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
+            // ── Configuration ─────────────────────────────────────────
+            Text(
+                text = "Configuration",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+
+            val userPrefs = remember {
+                com.daysync.app.core.config.UserPreferences(context)
+            }
+            var selectedTimezone by remember { mutableStateOf(userPrefs.timezoneId) }
+            var selectedCurrency by remember { mutableStateOf(userPrefs.currencyCode) }
+            var syncHour by remember { mutableIntStateOf(userPrefs.syncHour) }
+            var syncMinute by remember { mutableIntStateOf(userPrefs.syncMinute) }
+            var reminderHour by remember { mutableIntStateOf(userPrefs.reminderHour) }
+            var reminderMinute by remember { mutableIntStateOf(userPrefs.reminderMinute) }
+            var showTimezoneMenu by remember { mutableStateOf(false) }
+            var showCurrencyMenu by remember { mutableStateOf(false) }
+            var showSyncTimePicker by remember { mutableStateOf(false) }
+            var showReminderTimePicker by remember { mutableStateOf(false) }
+
+            // Timezone
+            ConfigRow(
+                label = "Timezone",
+                value = selectedTimezone,
+                onClick = { showTimezoneMenu = true },
+            )
+            DropdownMenu(expanded = showTimezoneMenu, onDismissRequest = { showTimezoneMenu = false }) {
+                com.daysync.app.core.config.UserPreferences.SUPPORTED_TIMEZONES.forEach { tz ->
+                    DropdownMenuItem(
+                        text = { Text(tz) },
+                        onClick = {
+                            selectedTimezone = tz
+                            userPrefs.timezoneId = tz
+                            showTimezoneMenu = false
+                        },
+                    )
+                }
+            }
+
+            // Currency
+            ConfigRow(
+                label = "Currency",
+                value = "$selectedCurrency (${userPrefs.currencySymbol})",
+                onClick = { showCurrencyMenu = true },
+            )
+            DropdownMenu(expanded = showCurrencyMenu, onDismissRequest = { showCurrencyMenu = false }) {
+                com.daysync.app.core.config.UserPreferences.SUPPORTED_CURRENCIES.forEach { code ->
+                    DropdownMenuItem(
+                        text = { Text(code) },
+                        onClick = {
+                            selectedCurrency = code
+                            userPrefs.currencyCode = code
+                            showCurrencyMenu = false
+                        },
+                    )
+                }
+            }
+
+            // Sync time
+            ConfigRow(
+                label = "Daily Sync Time",
+                value = "%02d:%02d".format(syncHour, syncMinute),
+                onClick = { showSyncTimePicker = true },
+            )
+            if (showSyncTimePicker) {
+                TimePickerDialog(
+                    initialHour = syncHour,
+                    initialMinute = syncMinute,
+                    onConfirm = { h, m ->
+                        syncHour = h; syncMinute = m
+                        userPrefs.syncHour = h; userPrefs.syncMinute = m
+                        showSyncTimePicker = false
+                    },
+                    onDismiss = { showSyncTimePicker = false },
+                )
+            }
+
+            // Reminder time
+            ConfigRow(
+                label = "Daily Reminder Time",
+                value = "%02d:%02d".format(reminderHour, reminderMinute),
+                onClick = { showReminderTimePicker = true },
+            )
+            if (showReminderTimePicker) {
+                TimePickerDialog(
+                    initialHour = reminderHour,
+                    initialMinute = reminderMinute,
+                    onConfirm = { h, m ->
+                        reminderHour = h; reminderMinute = m
+                        userPrefs.reminderHour = h; userPrefs.reminderMinute = m
+                        showReminderTimePicker = false
+                    },
+                    onDismiss = { showReminderTimePicker = false },
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Text(
                 text = "About",
                 style = MaterialTheme.typography.titleMedium,
@@ -255,4 +363,53 @@ private fun openHealthConnectSettings(context: Context) {
     } catch (_: Exception) {
         openAppSettings(context)
     }
+}
+
+@Composable
+private fun ConfigRow(
+    label: String,
+    value: String,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TimePickerDialog(
+    initialHour: Int,
+    initialMinute: Int,
+    onConfirm: (Int, Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val state = rememberTimePickerState(initialHour = initialHour, initialMinute = initialMinute)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select time") },
+        text = { TimePicker(state = state) },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(state.hour, state.minute) }) { Text("OK") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }

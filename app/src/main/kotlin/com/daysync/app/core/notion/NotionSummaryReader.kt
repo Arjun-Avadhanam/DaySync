@@ -35,12 +35,14 @@ class NotionSummaryReader @Inject constructor(
     /**
      * Returns the most recent weekly summary, or null if none exist.
      */
-    suspend fun fetchLatestSummary(): WeeklySummary? {
+    suspend fun fetchLatestSummary(parentPageId: String = PARENT_PAGE_ID): WeeklySummary? {
         if (apiKey.isBlank()) return null
+        val effectivePageId = parentPageId.ifBlank { PARENT_PAGE_ID }
+        if (effectivePageId.isBlank()) return null
 
         return try {
             // 1. List child blocks of the parent page to find child pages
-            val childrenJson = httpClient.get("$BASE_URL/blocks/$PARENT_PAGE_ID/children?page_size=100") {
+            val childrenJson = httpClient.get("$BASE_URL/blocks/$effectivePageId/children?page_size=100") {
                 header(HttpHeaders.Authorization, "Bearer $apiKey")
                 header("Notion-Version", NOTION_VERSION)
             }.bodyAsText()

@@ -9,6 +9,7 @@ import com.daysync.app.core.database.dao.JournalEntryDao
 import com.daysync.app.core.database.dao.MediaItemDao
 import com.daysync.app.core.database.dao.SleepSessionDao
 import com.daysync.app.core.database.dao.SportEventDao
+import com.daysync.app.core.config.UserPreferences
 import com.daysync.app.core.notion.NotionSummaryReader
 import com.daysync.app.core.notion.WeeklySummary
 import com.daysync.app.core.sync.SyncEngine
@@ -54,6 +55,7 @@ class HomeViewModel @Inject constructor(
     private val mediaItemDao: MediaItemDao,
     private val syncEngine: SyncEngine,
     private val restoreEngine: SyncRestoreEngine,
+    private val userPreferences: UserPreferences,
     private val notionSummaryReader: NotionSummaryReader,
 ) : ViewModel() {
 
@@ -76,7 +78,10 @@ class HomeViewModel @Inject constructor(
 
     private fun loadWeeklySummary() {
         viewModelScope.launch {
-            _weeklySummary.value = notionSummaryReader.fetchLatestSummary()
+            val pageId = userPreferences.notionSummaryPageId.ifBlank {
+                com.daysync.app.core.notion.NotionSummaryReader.PARENT_PAGE_ID
+            }
+            _weeklySummary.value = notionSummaryReader.fetchLatestSummary(pageId)
         }
     }
 

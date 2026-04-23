@@ -59,6 +59,7 @@ fun DashboardScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val summary by viewModel.summary.collectAsState()
     val weeklySummary by viewModel.weeklySummary.collectAsState()
     val syncState by viewModel.syncState.collectAsState()
@@ -117,8 +118,8 @@ fun DashboardScreen(
                 title = "Expenses",
                 onClick = { onNavigateToSection(com.daysync.app.ui.navigation.Expenses) },
             ) {
-                val monthly = NumberFormat.getCurrencyInstance(java.util.Locale("en", "IN"))
-                    .format(summary.monthlyExpenses)
+                val userPrefs = remember { com.daysync.app.core.config.UserPreferences(context) }
+                val monthly = userPrefs.formatCurrency(summary.monthlyExpenses)
                 Text("This month: $monthly")
             }
 
