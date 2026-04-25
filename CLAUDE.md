@@ -3,7 +3,7 @@
 Operational and architectural notes for working in this codebase. The user-facing overview lives in [README.md](./README.md); don't duplicate it here.
 
 ## Project Overview
-Personal Android app (single user) consolidating daily tracking: nutrition, workouts, expenses, sports, journal, media, AI chat. Offline-first, Room v6 local DB, Supabase cloud sync at 23:59 IST daily, exact reminder at 23:30 IST. Currently shipping debug APKs at v2.4.0.
+Personal Android app (single user) consolidating daily tracking: nutrition, workouts, expenses, sports, journal, media, AI chat. Offline-first, Room v6 local DB, Supabase cloud sync at 23:59 IST daily, exact reminder at 23:30 IST. Currently shipping debug APKs at v2.6.0.
 
 ## Tech Stack
 - **Language:** Kotlin (JDK 17)
@@ -25,6 +25,7 @@ Personal Android app (single user) consolidating daily tracking: nutrition, work
 app/src/main/kotlin/com/daysync/app/
   core/
     ai/           # GeminiRestClient (REST only, no embeddings yet)
+    config/       # UserPreferences (timezone, currency, sync/reminder times)
     database/     # AppDatabase v6 + 24 entities + DAOs
     di/           # Hilt modules incl. DatabaseModule, SyncRestoreModule
     notion/       # Bi-directional Notion export client + per-section exporters
@@ -86,8 +87,8 @@ Sync DTOs in `core/sync/dto/` should default new fields to `null` so older Supab
 `SyncRestoreEngine` (used by Settings → Restore from Cloud) covers user-entered tables only: food, meals, expenses, journal, media, daily health overrides, watchlist entries. Health metrics, sport events, and followed competitions are intentionally excluded — they regenerate from external APIs.
 
 ## Background Work
-- **DailySyncWorker** (WorkManager, periodic, 23:59 IST) — uploads pending Room rows to Supabase. Foreground service requires `FOREGROUND_SERVICE_TYPE_DATA_SYNC`.
-- **ReminderAlarmReceiver** (AlarmManager, exact, 23:30 IST) — fires once daily, enqueues `DailyReminderWorker` to check for missing weight/calories, then reschedules itself for tomorrow.
+- **DailySyncWorker** (WorkManager, periodic) — uploads pending Room rows to Supabase. Time configurable via Settings (default 23:59). Foreground service requires `FOREGROUND_SERVICE_TYPE_DATA_SYNC`.
+- **ReminderAlarmReceiver** (AlarmManager, exact) — fires once daily, enqueues `DailyReminderWorker` to check for missing weight/calories, then reschedules itself for tomorrow. Time configurable via Settings (default 23:30).
 - **DailyReminderWorker** (WorkManager, one-shot, triggered by alarm) — posts the reminder notification if data is missing.
 - **BootCompletedReceiver** — re-arms `ReminderAlarmReceiver` after reboot. WorkManager auto-reschedules itself; AlarmManager does not.
 
@@ -129,7 +130,10 @@ Sync DTOs in `core/sync/dto/` should default new fields to `null` so older Supab
 - **Exact alarms on SDK 33+** require either `USE_EXACT_ALARM` (auto-granted, used here) or `SCHEDULE_EXACT_ALARM` (user must enable in settings). Always guard with `AlarmManager.canScheduleExactAlarms()`.
 - **`fallbackToDestructiveMigration` is a safety net, not a strategy** — every schema bump needs an explicit `Migration` object in `DatabaseModule.kt`.
 - **Sleep day = endTime, not startTime** — Wed night→Thu morning sleep counts as Thursday. Don't regress the DAO queries or the `groupBy` in `HealthViewModel`.
-- **AI retrieval is heuristic context-dump, not RAG.** `DataContextBuilder` parses the user's question for date phrases ("today", "this week", "last N days"; defaults to last 7 days), bulk-fetches every DAO for that window, and formats it day-by-day into a plain-text blob that gets prepended to the LLM prompt. There is no embedding step, no pgvector, no per-question relevance selection — older docs/plans that reference embeddings are aspirational. This works because single-user data over a week fits comfortably in Gemini's context; it would not scale to multi-year queries. Don't propose pgvector code paths until the embedding pipeline actually lands.
+- **AI retrieval is heuristic context-dump, not RAG.** `DataContextBuilder` parses the user's question for date phrases ("today", "this week", "last N days"; defaults to last 7 days), bulk-fetches every DAO for that window, and formats it day-by-day into a plain-text blob that gets prepended to the LLM prompt. Context includes: health metrics, sleep (with quality score), workouts, weight (morning/evening/night), calories burned/consumed, calorie deficit, individual food items per meal, expenses, journal, sports, and media. There is no embedding step, no pgvector — older docs/plans that reference embeddings are aspirational. Don't propose pgvector code paths until the embedding pipeline actually lands.
+- **Notion buttons are guarded by API key check.** All import/export buttons (food, journal, media) are hidden when `NOTION_API_KEY` is blank. Without this, clicking them crashes for unconfigured users.
+- **Nutrition label scanner has OCR+Groq fallback.** If Gemini fails (timeout, rate limit), falls back to ML Kit text recognition (offline OCR) → Groq Llama 3.3 70B (text parsing). Strip markdown fences from Groq responses before JSON parsing.
+- **Music metadata uses MusicBrainz**, not iTunes. Cover art via Cover Art Archive. No auth required, 1 req/sec rate limit.
 
 ## Historical context
 The original implementation plan and per-feature research files live under `~/.claude/plans/hazy-herding-cupcake*.md`. They reflect the design intent at project start; treat them as historical, not authoritative — current code is the source of truth.

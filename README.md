@@ -2,7 +2,7 @@
 
 A personal Android app that consolidates daily tracking — nutrition, workouts, expenses, sports, journaling, media — into a single offline-first app, replacing a scattered collection of Notion pages with automated capture, cloud sync, and AI-powered analysis.
 
-**Current version:** 2.4.0
+**Current version:** 2.6.0
 
 ## Why DaySync?
 
@@ -12,19 +12,19 @@ Tracking daily life across 8+ Notion databases (meals, workouts, expenses, sport
 - **Automated expense capture** from payment-app notifications (GPay, PhonePe, BHIM, etc.)
 - **Live sports tracking** with auto-populated scores across football, NBA, F1, tennis, and MMA
 - **AI chat** that can correlate data across sections ("how do my workouts affect my sleep?")
-- **Daily 11 PM IST sync** to Supabase, with a separate 11:30 PM reminder for any missing daily logs
+- **Configurable daily sync** to Supabase (default 11 PM), with a separate reminder for missing daily logs
 - **Restore-from-cloud** so a fresh install or schema wipe recovers all user-entered data
 
 ## Features
 
 | Section | Description | Data source |
 |---|---|---|
-| **Health & Fitness** | Steps, heart rate, sleep stages, SpO2, workouts, VO2 max, daily/weekly trends | OnePlus Watch 2R via Health Connect |
+| **Health & Fitness** | Steps, heart rate, sleep stages, SpO2, workouts, VO2 max, daily/weekly/custom-range trends | Health Connect (any Wear OS watch) |
 | **Nutrition** | Meal library, daily entries, macro tracking, meal templates, calorie deficit (today + all-time) | Manual + Notion import |
 | **Expenses** | Auto-captured transactions, categorisation, payee rules, monthly reconciliation | Notification listener + manual + CSV import |
 | **Sports** | Watchlist with per-match Watchnotes, live scores, results, standings | Football-Data.org, API-Football, ESPN, BallDontLie, Jolpica |
 | **Journal** | Rich text entries, mood tracking, tags, attachments | Manual + Notion export |
-| **Media** | Books / movies / TV / games / anime — status, scores, creators | Manual + TMDB / OMDB / RAWG / Google Books metadata |
+| **Media** | Books / movies / TV / games / anime / music — status, scores, creators | Manual + TMDB / OMDB / RAWG / Google Books / MusicBrainz metadata |
 | **AI Chat** | Natural-language queries over your data with full-context system prompt | Gemini 2.5 Flash (primary), Groq Llama 3.3 70B (fallback) |
 
 Sport coverage by source: Football → Football-Data.org + API-Football + ESPN; NBA → BallDontLie + ESPN; F1 → Jolpica; Tennis & MMA → ESPN.
@@ -97,6 +97,8 @@ All keys live in `local.properties` (gitignored) and surface as `BuildConfig` fi
 | `RELEASE_STORE_FILE`, `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD` | Release signing |
 
 Supabase schema lives under `supabase/migrations/` — apply each `.sql` in order via the Supabase SQL Editor before first sync, and apply any new migration before installing a build that references it.
+
+Timezone, currency, and sync/reminder times are configurable in-app via Settings → Configuration. Defaults to IST and INR.
 
 ## Running Costs
 
