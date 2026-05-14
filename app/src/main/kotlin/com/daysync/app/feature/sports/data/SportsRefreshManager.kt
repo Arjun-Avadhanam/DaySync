@@ -7,6 +7,7 @@ import com.daysync.app.feature.sports.data.remote.dto.mapApifStatus
 import com.daysync.app.feature.sports.data.remote.dto.toCompetitorEntity
 import com.daysync.app.feature.sports.data.remote.dto.toSportEventEntity
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -19,6 +20,7 @@ import javax.inject.Singleton
 
 @Singleton
 class SportsRefreshManager @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val dao: SportEventDao,
     private val apiFootballService: ApiFootballService,
     private val espnApi: EspnApiService,
@@ -52,6 +54,13 @@ class SportsRefreshManager @Inject constructor(
     }
 
     private suspend fun pollLiveScores() {
+        // Snapshot watchlisted event statuses before refresh to detect completions
+        val watchlistedIds = dao.getWatchlistedEventIds().first().toSet()
+        val preRefreshStatuses = mutableMapOf<String, String>()
+        for (id in watchlistedIds) {
+            dao.getEventById(id)?.let { preRefreshStatuses[id] = it.status }
+        }
+
         val followed = dao.getFollowedCompetitionIds().toSet()
 
         // Poll API-Football for live football (1 request = all live matches)
@@ -98,9 +107,26 @@ class SportsRefreshManager @Inject constructor(
                 }
             } catch (_: Exception) {}
         }
+
+        // Check for watchlisted events that just transitioned to COMPLETED
+        for (id in watchlistedIds) {
+            val oldStatus = preRefreshStatuses[id] ?: continue
+            val newEvent = dao.getEventById(id) ?: continue
+            if (oldStatus != "COMPLETED" && newEvent.status == "COMPLETED") {
+                // Schedule post-match notification 30 min from now
+                val triggerAt = System.currentTimeMillis() + POST_MATCH_DELAY_MS
+                val name = newEvent.eventName ?: "Match"
+                com.daysync.app.feature.sports.service.MatchNotificationReceiver.schedule(
+                    context, id, name,
+                    com.daysync.app.feature.sports.service.MatchNotificationReceiver.TYPE_POST_MATCH,
+                    triggerAt,
+                )
+            }
+        }
     }
 
     companion object {
         const val POLL_INTERVAL_MS = 60_000L // 60 seconds
+        private const val POST_MATCH_DELAY_MS = 30 * 60 * 1000L
     }
 }

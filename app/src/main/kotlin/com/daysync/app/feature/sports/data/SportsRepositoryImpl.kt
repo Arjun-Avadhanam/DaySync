@@ -36,6 +36,7 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.util.UUID
 import javax.inject.Inject
@@ -43,6 +44,7 @@ import javax.inject.Singleton
 
 @Singleton
 class SportsRepositoryImpl @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val dao: SportEventDao,
     private val footballDataApi: FootballDataApiService,
     private val espnApi: EspnApiService,
@@ -53,6 +55,8 @@ class SportsRepositoryImpl @Inject constructor(
 
     companion object {
         private const val TAG = "SportsRepository"
+        private const val PRE_MATCH_LEAD_MS = 30 * 60 * 1000L
+        private const val POST_MATCH_DELAY_MS = 30 * 60 * 1000L
     }
 
     override suspend fun ensureSeedData() {
@@ -151,6 +155,11 @@ class SportsRepositoryImpl @Inject constructor(
     override suspend fun toggleWatchlist(eventId: String) {
         if (dao.isEventWatchlisted(eventId)) {
             dao.deleteWatchlistByEventId(eventId)
+            // Cancel any scheduled notifications for this event
+            com.daysync.app.feature.sports.service.MatchNotificationReceiver.cancel(
+                context, eventId,
+                com.daysync.app.feature.sports.service.MatchNotificationReceiver.TYPE_PRE_MATCH,
+            )
         } else {
             dao.insertWatchlistEntry(
                 WatchlistEntryEntity(
@@ -159,7 +168,28 @@ class SportsRepositoryImpl @Inject constructor(
                     addedAt = Clock.System.now(),
                 )
             )
+            // Mark the sport event as PENDING so it syncs to Supabase —
+            // Claude's weekly summary needs event data alongside watchlist entries
+            dao.getEventById(eventId)?.let { event ->
+                dao.updateEvent(event.copy(
+                    syncStatus = com.daysync.app.core.sync.SyncStatus.PENDING,
+                    lastModified = Clock.System.now(),
+                ))
+                // Schedule pre-match notification (30 min before kick-off)
+                schedulePreMatchNotification(event)
+            }
         }
+    }
+
+    private fun schedulePreMatchNotification(event: SportEventEntity) {
+        val triggerAt = event.scheduledAt.toEpochMilliseconds() - PRE_MATCH_LEAD_MS
+        if (triggerAt <= Clock.System.now().toEpochMilliseconds()) return // already past
+        val name = event.eventName ?: "Match"
+        com.daysync.app.feature.sports.service.MatchNotificationReceiver.schedule(
+            context, event.id, name,
+            com.daysync.app.feature.sports.service.MatchNotificationReceiver.TYPE_PRE_MATCH,
+            triggerAt,
+        )
     }
 
     override fun observeWatchnotes(eventId: String): Flow<String?> =
@@ -269,6 +299,20 @@ class SportsRepositoryImpl @Inject constructor(
             try { refreshTennisEvents() } catch (e: Exception) {
                 Log.e(TAG, "Failed to refresh Tennis: ${e.message}", e)
                 errors += "Tennis: ${e.message}"
+            }
+        }
+
+        // Mark all watchlisted sport events as PENDING so they sync to Supabase.
+        // This ensures the Claude weekly summary can join watchlist_entries with sport_events.
+        val watchlistedIds = dao.getWatchlistedEventIds().first()
+        for (id in watchlistedIds) {
+            dao.getEventById(id)?.let { event ->
+                if (event.syncStatus == com.daysync.app.core.sync.SyncStatus.SYNCED) {
+                    dao.updateEvent(event.copy(
+                        syncStatus = com.daysync.app.core.sync.SyncStatus.PENDING,
+                        lastModified = Clock.System.now(),
+                    ))
+                }
             }
         }
 

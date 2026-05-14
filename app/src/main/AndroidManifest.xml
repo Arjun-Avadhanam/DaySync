@@ -108,6 +108,11 @@
             android:name=".core.sync.ReminderAlarmReceiver"
             android:exported="false" />
 
+        <!-- Match Notification Receiver (pre-match and post-match reminders) -->
+        <receiver
+            android:name=".feature.sports.service.MatchNotificationReceiver"
+            android:exported="false" />
+
         <!-- Override WorkManager's SystemForegroundService to declare dataSync type (required on SDK 34+) -->
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
