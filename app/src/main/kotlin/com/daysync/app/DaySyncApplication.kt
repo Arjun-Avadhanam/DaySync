@@ -10,6 +10,8 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.daysync.app.core.sync.DailySyncWorker
 import com.daysync.app.core.sync.ReminderAlarmReceiver
+import com.daysync.app.feature.expenses.budget.BudgetCheckWorker
+import com.daysync.app.feature.expenses.budget.BudgetNotificationChannel
 import com.daysync.app.feature.expenses.service.ExpenseNotificationChannel
 import dagger.hilt.android.HiltAndroidApp
 import java.time.Duration
@@ -33,8 +35,21 @@ class DaySyncApplication : Application(), Configuration.Provider {
         super.onCreate()
         com.daysync.app.core.CrashLogger.install(this)
         ExpenseNotificationChannel.createChannel(this)
+        BudgetNotificationChannel.createChannel(this)
         scheduleDailySync()
         scheduleDailyReminder()
+        scheduleBudgetCheck()
+    }
+
+    private fun scheduleBudgetCheck() {
+        val request = PeriodicWorkRequestBuilder<BudgetCheckWorker>(24, TimeUnit.HOURS)
+            .addTag("budget_check")
+            .build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "daysync_budget_check",
+            ExistingPeriodicWorkPolicy.UPDATE,
+            request,
+        )
     }
 
     private fun scheduleDailySync() {
