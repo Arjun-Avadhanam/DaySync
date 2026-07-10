@@ -56,6 +56,7 @@ interface SportsRepository {
 
     // Refresh
     suspend fun refreshAllSports()
+    suspend fun finalizeStaleLiveEvents()
 
     // Standings
     suspend fun getStandings(competitionCode: String): List<StandingRow>

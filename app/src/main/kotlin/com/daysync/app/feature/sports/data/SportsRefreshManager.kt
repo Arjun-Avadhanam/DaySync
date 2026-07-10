@@ -54,6 +54,12 @@ class SportsRefreshManager @Inject constructor(
     }
 
     private suspend fun pollLiveScores() {
+        // Finalize events the APIs stopped returning BEFORE the status snapshot,
+        // so a long-stale watchlisted event can't register as a fresh completion
+        // and fire a post-match notification.
+        val now = System.currentTimeMillis()
+        dao.completeStaleLiveEvents(now - SportsRepositoryImpl.STALE_EVENT_GRACE_MS, now)
+
         // Snapshot watchlisted event statuses before refresh to detect completions
         val watchlistedIds = dao.getWatchlistedEventIds().first().toSet()
         val preRefreshStatuses = mutableMapOf<String, String>()

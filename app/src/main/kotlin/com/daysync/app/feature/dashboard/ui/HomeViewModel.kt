@@ -106,7 +106,9 @@ class HomeViewModel @Inject constructor(
                 val monthlyExpenses = expenseDao.getMonthlyTotal(monthStart, today).first()
 
                 // Sports
-                val upcomingMatches = sportEventDao.getUpcomingEvents().first().size
+                val upcomingSince = Clock.System.now().toEpochMilliseconds() -
+                    com.daysync.app.feature.sports.data.SportsRepositoryImpl.STALE_EVENT_GRACE_MS
+                val upcomingMatches = sportEventDao.getUpcomingEvents(upcomingSince).first().size
 
                 // Journal
                 val journalEntries = journalEntryDao.getAll().first().size

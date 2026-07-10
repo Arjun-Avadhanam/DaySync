@@ -57,19 +57,34 @@ class SportsRepositoryImpl @Inject constructor(
         private const val TAG = "SportsRepository"
         private const val PRE_MATCH_LEAD_MS = 30 * 60 * 1000L
         private const val POST_MATCH_DELAY_MS = 30 * 60 * 1000L
+
+        // No tracked event (UFC card ≈ 7h is the longest) runs this long, so
+        // anything older is either finished or abandoned by its API.
+        const val STALE_EVENT_GRACE_MS = 12 * 60 * 60 * 1000L
     }
 
     override suspend fun ensureSeedData() {
         SeedData.ensureSeedData(dao)
     }
 
+    private fun staleCutoffMillis(): Long =
+        Clock.System.now().toEpochMilliseconds() - STALE_EVENT_GRACE_MS
+
     // Events
     override fun getUpcomingEvents(sportId: String?): Flow<List<SportEventEntity>> {
-        return if (sportId != null) dao.getUpcomingEventsBySport(sportId) else dao.getUpcomingEvents()
+        val since = staleCutoffMillis()
+        return if (sportId != null) dao.getUpcomingEventsBySport(sportId, since) else dao.getUpcomingEvents(since)
     }
 
     override fun getLiveEvents(sportId: String?): Flow<List<SportEventEntity>> {
-        return if (sportId != null) dao.getLiveEventsBySport(sportId) else dao.getLiveEvents()
+        val since = staleCutoffMillis()
+        return if (sportId != null) dao.getLiveEventsBySport(sportId, since) else dao.getLiveEvents(since)
+    }
+
+    override suspend fun finalizeStaleLiveEvents() {
+        val now = Clock.System.now().toEpochMilliseconds()
+        val updated = dao.completeStaleLiveEvents(now - STALE_EVENT_GRACE_MS, now)
+        if (updated > 0) Log.i(TAG, "Finalized $updated stale LIVE events")
     }
 
     override fun getRecentResults(sportId: String?): Flow<List<SportEventEntity>> {
@@ -261,6 +276,9 @@ class SportsRepositoryImpl @Inject constructor(
 
     // Refresh
     override suspend fun refreshAllSports() {
+        // Run before the network work so stuck events clear even offline
+        finalizeStaleLiveEvents()
+
         val errors = mutableListOf<String>()
         val followed = dao.getFollowedCompetitionIds().toSet()
 

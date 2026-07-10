@@ -114,16 +114,18 @@ interface SportEventDao {
     @Query(
         """SELECT * FROM sport_events
            WHERE status IN ('SCHEDULED', 'LIVE') AND isDeleted = 0
+           AND scheduledAt >= :sinceMillis
            ORDER BY scheduledAt ASC"""
     )
-    fun getUpcomingEvents(): Flow<List<SportEventEntity>>
+    fun getUpcomingEvents(sinceMillis: Long): Flow<List<SportEventEntity>>
 
     @Query(
         """SELECT * FROM sport_events
            WHERE status IN ('SCHEDULED', 'LIVE') AND isDeleted = 0 AND sportId = :sportId
+           AND scheduledAt >= :sinceMillis
            ORDER BY scheduledAt ASC"""
     )
-    fun getUpcomingEventsBySport(sportId: String): Flow<List<SportEventEntity>>
+    fun getUpcomingEventsBySport(sportId: String, sinceMillis: Long): Flow<List<SportEventEntity>>
 
     @Query(
         """SELECT * FROM sport_events
@@ -139,11 +141,26 @@ interface SportEventDao {
     )
     fun getRecentResultsBySport(sportId: String): Flow<List<SportEventEntity>>
 
-    @Query("SELECT * FROM sport_events WHERE status = 'LIVE' AND isDeleted = 0")
-    fun getLiveEvents(): Flow<List<SportEventEntity>>
+    @Query("SELECT * FROM sport_events WHERE status = 'LIVE' AND isDeleted = 0 AND scheduledAt >= :sinceMillis")
+    fun getLiveEvents(sinceMillis: Long): Flow<List<SportEventEntity>>
 
-    @Query("SELECT * FROM sport_events WHERE status = 'LIVE' AND isDeleted = 0 AND sportId = :sportId")
-    fun getLiveEventsBySport(sportId: String): Flow<List<SportEventEntity>>
+    @Query(
+        """SELECT * FROM sport_events
+           WHERE status = 'LIVE' AND isDeleted = 0 AND sportId = :sportId
+           AND scheduledAt >= :sinceMillis"""
+    )
+    fun getLiveEventsBySport(sportId: String, sinceMillis: Long): Flow<List<SportEventEntity>>
+
+    // APIs only upsert events they still return; once a season ends (or the
+    // fetch window moves on) a LIVE row never receives its closing update and
+    // would sit in the Live/Upcoming tabs forever. Finalize anything that
+    // started long enough ago that it cannot still be running.
+    @Query(
+        """UPDATE sport_events
+           SET status = 'COMPLETED', lastModified = :nowMillis, syncStatus = 'PENDING'
+           WHERE status = 'LIVE' AND scheduledAt < :cutoffMillis AND isDeleted = 0"""
+    )
+    suspend fun completeStaleLiveEvents(cutoffMillis: Long, nowMillis: Long): Int
 
     @Query(
         """SELECT * FROM sport_events
