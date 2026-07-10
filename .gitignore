@@ -68,3 +68,6 @@ out/
 # Claude Code (local-only files)
 # ============================================
 CLAUDE.local.md
+
+# WSL / Windows metadata junk
+*:Zone.Identifier
