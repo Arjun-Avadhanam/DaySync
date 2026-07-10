@@ -9,6 +9,8 @@ import com.daysync.app.core.database.dao.ExpenseDao
 import com.daysync.app.feature.expenses.budget.BudgetAlertEvaluator
 import com.daysync.app.feature.expenses.budget.BudgetAlertStore
 import com.daysync.app.feature.expenses.budget.BudgetNotificationChannel
+import com.daysync.app.feature.expenses.budget.data.BudgetRepository
+import com.daysync.app.feature.expenses.budget.data.BudgetRepositoryImpl
 import com.daysync.app.feature.expenses.budget.model.ResolvedBudget
 import dagger.Module
 import dagger.Provides
@@ -51,5 +53,14 @@ object BudgetModule {
             context.getSystemService(NotificationManager::class.java).notify(id, notification)
         }
         return BudgetAlertEvaluator(budgetDao, expenseDao, alertStore, post)
+    }
+
+    @Provides
+    @Singleton
+    fun provideBudgetRepository(
+        budgetDao: BudgetDao,
+        expenseDao: ExpenseDao,
+    ): BudgetRepository {
+        return BudgetRepositoryImpl(budgetDao, expenseDao)
     }
 }
