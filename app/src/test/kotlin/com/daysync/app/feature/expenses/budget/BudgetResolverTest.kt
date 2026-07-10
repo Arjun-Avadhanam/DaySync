@@ -39,30 +39,35 @@ class BudgetResolverTest {
     }
 
     @Test
-    fun `weekly resolution precedence per-month override then pattern then flat`() {
+    fun `per-week override wins over recurring flat cap`() {
         val budgets = listOf(
-            budget("flat", "WEEKLY", 10000.0, recurring = true),                 // flat cap
-            budget("pat2", "WEEKLY", 12000.0, recurring = true, weekBlock = 2),   // recurring pattern block 2
-            budget("ovr2", "WEEKLY", 15000.0, recurring = false, yearMonth = "2026-07", weekBlock = 2),
+            budget("flat", "WEEKLY", 10000.0, recurring = true),
+            budget("ovr", "WEEKLY", 15000.0, recurring = false,
+                start = LocalDate(2026, 7, 6), end = LocalDate(2026, 7, 12)),
         )
-        val blocks = BudgetResolver.weeklyBlocksFor(budgets, 2026, 7)
-        // block 1 -> flat, block 2 -> per-month override, block 3 -> flat
-        assertEquals(10000.0, blocks.first { it.instanceKey == "WEEKLY:2026-07:1" }.amount, 0.0)
-        assertEquals(15000.0, blocks.first { it.instanceKey == "WEEKLY:2026-07:2" }.amount, 0.0)
-        assertEquals(10000.0, blocks.first { it.instanceKey == "WEEKLY:2026-07:3" }.amount, 0.0)
+        // week of Mon Jul 6
+        assertEquals(15000.0, BudgetResolver.weeklyForWeek(budgets, LocalDate(2026, 7, 6))!!.amount, 0.0)
+        assertEquals("WEEKLY:2026-07-06", BudgetResolver.weeklyForWeek(budgets, LocalDate(2026, 7, 6))!!.instanceKey)
+        // a different week falls back to the flat cap
+        assertEquals(10000.0, BudgetResolver.weeklyForWeek(budgets, LocalDate(2026, 7, 13))!!.amount, 0.0)
     }
 
     @Test
-    fun `coveringDate returns monthly plus containing block plus containing customs`() {
+    fun `weeklyForWeek is null when neither override nor flat cap exists`() {
+        assertNull(BudgetResolver.weeklyForWeek(emptyList(), LocalDate(2026, 7, 6)))
+    }
+
+    @Test
+    fun `coveringDate resolves the calendar week containing the date`() {
         val budgets = listOf(
             budget("m", "MONTHLY", 40000.0, recurring = true),
             budget("w", "WEEKLY", 10000.0, recurring = true),
             budget("c", "CUSTOM", 8000.0, recurring = false, yearMonth = "2026-07",
                 start = LocalDate(2026, 7, 5), end = LocalDate(2026, 7, 12), label = "Trip"),
         )
-        val covering = BudgetResolver.coveringDate(budgets, LocalDate(2026, 7, 10))
-        val keys = covering.map { it.instanceKey }.toSet()
-        assertEquals(setOf("MONTHLY:2026-07", "WEEKLY:2026-07:2", "CUSTOM:c"), keys)
+        // Jul 10 is in the Mon Jul 6 week
+        val keys = BudgetResolver.coveringDate(budgets, LocalDate(2026, 7, 10)).map { it.instanceKey }.toSet()
+        assertEquals(setOf("MONTHLY:2026-07", "WEEKLY:2026-07-06", "CUSTOM:c"), keys)
     }
 
     @Test

@@ -2,7 +2,7 @@ package com.daysync.app.feature.expenses.budget
 
 import com.daysync.app.core.database.entity.BudgetEntity
 import com.daysync.app.feature.expenses.budget.model.BudgetKind
-import com.daysync.app.feature.expenses.budget.model.MonthWeeks
+import com.daysync.app.feature.expenses.budget.model.CalendarWeeks
 import com.daysync.app.feature.expenses.budget.model.ResolvedBudget
 import kotlinx.datetime.LocalDate
 
@@ -15,13 +15,15 @@ object BudgetResolver {
         "July", "August", "September", "October", "November", "December",
     )[month - 1]
 
+    private fun shortMonth(month: Int): String = monthLabel(month).take(3)
+
     fun monthlyFor(budgets: List<BudgetEntity>, year: Int, month: Int): ResolvedBudget? {
         val key = ym(year, month)
         val monthlies = budgets.filter { it.type == "MONTHLY" }
         val chosen = monthlies.firstOrNull { !it.recurring && it.yearMonth == key }
             ?: monthlies.firstOrNull { it.recurring }
             ?: return null
-        val n = MonthWeeks.daysInMonth(year, month)
+        val n = CalendarWeeks.daysInMonth(year, month)
         return ResolvedBudget(
             instanceKey = "MONTHLY:$key",
             kind = BudgetKind.MONTHLY,
@@ -32,26 +34,20 @@ object BudgetResolver {
         )
     }
 
-    fun weeklyBlocksFor(budgets: List<BudgetEntity>, year: Int, month: Int): List<ResolvedBudget> {
-        val key = ym(year, month)
+    fun weeklyForWeek(budgets: List<BudgetEntity>, monday: LocalDate): ResolvedBudget? {
         val weeklies = budgets.filter { it.type == "WEEKLY" }
-        val perMonth = weeklies.filter { !it.recurring && it.yearMonth == key && it.weekBlock != null }
-            .associateBy { it.weekBlock!! }
-        val pattern = weeklies.filter { it.recurring && it.weekBlock != null }
-            .associateBy { it.weekBlock!! }
+        val override = weeklies.firstOrNull { !it.recurring && it.startDate == monday }
         val flat = weeklies.firstOrNull { it.recurring && it.weekBlock == null }
-
-        return MonthWeeks.blocksFor(year, month).mapNotNull { block ->
-            val amount = (perMonth[block.index] ?: pattern[block.index] ?: flat)?.amount ?: return@mapNotNull null
-            ResolvedBudget(
-                instanceKey = "WEEKLY:$key:${block.index}",
-                kind = BudgetKind.WEEKLY,
-                label = "${monthLabel(month).take(3)} ${block.start.dayOfMonth}–${block.end.dayOfMonth}",
-                start = block.start,
-                end = block.end,
-                amount = amount,
-            )
-        }
+        val chosen = override ?: flat ?: return null
+        val end = CalendarWeeks.weekEnd(monday)
+        return ResolvedBudget(
+            instanceKey = "WEEKLY:$monday",
+            kind = BudgetKind.WEEKLY,
+            label = "${shortMonth(monday.monthNumber)} ${monday.dayOfMonth} – ${shortMonth(end.monthNumber)} ${end.dayOfMonth}",
+            start = monday,
+            end = end,
+            amount = chosen.amount,
+        )
     }
 
     fun customFor(budgets: List<BudgetEntity>, year: Int, month: Int): List<ResolvedBudget> {
@@ -74,7 +70,7 @@ object BudgetResolver {
         val month = date.monthNumber
         val result = mutableListOf<ResolvedBudget>()
         monthlyFor(budgets, year, month)?.let { result += it }
-        weeklyBlocksFor(budgets, year, month).firstOrNull { date >= it.start && date <= it.end }?.let { result += it }
+        weeklyForWeek(budgets, CalendarWeeks.weekStart(date))?.let { result += it }
         result += customFor(budgets, year, month).filter { date >= it.start && date <= it.end }
         return result
     }
