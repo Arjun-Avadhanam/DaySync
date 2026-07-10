@@ -1,5 +1,6 @@
 package com.daysync.app.core.sync.mapper
 
+import com.daysync.app.core.database.entity.BudgetEntity
 import com.daysync.app.core.database.entity.CompetitionEntity
 import com.daysync.app.core.database.entity.CompetitorEntity
 import com.daysync.app.core.database.entity.DailyMealEntryEntity
@@ -21,6 +22,7 @@ import com.daysync.app.core.database.entity.SportEventEntity
 import com.daysync.app.core.database.entity.SyncLogEntity
 import com.daysync.app.core.database.entity.VenueEntity
 import com.daysync.app.core.database.entity.WatchlistEntryEntity
+import com.daysync.app.core.sync.dto.BudgetDto
 import com.daysync.app.core.sync.dto.CompetitionDto
 import com.daysync.app.core.sync.dto.CompetitorDto
 import com.daysync.app.core.sync.dto.DailyMealEntryDto
@@ -164,6 +166,23 @@ fun ExpenseEntity.toDto() = ExpenseDto(
     notes = notes,
     source = source,
     merchantName = merchantName,
+    lastModified = lastModified.toEpochMilliseconds(),
+    isDeleted = isDeleted,
+)
+
+// Budgets
+
+fun BudgetEntity.toDto() = BudgetDto(
+    id = id,
+    type = type,
+    category = category,
+    amount = amount,
+    recurring = recurring,
+    yearMonth = yearMonth,
+    weekBlock = weekBlock,
+    startDate = startDate?.toString(),
+    endDate = endDate?.toString(),
+    label = label,
     lastModified = lastModified.toEpochMilliseconds(),
     isDeleted = isDeleted,
 )

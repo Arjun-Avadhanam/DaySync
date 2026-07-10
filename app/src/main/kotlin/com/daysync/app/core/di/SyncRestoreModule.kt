@@ -41,6 +41,7 @@ object SyncRestoreModule {
         mediaItemDao: MediaItemDao,
         dailyHealthOverrideDao: DailyHealthOverrideDao,
         sportEventDao: SportEventDao,
+        budgetDao: com.daysync.app.core.database.dao.BudgetDao,
     ): SyncRestoreEngine {
         val httpClient = HttpClient(OkHttp) {
             install(ContentNegotiation) {
@@ -61,6 +62,7 @@ object SyncRestoreModule {
             mediaItemDao = mediaItemDao,
             dailyHealthOverrideDao = dailyHealthOverrideDao,
             sportEventDao = sportEventDao,
+            budgetDao = budgetDao,
         )
     }
 }

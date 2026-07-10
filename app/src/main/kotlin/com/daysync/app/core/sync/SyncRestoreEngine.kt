@@ -48,6 +48,7 @@ class SyncRestoreEngine @Inject constructor(
     private val mediaItemDao: MediaItemDao,
     private val dailyHealthOverrideDao: DailyHealthOverrideDao,
     private val sportEventDao: SportEventDao,
+    private val budgetDao: com.daysync.app.core.database.dao.BudgetDao,
 ) {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
@@ -69,6 +70,7 @@ class SyncRestoreEngine @Inject constructor(
             "daily_meal_entries" to ::restoreDailyMealEntries,
             "daily_nutrition_summaries" to ::restoreNutritionSummaries,
             "expenses" to ::restoreExpenses,
+            "budgets" to ::restoreBudgets,
             "journal_entries" to ::restoreJournalEntries,
             "media_items" to ::restoreMediaItems,
             "daily_health_overrides" to ::restoreHealthOverrides,
@@ -139,6 +141,13 @@ class SyncRestoreEngine @Inject constructor(
         val rows = fetchAll<ExpenseRow>("expenses")
         val entities = rows.map { it.toEntity() }
         if (entities.isNotEmpty()) expenseDao.insertAll(entities)
+        return entities.size
+    }
+
+    private suspend fun restoreBudgets(): Int {
+        val rows = fetchAll<BudgetRow>("budgets")
+        val entities = rows.map { it.toEntity() }
+        if (entities.isNotEmpty()) budgetDao.upsertAll(entities)
         return entities.size
     }
 
@@ -225,6 +234,31 @@ class SyncRestoreEngine @Inject constructor(
             frequency = frequency, unitCost = unitCost, quantity = quantity,
             deliveryCharge = deliveryCharge, totalAmount = totalAmount,
             notes = notes, source = source, merchantName = merchantName,
+            syncStatus = SyncStatus.SYNCED,
+            lastModified = Instant.fromEpochMilliseconds(lastModified),
+        )
+    }
+
+    @Serializable
+    data class BudgetRow(
+        val id: String,
+        val type: String,
+        val category: String? = null,
+        val amount: Double,
+        val recurring: Boolean,
+        @SerialName("year_month") val yearMonth: String? = null,
+        @SerialName("week_block") val weekBlock: Int? = null,
+        @SerialName("start_date") val startDate: String? = null,
+        @SerialName("end_date") val endDate: String? = null,
+        val label: String? = null,
+        @SerialName("last_modified") val lastModified: Long,
+    ) {
+        fun toEntity() = BudgetEntity(
+            id = id, type = type, category = category, amount = amount, recurring = recurring,
+            yearMonth = yearMonth, weekBlock = weekBlock,
+            startDate = startDate?.let { LocalDate.parse(it) },
+            endDate = endDate?.let { LocalDate.parse(it) },
+            label = label,
             syncStatus = SyncStatus.SYNCED,
             lastModified = Instant.fromEpochMilliseconds(lastModified),
         )

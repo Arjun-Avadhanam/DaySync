@@ -64,6 +64,7 @@ class DaySyncEngine @Inject constructor(
     private val dailyMealEntryDao: DailyMealEntryDao,
     private val dailyNutritionSummaryDao: DailyNutritionSummaryDao,
     private val expenseDao: ExpenseDao,
+    private val budgetDao: com.daysync.app.core.database.dao.BudgetDao,
     private val sportEventDao: SportEventDao,
     private val journalEntryDao: JournalEntryDao,
     private val mediaItemDao: MediaItemDao,
@@ -98,6 +99,7 @@ class DaySyncEngine @Inject constructor(
             "daily_meal_entries" to ::syncDailyMealEntries,
             "daily_nutrition_summaries" to ::syncDailyNutritionSummaries,
             "expenses" to ::syncExpenses,
+            "budgets" to ::syncBudgets,
             "sport_events" to ::syncSportEvents,
             "watchlist_entries" to ::syncWatchlistEntries,
             "followed_competitors" to ::syncFollowedCompetitors,
@@ -236,6 +238,15 @@ class DaySyncEngine @Inject constructor(
         logSync("expenses", pending.size, "SUCCESS")
     }.onFailure { logSync("expenses", 0, "FAILED"); Log.e(TAG, "syncExpenses failed", it) }
 
+    private suspend fun syncBudgets(): Result<Unit> = runCatching {
+        val pending = budgetDao.getPendingSync()
+        if (pending.isEmpty()) { logSync("budgets", 0, "SUCCESS"); return@runCatching }
+        val dtos = pending.map { it.toDto() }
+        upsertChunked("budgets", dtos)
+        markSyncedChunked(pending.map { it.id }) { budgetDao.markAsSynced(it) }
+        logSync("budgets", pending.size, "SUCCESS")
+    }.onFailure { logSync("budgets", 0, "FAILED"); Log.e(TAG, "syncBudgets failed", it) }
+
     @OptIn(ExperimentalTime::class)
     private suspend fun syncSportEvents(): Result<Unit> = runCatching {
         val pending = sportEventDao.getPendingSyncEvents()
@@ -370,7 +381,7 @@ class DaySyncEngine @Inject constructor(
     }
 
     companion object {
-        private const val TOTAL_TABLES = 16
+        private const val TOTAL_TABLES = 17
     }
 }
 
