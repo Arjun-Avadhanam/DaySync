@@ -34,8 +34,8 @@ android {
         applicationId = "com.daysync.app"
         minSdk = 28
         targetSdk = 36
-        versionCode = 20601
-        versionName = "2.6.1"
+        versionCode = 20700
+        versionName = "2.7.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
