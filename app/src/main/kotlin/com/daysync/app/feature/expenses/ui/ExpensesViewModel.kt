@@ -21,7 +21,28 @@ import kotlinx.datetime.toLocalDateTime
 
 sealed interface ExpensePeriod {
     data class Monthly(val year: Int, val month: Int) : ExpensePeriod
+    data class Weekly(val year: Int, val month: Int, val blockIndex: Int) : ExpensePeriod
     data class Custom(val start: LocalDate, val end: LocalDate) : ExpensePeriod
+}
+
+object WeeklyNav {
+    fun next(w: ExpensePeriod.Weekly): ExpensePeriod.Weekly {
+        val blocks = com.daysync.app.feature.expenses.budget.model.MonthWeeks.blocksFor(w.year, w.month).size
+        return if (w.blockIndex < blocks) w.copy(blockIndex = w.blockIndex + 1)
+        else {
+            val (y, m) = if (w.month == 12) w.year + 1 to 1 else w.year to w.month + 1
+            ExpensePeriod.Weekly(y, m, 1)
+        }
+    }
+
+    fun previous(w: ExpensePeriod.Weekly): ExpensePeriod.Weekly {
+        return if (w.blockIndex > 1) w.copy(blockIndex = w.blockIndex - 1)
+        else {
+            val (y, m) = if (w.month == 1) w.year - 1 to 12 else w.year to w.month - 1
+            val lastBlock = com.daysync.app.feature.expenses.budget.model.MonthWeeks.blocksFor(y, m).size
+            ExpensePeriod.Weekly(y, m, lastBlock)
+        }
+    }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -44,6 +65,12 @@ class ExpensesViewModel @Inject constructor(
                 val s = LocalDate(period.year, period.month, 1)
                 val e = LocalDate(period.year, period.month, daysInMonth(period.year, period.month))
                 s to e
+            }
+            is ExpensePeriod.Weekly -> {
+                val block = com.daysync.app.feature.expenses.budget.model.MonthWeeks
+                    .blocksFor(period.year, period.month)
+                    .first { it.index == period.blockIndex }
+                block.start to block.end
             }
             is ExpensePeriod.Custom -> period.start to period.end
         }
@@ -68,6 +95,12 @@ class ExpensesViewModel @Inject constructor(
                 isCustomRange = _period.value is ExpensePeriod.Custom,
                 rangeLabel = when (val p = _period.value) {
                     is ExpensePeriod.Custom -> com.daysync.app.core.ui.formatRangeLabel(p.start, p.end)
+                    is ExpensePeriod.Weekly -> {
+                        val b = com.daysync.app.feature.expenses.budget.model.MonthWeeks
+                            .blocksFor(p.year, p.month).first { it.index == p.blockIndex }
+                        val mon = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")[p.month - 1]
+                        "$mon ${b.start.dayOfMonth}–${b.end.dayOfMonth}"
+                    }
                     is ExpensePeriod.Monthly -> null
                 },
             )
@@ -94,6 +127,23 @@ class ExpensesViewModel @Inject constructor(
             current.year to current.month + 1
         }
         _period.value = ExpensePeriod.Monthly(year, month)
+    }
+
+    fun showWeekly() {
+        val block = com.daysync.app.feature.expenses.budget.model.MonthWeeks.blockContaining(today)
+        _period.value = ExpensePeriod.Weekly(today.year, today.monthNumber, block.index)
+    }
+
+    fun showMonthly() {
+        _period.value = ExpensePeriod.Monthly(today.year, today.monthNumber)
+    }
+
+    fun previousWeek() {
+        (_period.value as? ExpensePeriod.Weekly)?.let { _period.value = WeeklyNav.previous(it) }
+    }
+
+    fun nextWeek() {
+        (_period.value as? ExpensePeriod.Weekly)?.let { _period.value = WeeklyNav.next(it) }
     }
 
     fun setCustomRange(start: LocalDate, end: LocalDate) {
