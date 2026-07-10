@@ -16,3 +16,8 @@ create table if not exists public.budgets (
 
 create index if not exists idx_budgets_type on public.budgets (type);
 create index if not exists idx_budgets_year_month on public.budgets (year_month);
+
+-- Match the RLS posture of every other DaySync table: enabled with a single
+-- permissive policy (single-user app; anon key is embedded in the client).
+alter table public.budgets enable row level security;
+create policy "Allow all" on public.budgets for all to public using (true) with check (true);
