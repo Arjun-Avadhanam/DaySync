@@ -26,6 +26,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -54,6 +55,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.daysync.app.core.ui.ErrorMessage
 import com.daysync.app.core.ui.LoadingIndicator
@@ -61,6 +63,7 @@ import com.daysync.app.feature.expenses.model.Expense
 import com.daysync.app.feature.expenses.model.formatIndianCurrency
 import com.daysync.app.feature.expenses.ui.components.ExpenseSourceBadge
 import com.daysync.app.ui.navigation.ExpenseAdd
+import com.daysync.app.ui.navigation.ExpenseBudgets
 import com.daysync.app.ui.navigation.ExpenseCsvImport
 import com.daysync.app.ui.navigation.ExpenseDetail
 import com.daysync.app.ui.navigation.ExpensePayeeRules
@@ -121,6 +124,13 @@ fun ExpensesScreen(
                                 navController.navigate(ExpensePayeeRules)
                             },
                         )
+                        DropdownMenuItem(
+                            text = { Text("Budgets") },
+                            onClick = {
+                                menuExpanded = false
+                                navController.navigate(ExpenseBudgets)
+                            },
+                        )
                     }
                 },
             )
@@ -149,6 +159,8 @@ fun ExpensesScreen(
                     )
                 }
             }
+
+            BudgetSummaryCard(onSetBudget = { navController.navigate(ExpenseBudgets) })
 
             when (val state = uiState) {
                 is ExpensesListUiState.Loading -> LoadingIndicator()
@@ -180,14 +192,39 @@ fun ExpensesScreen(
                             }
                         }
                     } else {
-                        // Month selector
-                        MonthSelector(
-                            year = state.selectedYear,
-                            month = state.selectedMonth,
-                            monthlyTotal = state.monthlyTotal,
-                            onPrevious = viewModel::previousMonth,
-                            onNext = viewModel::nextMonth,
-                        )
+                        // Week | Month toggle
+                        val isWeekly = viewModel.period.collectAsStateWithLifecycle().value is ExpensePeriod.Weekly
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            FilterChip(
+                                selected = isWeekly,
+                                onClick = { viewModel.showWeekly() },
+                                label = { Text("Week") },
+                            )
+                            FilterChip(
+                                selected = !isWeekly,
+                                onClick = { viewModel.showMonthly() },
+                                label = { Text("Month") },
+                            )
+                        }
+                        if (isWeekly) {
+                            PeriodStepper(
+                                label = state.rangeLabel ?: "",
+                                total = state.monthlyTotal,
+                                onPrevious = viewModel::previousWeek,
+                                onNext = viewModel::nextWeek,
+                            )
+                        } else {
+                            MonthSelector(
+                                year = state.selectedYear,
+                                month = state.selectedMonth,
+                                monthlyTotal = state.monthlyTotal,
+                                onPrevious = viewModel::previousMonth,
+                                onNext = viewModel::nextMonth,
+                            )
+                        }
                         // Custom range option
                         var showCustomPicker by remember { mutableStateOf(false) }
                         TextButton(
@@ -276,6 +313,33 @@ fun ExpensesScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PeriodStepper(
+    label: String,
+    total: Double,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+) {
+    val context = LocalContext.current
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onPrevious) { Icon(Icons.Default.ChevronLeft, contentDescription = "Previous") }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(
+                com.daysync.app.core.config.UserPreferences(context).formatCurrency(total),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        IconButton(onClick = onNext) { Icon(Icons.Default.ChevronRight, contentDescription = "Next") }
     }
 }
 

@@ -18,3 +18,4 @@ import kotlinx.serialization.Serializable
 @Serializable data object ExpenseCsvImport
 @Serializable data object ExpensePayeeRules
 @Serializable data object ExpenseReceiptScan
+@Serializable data object ExpenseBudgets
