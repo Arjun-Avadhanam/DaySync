@@ -17,32 +17,22 @@ import kotlinx.coroutines.launch
 import kotlin.time.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 
 sealed interface ExpensePeriod {
     data class Monthly(val year: Int, val month: Int) : ExpensePeriod
-    data class Weekly(val year: Int, val month: Int, val blockIndex: Int) : ExpensePeriod
+    data class Weekly(val weekStart: LocalDate) : ExpensePeriod
     data class Custom(val start: LocalDate, val end: LocalDate) : ExpensePeriod
 }
 
 object WeeklyNav {
-    fun next(w: ExpensePeriod.Weekly): ExpensePeriod.Weekly {
-        val blocks = com.daysync.app.feature.expenses.budget.model.MonthWeeks.blocksFor(w.year, w.month).size
-        return if (w.blockIndex < blocks) w.copy(blockIndex = w.blockIndex + 1)
-        else {
-            val (y, m) = if (w.month == 12) w.year + 1 to 1 else w.year to w.month + 1
-            ExpensePeriod.Weekly(y, m, 1)
-        }
-    }
+    fun next(w: ExpensePeriod.Weekly): ExpensePeriod.Weekly =
+        ExpensePeriod.Weekly(w.weekStart.plus(7, kotlinx.datetime.DateTimeUnit.DAY))
 
-    fun previous(w: ExpensePeriod.Weekly): ExpensePeriod.Weekly {
-        return if (w.blockIndex > 1) w.copy(blockIndex = w.blockIndex - 1)
-        else {
-            val (y, m) = if (w.month == 1) w.year - 1 to 12 else w.year to w.month - 1
-            val lastBlock = com.daysync.app.feature.expenses.budget.model.MonthWeeks.blocksFor(y, m).size
-            ExpensePeriod.Weekly(y, m, lastBlock)
-        }
-    }
+    fun previous(w: ExpensePeriod.Weekly): ExpensePeriod.Weekly =
+        ExpensePeriod.Weekly(w.weekStart.minus(7, kotlinx.datetime.DateTimeUnit.DAY))
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -66,12 +56,8 @@ class ExpensesViewModel @Inject constructor(
                 val e = LocalDate(period.year, period.month, daysInMonth(period.year, period.month))
                 s to e
             }
-            is ExpensePeriod.Weekly -> {
-                val block = com.daysync.app.feature.expenses.budget.model.MonthWeeks
-                    .blocksFor(period.year, period.month)
-                    .first { it.index == period.blockIndex }
-                block.start to block.end
-            }
+            is ExpensePeriod.Weekly ->
+                period.weekStart to com.daysync.app.feature.expenses.budget.model.CalendarWeeks.weekEnd(period.weekStart)
             is ExpensePeriod.Custom -> period.start to period.end
         }
         kotlinx.coroutines.flow.flowOf(start to end)
@@ -95,12 +81,10 @@ class ExpensesViewModel @Inject constructor(
                 isCustomRange = _period.value is ExpensePeriod.Custom,
                 rangeLabel = when (val p = _period.value) {
                     is ExpensePeriod.Custom -> com.daysync.app.core.ui.formatRangeLabel(p.start, p.end)
-                    is ExpensePeriod.Weekly -> {
-                        val b = com.daysync.app.feature.expenses.budget.model.MonthWeeks
-                            .blocksFor(p.year, p.month).first { it.index == p.blockIndex }
-                        val mon = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")[p.month - 1]
-                        "$mon ${b.start.dayOfMonth}–${b.end.dayOfMonth}"
-                    }
+                    is ExpensePeriod.Weekly -> com.daysync.app.core.ui.formatRangeLabel(
+                        p.weekStart,
+                        com.daysync.app.feature.expenses.budget.model.CalendarWeeks.weekEnd(p.weekStart),
+                    )
                     is ExpensePeriod.Monthly -> null
                 },
             )
@@ -130,8 +114,9 @@ class ExpensesViewModel @Inject constructor(
     }
 
     fun showWeekly() {
-        val block = com.daysync.app.feature.expenses.budget.model.MonthWeeks.blockContaining(today)
-        _period.value = ExpensePeriod.Weekly(today.year, today.monthNumber, block.index)
+        _period.value = ExpensePeriod.Weekly(
+            com.daysync.app.feature.expenses.budget.model.CalendarWeeks.weekStart(today)
+        )
     }
 
     fun showMonthly() {
