@@ -491,7 +491,7 @@ private fun ExpenseItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CustomDateRangeDialog(
+internal fun CustomDateRangeDialog(
     onConfirm: (kotlinx.datetime.LocalDate, kotlinx.datetime.LocalDate) -> Unit,
     onDismiss: () -> Unit,
 ) {

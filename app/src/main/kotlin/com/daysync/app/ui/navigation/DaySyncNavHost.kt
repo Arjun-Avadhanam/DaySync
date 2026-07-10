@@ -10,6 +10,7 @@ import androidx.navigation.toRoute
 import com.daysync.app.feature.dashboard.ui.AppGuideScreen
 import com.daysync.app.feature.dashboard.ui.DashboardScreen
 import com.daysync.app.feature.dashboard.ui.SettingsScreen
+import com.daysync.app.feature.expenses.ui.BudgetSetupScreen
 import com.daysync.app.feature.expenses.ui.CsvImportScreen
 import com.daysync.app.feature.expenses.ui.ExpenseFormScreen
 import com.daysync.app.feature.expenses.ui.ExpensesScreen
@@ -82,6 +83,9 @@ fun DaySyncNavHost(
         }
         composable<ExpenseReceiptScan> {
             ReceiptScanScreen(onNavigateBack = { navController.popBackStack() })
+        }
+        composable<ExpenseBudgets> {
+            BudgetSetupScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }
