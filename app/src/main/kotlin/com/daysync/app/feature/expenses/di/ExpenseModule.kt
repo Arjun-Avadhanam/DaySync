@@ -42,7 +42,8 @@ object ExpenseModule {
         payeeRuleDao: PayeeRuleDao,
         deduplicator: TransactionDeduplicator,
         userPreferences: com.daysync.app.core.config.UserPreferences,
+        budgetAlertEvaluator: com.daysync.app.feature.expenses.budget.BudgetAlertEvaluator,
     ): ExpenseRepository {
-        return ExpenseRepositoryImpl(expenseDao, payeeRuleDao, deduplicator, userPreferences)
+        return ExpenseRepositoryImpl(expenseDao, payeeRuleDao, deduplicator, userPreferences, budgetAlertEvaluator)
     }
 }

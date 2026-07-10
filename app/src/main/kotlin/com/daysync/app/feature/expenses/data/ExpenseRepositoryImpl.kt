@@ -27,6 +27,7 @@ class ExpenseRepositoryImpl(
     private val payeeRuleDao: PayeeRuleDao,
     private val deduplicator: TransactionDeduplicator,
     private val userPreferences: com.daysync.app.core.config.UserPreferences,
+    private val budgetAlertEvaluator: com.daysync.app.feature.expenses.budget.BudgetAlertEvaluator,
 ) : ExpenseRepository {
 
     override fun getExpensesForDate(date: LocalDate): Flow<List<Expense>> {
@@ -66,10 +67,13 @@ class ExpenseRepositoryImpl(
 
     override suspend fun addExpense(expense: Expense) {
         expenseDao.insert(expense.toEntity())
+        budgetAlertEvaluator.onExpenseChanged(setOf(expense.date))
     }
 
     override suspend fun updateExpense(expense: Expense) {
+        val oldDate = expenseDao.getById(expense.id)?.date
         expenseDao.update(expense.toEntity())
+        budgetAlertEvaluator.onExpenseChanged(setOfNotNull(oldDate, expense.date))
     }
 
     override suspend fun deleteExpense(id: String) {
@@ -81,6 +85,7 @@ class ExpenseRepositoryImpl(
                 lastModified = Clock.System.now(),
             )
         )
+        budgetAlertEvaluator.onExpenseChanged(setOf(entity.date))
     }
 
     override suspend fun processNotification(parsed: ParsedTransaction): ProcessResult {
@@ -110,6 +115,7 @@ class ExpenseRepositoryImpl(
         // 3. Save (or prompt for classification if we still don't know the category)
         val expense = createExpenseFromParsed(parsed, today, category, title)
         expenseDao.insert(expense)
+        budgetAlertEvaluator.onExpenseChanged(setOf(expense.date))
         return if (category == null) {
             ProcessResult.NeedsClassification(expense.toDomain())
         } else {
@@ -121,6 +127,7 @@ class ExpenseRepositoryImpl(
         var imported = 0
         var skipped = 0
         var errors = 0
+        val touched = mutableSetOf<LocalDate>()
 
         for (entry in entries) {
             try {
@@ -149,12 +156,14 @@ class ExpenseRepositoryImpl(
                     lastModified = Clock.System.now(),
                 )
                 expenseDao.insert(entity)
+                touched += entry.date
                 imported++
             } catch (_: Exception) {
                 errors++
             }
         }
 
+        if (touched.isNotEmpty()) budgetAlertEvaluator.onExpenseChanged(touched)
         return ImportResult(imported = imported, skippedDuplicates = skipped, errors = errors)
     }
 
@@ -189,6 +198,7 @@ class ExpenseRepositoryImpl(
             lastModified = Clock.System.now(),
         )
         expenseDao.insert(entity)
+        budgetAlertEvaluator.onExpenseChanged(setOf(date))
         return entity.toDomain()
     }
 
