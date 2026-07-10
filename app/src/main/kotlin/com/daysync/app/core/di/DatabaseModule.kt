@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.daysync.app.core.database.AppDatabase
+import com.daysync.app.core.database.dao.BudgetDao
 import com.daysync.app.core.database.dao.DailyHealthOverrideDao
 import com.daysync.app.core.database.dao.DailyMealEntryDao
 import com.daysync.app.core.database.dao.DailyNutritionSummaryDao
@@ -39,6 +40,33 @@ object DatabaseModule {
         }
     }
 
+    // v6 → v7: add budgets table
+    private val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `budgets` (
+                    `id` TEXT NOT NULL PRIMARY KEY,
+                    `type` TEXT NOT NULL,
+                    `category` TEXT,
+                    `amount` REAL NOT NULL,
+                    `recurring` INTEGER NOT NULL,
+                    `yearMonth` TEXT,
+                    `weekBlock` INTEGER,
+                    `startDate` TEXT,
+                    `endDate` TEXT,
+                    `label` TEXT,
+                    `syncStatus` TEXT NOT NULL,
+                    `lastModified` INTEGER NOT NULL,
+                    `isDeleted` INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_budgets_type` ON `budgets` (`type`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_budgets_yearMonth` ON `budgets` (`yearMonth`)")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
@@ -47,7 +75,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "daysync.db"
         )
-            .addMigrations(MIGRATION_5_6)
+            .addMigrations(MIGRATION_5_6, MIGRATION_6_7)
             .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
@@ -69,6 +97,7 @@ object DatabaseModule {
     // Expense DAOs
     @Provides fun provideExpenseDao(db: AppDatabase): ExpenseDao = db.expenseDao()
     @Provides fun providePayeeRuleDao(db: AppDatabase): PayeeRuleDao = db.payeeRuleDao()
+    @Provides fun provideBudgetDao(db: AppDatabase): BudgetDao = db.budgetDao()
 
     // Sport DAO
     @Provides fun provideSportEventDao(db: AppDatabase): SportEventDao = db.sportEventDao()

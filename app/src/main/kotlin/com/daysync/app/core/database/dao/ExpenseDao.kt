@@ -63,6 +63,12 @@ interface ExpenseDao {
     fun getMonthlyTotal(startDate: LocalDate, endDate: LocalDate): Flow<Double>
 
     @Query(
+        "SELECT COALESCE(SUM(totalAmount), 0.0) FROM expenses " +
+            "WHERE date >= :startDate AND date <= :endDate AND isDeleted = 0"
+    )
+    suspend fun getTotalInRangeOnce(startDate: LocalDate, endDate: LocalDate): Double
+
+    @Query(
         "SELECT * FROM expenses WHERE LOWER(merchantName) LIKE '%' || LOWER(:merchantName) || '%' " +
             "AND isDeleted = 0 ORDER BY date DESC"
     )
