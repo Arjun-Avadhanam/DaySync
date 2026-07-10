@@ -12,7 +12,7 @@ class OpenLibraryApiClient(
 ) {
     private val baseUrl = "https://openlibrary.org"
 
-    suspend fun searchComics(query: String): List<MediaMetadataResult> = try {
+    suspend fun search(query: String): List<MediaMetadataResult> = try {
         val response: OpenLibraryResponse = httpClient.get("$baseUrl/search.json") {
             parameter("q", query)
             parameter("limit", 10)

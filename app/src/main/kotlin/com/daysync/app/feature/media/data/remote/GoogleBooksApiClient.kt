@@ -13,8 +13,10 @@ class GoogleBooksApiClient @Inject constructor(
     private val baseUrl = "https://www.googleapis.com/books/v1"
 
     suspend fun searchBooks(query: String): List<MediaMetadataResult> = try {
+        // Plain q, NOT intitle: — the field qualifier can never match author
+        // names ("george orwell") or general terms.
         val response: GoogleBooksResponse = httpClient.get("$baseUrl/volumes") {
-            parameter("q", "intitle:$query")
+            parameter("q", query)
             parameter("maxResults", 10)
             parameter("orderBy", "relevance")
         }.body()

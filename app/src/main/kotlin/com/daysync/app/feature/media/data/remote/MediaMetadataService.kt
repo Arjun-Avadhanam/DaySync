@@ -18,8 +18,12 @@ class MediaMetadataService @Inject constructor(
             MediaType.TV_SERIES -> omdbClient.searchSeries(query)
             MediaType.MANGA -> jikanClient.searchManga(query)
             MediaType.ANIME -> jikanClient.searchAnime(query)
-            MediaType.BOOK, MediaType.ARTICLE -> googleBooksClient.searchBooks(query)
-            MediaType.COMIC -> openLibraryClient.searchComics(query)
+            // Google Books rejects keyless requests with 429 (anonymous daily
+            // quota is 0 since late 2025), so OpenLibrary is the effective
+            // primary; keep Google first for its richer metadata if it recovers.
+            MediaType.BOOK, MediaType.ARTICLE ->
+                googleBooksClient.searchBooks(query).ifEmpty { openLibraryClient.search(query) }
+            MediaType.COMIC -> openLibraryClient.search(query)
             MediaType.GAME -> steamClient.searchGames(query)
             MediaType.MUSIC -> musicBrainzClient.searchMusic(query)
             MediaType.PODCAST -> emptyList() // No podcast source currently
