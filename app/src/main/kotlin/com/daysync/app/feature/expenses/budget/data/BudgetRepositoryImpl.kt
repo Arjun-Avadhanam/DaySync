@@ -5,6 +5,7 @@ import com.daysync.app.core.database.dao.ExpenseDao
 import com.daysync.app.core.database.entity.BudgetEntity
 import com.daysync.app.core.sync.SyncStatus
 import com.daysync.app.feature.expenses.budget.BudgetResolver
+import com.daysync.app.feature.expenses.budget.model.CalendarWeeks
 import com.daysync.app.feature.expenses.budget.model.BudgetSummary
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -67,21 +68,23 @@ class BudgetRepositoryImpl @Inject constructor(
             .forEach { budgetDao.softDelete(it.id, Clock.System.now().toEpochMilliseconds()) }
     }
 
-    override suspend fun setVaryingWeekly(year: Int, month: Int, amounts: Map<Int, Double>, repeatEveryMonth: Boolean) {
-        val key = ym(year, month)
-        // Replace this month's per-block overrides wholesale.
-        budgetDao.deletePerMonthWeeklyBlocks(key)
-        val perMonthRows = amounts.map { (block, amt) ->
-            newRow("WEEKLY", recurring = false).copy(yearMonth = key, weekBlock = block, amount = amt)
-        }
-        if (repeatEveryMonth) {
-            budgetDao.deleteRecurringWeeklyBlocks()
-            val patternRows = amounts.map { (block, amt) ->
-                newRow("WEEKLY", recurring = true).copy(weekBlock = block, amount = amt)
-            }
-            budgetDao.upsertAll(patternRows)
-        }
-        budgetDao.upsertAll(perMonthRows)
+    override suspend fun setWeekOverride(monday: LocalDate, amount: Double) {
+        val existing = budgetDao.getAllActiveList()
+            .firstOrNull { it.type == "WEEKLY" && !it.recurring && it.startDate == monday }
+        val row = (existing ?: newRow("WEEKLY", recurring = false)).copy(
+            startDate = monday,
+            endDate = CalendarWeeks.weekEnd(monday),
+            amount = amount,
+            syncStatus = SyncStatus.PENDING,
+            lastModified = Clock.System.now(),
+        )
+        budgetDao.upsert(row)
+    }
+
+    override suspend fun clearWeekOverride(monday: LocalDate) {
+        budgetDao.getAllActiveList()
+            .filter { it.type == "WEEKLY" && !it.recurring && it.startDate == monday }
+            .forEach { budgetDao.softDelete(it.id, Clock.System.now().toEpochMilliseconds()) }
     }
 
     override suspend fun addCustomBudget(year: Int, month: Int, start: LocalDate, end: LocalDate, amount: Double, label: String?) {

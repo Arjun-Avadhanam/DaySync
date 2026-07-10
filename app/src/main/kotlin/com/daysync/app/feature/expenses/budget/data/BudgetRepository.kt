@@ -17,8 +17,11 @@ interface BudgetRepository {
     suspend fun setRecurringFlatWeekly(amount: Double)
     suspend fun clearRecurringFlatWeekly()
 
-    /** Replace the weekly split for a month. If repeatEveryMonth, also install as recurring pattern. */
-    suspend fun setVaryingWeekly(year: Int, month: Int, amounts: Map<Int, Double>, repeatEveryMonth: Boolean)
+    /** Set (upsert) a per-week override amount for the Mon–Sun week starting [monday]. */
+    suspend fun setWeekOverride(monday: LocalDate, amount: Double)
+
+    /** Remove any per-week override for the week starting [monday]. */
+    suspend fun clearWeekOverride(monday: LocalDate)
 
     suspend fun addCustomBudget(year: Int, month: Int, start: LocalDate, end: LocalDate, amount: Double, label: String?)
     suspend fun updateCustomBudget(id: String, start: LocalDate, end: LocalDate, amount: Double, label: String?)

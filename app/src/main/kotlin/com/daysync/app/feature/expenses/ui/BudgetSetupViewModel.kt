@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.daysync.app.core.config.UserPreferences
 import com.daysync.app.core.database.entity.BudgetEntity
 import com.daysync.app.feature.expenses.budget.data.BudgetRepository
-import com.daysync.app.feature.expenses.budget.model.MonthWeeks
-import com.daysync.app.feature.expenses.budget.model.WeekBlock
+import com.daysync.app.feature.expenses.budget.model.CalendarWeek
+import com.daysync.app.feature.expenses.budget.model.CalendarWeeks
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -28,7 +28,8 @@ class BudgetSetupViewModel @Inject constructor(
         repository.observeActiveBudgets()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    fun blocksFor(year: Int, month: Int): List<WeekBlock> = MonthWeeks.blocksFor(year, month)
+    fun weeksForCurrentMonth(): List<CalendarWeek> =
+        CalendarWeeks.weeksOverlappingMonth(today.year, today.monthNumber)
 
     fun setMonthly(amount: Double?) = viewModelScope.launch {
         if (amount == null || amount <= 0.0) repository.clearRecurringMonthly() else repository.setRecurringMonthly(amount)
@@ -38,8 +39,9 @@ class BudgetSetupViewModel @Inject constructor(
         if (amount == null || amount <= 0.0) repository.clearRecurringFlatWeekly() else repository.setRecurringFlatWeekly(amount)
     }
 
-    fun setVaryingWeekly(year: Int, month: Int, amounts: Map<Int, Double>, repeat: Boolean) = viewModelScope.launch {
-        repository.setVaryingWeekly(year, month, amounts, repeat)
+    fun setWeekOverride(monday: LocalDate, amount: Double?) = viewModelScope.launch {
+        if (amount == null || amount <= 0.0) repository.clearWeekOverride(monday)
+        else repository.setWeekOverride(monday, amount)
     }
 
     fun addCustom(year: Int, month: Int, start: LocalDate, end: LocalDate, amount: Double, label: String?) = viewModelScope.launch {

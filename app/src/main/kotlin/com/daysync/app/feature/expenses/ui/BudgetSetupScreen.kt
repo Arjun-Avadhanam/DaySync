@@ -13,7 +13,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -26,7 +25,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -38,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.daysync.app.core.database.entity.BudgetEntity
-import com.daysync.app.feature.expenses.budget.model.WeekBlock
+import com.daysync.app.feature.expenses.budget.model.CalendarWeek
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,11 +81,14 @@ fun BudgetSetupScreen(
             )
             HorizontalDivider()
 
-            // Vary by week for this month
+            // Vary by week (per-week overrides for weeks touching this month)
+            val weekOverrides = budgets
+                .filter { it.type == "WEEKLY" && !it.recurring && it.startDate != null }
+                .associate { it.startDate!! to it.amount }
             VaryByWeekSection(
-                blocks = viewModel.blocksFor(today.year, today.monthNumber),
-                monthlyAmount = monthly?.amount ?: 0.0,
-                onSave = { amounts, repeat -> viewModel.setVaryingWeekly(today.year, today.monthNumber, amounts, repeat) },
+                weeks = viewModel.weeksForCurrentMonth(),
+                overrideAmounts = weekOverrides,
+                onSaveWeek = { monday, amount -> viewModel.setWeekOverride(monday, amount) },
             )
             HorizontalDivider()
 
@@ -121,17 +122,15 @@ private fun AmountSection(title: String, initial: Double?, onSave: (Double?) -> 
 
 @Composable
 private fun VaryByWeekSection(
-    blocks: List<WeekBlock>,
-    monthlyAmount: Double,
-    onSave: (Map<Int, Double>, Boolean) -> Unit,
+    weeks: List<CalendarWeek>,
+    overrideAmounts: Map<kotlinx.datetime.LocalDate, Double>,
+    onSaveWeek: (kotlinx.datetime.LocalDate, Double?) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val amounts = remember { mutableStateMapOf<Int, String>() }
-    var repeat by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                "Vary by week for this month",
+                "Vary by week (this month)",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f),
@@ -139,32 +138,29 @@ private fun VaryByWeekSection(
             Switch(checked = expanded, onCheckedChange = { expanded = it })
         }
         if (expanded) {
-            blocks.forEach { block ->
-                OutlinedTextField(
-                    value = amounts[block.index] ?: "",
-                    onValueChange = { amounts[block.index] = it.filter { c -> c.isDigit() } },
-                    label = { Text("${block.start.dayOfMonth}–${block.end.dayOfMonth}") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            val allocated = amounts.values.sumOf { it.toDoubleOrNull() ?: 0.0 }
             Text(
-                "Unallocated: ${(monthlyAmount - allocated).toInt()}",
+                "Override a specific week; blank falls back to your weekly budget.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = repeat, onCheckedChange = { repeat = it })
-                Text("Repeat this weekly pattern every month", style = MaterialTheme.typography.bodySmall)
+            weeks.forEach { week ->
+                var text by remember(week.start) {
+                    mutableStateOf(overrideAmounts[week.start]?.let { it.toInt().toString() } ?: "")
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = text,
+                        onValueChange = { text = it.filter { c -> c.isDigit() } },
+                        label = { Text("${week.start.monthNumber}/${week.start.dayOfMonth} – ${week.end.monthNumber}/${week.end.dayOfMonth}") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                    )
+                    Button(
+                        onClick = { onSaveWeek(week.start, text.toDoubleOrNull()) },
+                        modifier = Modifier.padding(start = 8.dp),
+                    ) { Text("Save") }
+                }
             }
-            Button(
-                onClick = {
-                    val map = amounts.mapNotNull { (k, v) -> v.toDoubleOrNull()?.let { k to it } }.toMap()
-                    onSave(map, repeat)
-                },
-                modifier = Modifier.align(Alignment.End),
-            ) { Text("Save weekly split") }
         }
     }
 }
