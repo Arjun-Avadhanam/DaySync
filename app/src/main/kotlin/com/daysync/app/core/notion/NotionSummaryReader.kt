@@ -6,8 +6,11 @@ import io.ktor.client.request.header
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -16,14 +19,15 @@ import javax.inject.Singleton
 
 data class WeeklySummary(
     val title: String,
-    val content: String,
+    val blocks: List<NotionBlock>,
     val pageId: String,
 )
 
 /**
  * Reads the latest weekly summary from the "DaySync Weekly Summaries"
  * Notion page. Claude's scheduled routine creates child pages there;
- * this reader fetches the most recent one and returns its text content.
+ * this reader fetches the most recent one and returns its content as
+ * structured blocks (headings, paragraphs, lists, dividers, tables).
  */
 @Singleton
 class NotionSummaryReader @Inject constructor(
@@ -42,13 +46,7 @@ class NotionSummaryReader @Inject constructor(
 
         return try {
             // 1. List child blocks of the parent page to find child pages
-            val childrenJson = httpClient.get("$BASE_URL/blocks/$effectivePageId/children?page_size=100") {
-                header(HttpHeaders.Authorization, "Bearer $apiKey")
-                header("Notion-Version", NOTION_VERSION)
-            }.bodyAsText()
-
-            val children = json.parseToJsonElement(childrenJson).jsonObject
-            val results = children["results"]?.jsonArray ?: return null
+            val results = fetchChildren(effectivePageId) ?: return null
 
             // Find child_page blocks (most recent = last in the list)
             val childPages = results.filter {
@@ -62,69 +60,42 @@ class NotionSummaryReader @Inject constructor(
                 ?.get("title")?.jsonPrimitive?.content ?: "Weekly Summary"
 
             // 2. Fetch the content blocks of the child page
-            val content = fetchPageContent(pageId)
-            if (content.isBlank()) return null
+            val blocks = fetchPageBlocks(pageId)
+            if (blocks.isEmpty()) return null
 
-            WeeklySummary(title = title, content = content, pageId = pageId)
+            WeeklySummary(title = title, blocks = blocks, pageId = pageId)
         } catch (e: Exception) {
             Log.w(TAG, "Failed to fetch weekly summary from Notion", e)
             null
         }
     }
 
-    private suspend fun fetchPageContent(pageId: String): String {
-        val blocksJson = httpClient.get("$BASE_URL/blocks/$pageId/children?page_size=100") {
+    private suspend fun fetchPageBlocks(pageId: String): List<NotionBlock> {
+        val results = fetchChildren(pageId) ?: return emptyList()
+
+        // Notion keeps table rows as children of the table block, so each table
+        // needs its own call. Fire them together — 5 tables cost one round-trip
+        // of latency, not five.
+        val tableIds = NotionBlockParser.tableBlockIds(results)
+        val tableRows: Map<String, JsonArray> = if (tableIds.isEmpty()) {
+            emptyMap()
+        } else {
+            coroutineScope {
+                tableIds.map { id ->
+                    async { id to runCatching { fetchChildren(id) }.getOrNull() }
+                }.awaitAll()
+            }.mapNotNull { (id, rows) -> rows?.let { id to it } }.toMap()
+        }
+
+        return NotionBlockParser.parse(results, tableRows)
+    }
+
+    private suspend fun fetchChildren(blockId: String): JsonArray? {
+        val body = httpClient.get("$BASE_URL/blocks/$blockId/children?page_size=100") {
             header(HttpHeaders.Authorization, "Bearer $apiKey")
             header("Notion-Version", NOTION_VERSION)
         }.bodyAsText()
-
-        val blocks = json.parseToJsonElement(blocksJson).jsonObject
-        val results = blocks["results"]?.jsonArray ?: return ""
-
-        return buildString {
-            for (block in results) {
-                val obj = block.jsonObject
-                val type = obj["type"]?.jsonPrimitive?.content ?: continue
-                val blockData = obj[type]?.jsonObject ?: continue
-
-                when (type) {
-                    "heading_1" -> {
-                        appendLine("# ${extractRichText(blockData)}")
-                        appendLine()
-                    }
-                    "heading_2" -> {
-                        appendLine("## ${extractRichText(blockData)}")
-                        appendLine()
-                    }
-                    "heading_3" -> {
-                        appendLine("### ${extractRichText(blockData)}")
-                        appendLine()
-                    }
-                    "paragraph" -> {
-                        val text = extractRichText(blockData)
-                        if (text.isNotBlank()) appendLine(text)
-                        appendLine()
-                    }
-                    "bulleted_list_item" -> {
-                        appendLine("- ${extractRichText(blockData)}")
-                    }
-                    "numbered_list_item" -> {
-                        appendLine("- ${extractRichText(blockData)}")
-                    }
-                    "divider" -> {
-                        appendLine("---")
-                        appendLine()
-                    }
-                }
-            }
-        }.trim()
-    }
-
-    private fun extractRichText(blockData: JsonObject): String {
-        val richText = blockData["rich_text"]?.jsonArray ?: return ""
-        return richText.joinToString("") { element ->
-            element.jsonObject["plain_text"]?.jsonPrimitive?.content ?: ""
-        }
+        return json.parseToJsonElement(body).jsonObject["results"]?.jsonArray
     }
 
     companion object {

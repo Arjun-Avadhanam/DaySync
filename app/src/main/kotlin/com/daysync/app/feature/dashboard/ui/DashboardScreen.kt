@@ -328,11 +328,12 @@ private fun WeeklySummaryCard(
                         color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.2f),
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = summary.content,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                    )
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        androidx.compose.material3.LocalContentColor provides
+                            MaterialTheme.colorScheme.onTertiaryContainer,
+                    ) {
+                        com.daysync.app.core.notion.NotionBlocks(blocks = summary.blocks)
+                    }
                 }
             }
         }
