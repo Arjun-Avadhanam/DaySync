@@ -3,6 +3,7 @@ package com.daysync.app.feature.media.di
 import com.daysync.app.BuildConfig
 import com.daysync.app.feature.media.data.MediaRepository
 import com.daysync.app.feature.media.data.MediaRepositoryImpl
+import com.daysync.app.feature.media.data.remote.AniListApiClient
 import com.daysync.app.feature.media.data.remote.GoogleBooksApiClient
 import com.daysync.app.feature.media.data.remote.MusicBrainzApiClient
 import com.daysync.app.feature.media.data.remote.JikanApiClient
@@ -41,6 +42,13 @@ object MediaNetworkModule {
                     ignoreUnknownKeys = true
                     isLenient = true
                 })
+            }
+            // Metadata providers (Jikan/MAL especially) can hang; don't let a stalled
+            // request block the search-as-you-type dropdown indefinitely.
+            install(io.ktor.client.plugins.HttpTimeout) {
+                requestTimeoutMillis = 10_000
+                connectTimeoutMillis = 5_000
+                socketTimeoutMillis = 10_000
             }
         }
     }
@@ -83,6 +91,12 @@ object MediaNetworkModule {
 
     @Provides
     @Singleton
+    fun provideAniListApiClient(@MediaHttpClient httpClient: HttpClient): AniListApiClient {
+        return AniListApiClient(httpClient)
+    }
+
+    @Provides
+    @Singleton
     fun provideMediaMetadataService(
         omdbClient: OmdbApiClient,
         googleBooksClient: GoogleBooksApiClient,
@@ -90,8 +104,12 @@ object MediaNetworkModule {
         steamClient: SteamApiClient,
         musicBrainzClient: MusicBrainzApiClient,
         openLibraryClient: OpenLibraryApiClient,
+        aniListClient: AniListApiClient,
     ): MediaMetadataService {
-        return MediaMetadataService(omdbClient, googleBooksClient, jikanClient, steamClient, musicBrainzClient, openLibraryClient)
+        return MediaMetadataService(
+            omdbClient, googleBooksClient, jikanClient, steamClient,
+            musicBrainzClient, openLibraryClient, aniListClient,
+        )
     }
 }
 
