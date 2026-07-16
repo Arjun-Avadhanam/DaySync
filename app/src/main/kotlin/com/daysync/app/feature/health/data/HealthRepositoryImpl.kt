@@ -165,14 +165,7 @@ class HealthRepositoryImpl @Inject constructor(
         return nutritionSummaryDao.getByDate(date)?.totalCalories?.takeIf { it > 0 }
     }
 
-    override suspend fun getAllTimeCalorieDeficit(): Double {
-        val baseline = com.daysync.app.BuildConfig.CALORIE_DEFICIT_BASELINE.toDouble()
-        var delta = 0.0
-        for (override in dailyHealthOverrideDao.getAllWithCalories()) {
-            val burned = override.totalCalories ?: continue
-            val consumed = getCaloriesConsumed(override.date) ?: 0.0
-            delta += (burned - consumed)
-        }
-        return baseline + delta
+    override suspend fun getWaterLiters(date: LocalDate): Double? {
+        return nutritionSummaryDao.getByDate(date)?.waterLiters?.takeIf { it > 0 }
     }
 }

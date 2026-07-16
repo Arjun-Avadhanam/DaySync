@@ -9,7 +9,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -18,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -50,12 +54,41 @@ fun NutritionDailyTrackerScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val currentDate by viewModel.currentDate.collectAsStateWithLifecycle()
     var showMenu by remember { mutableStateOf(false) }
+    var showUnlockConfirm by remember { mutableStateOf(false) }
+
+    // Locked by default until state resolves, so editing controls never flash in.
+    val isLocked = (state as? NutritionDailyTrackerState.Success)?.isLocked ?: true
+
+    if (showUnlockConfirm) {
+        AlertDialog(
+            onDismissRequest = { showUnlockConfirm = false },
+            title = { Text("Unlock diet for editing?") },
+            text = { Text("This re-enables adding and deleting meal entries. Water is always editable.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.setLocked(false)
+                    showUnlockConfirm = false
+                }) { Text("Unlock") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUnlockConfirm = false }) { Text("Cancel") }
+            },
+        )
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Nutrition") },
                 actions = {
+                    IconButton(onClick = {
+                        if (isLocked) showUnlockConfirm = true else viewModel.setLocked(true)
+                    }) {
+                        Icon(
+                            if (isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                            contentDescription = if (isLocked) "Diet locked — tap to unlock" else "Diet unlocked — tap to lock",
+                        )
+                    }
                     IconButton(onClick = { showMenu = true }) {
                         Icon(Icons.Default.MoreVert, contentDescription = "More")
                     }
@@ -147,6 +180,7 @@ fun NutritionDailyTrackerScreen(
                                     onAddMealEntry(currentDate.toString(), mealTime.dbValue)
                                 },
                                 onDeleteEntry = viewModel::deleteMealEntry,
+                                isLocked = s.isLocked,
                             )
                         }
                     }

@@ -30,7 +30,11 @@ sealed interface MealTemplateEvent {
 @HiltViewModel
 class MealTemplatesViewModel @Inject constructor(
     private val repository: NutritionRepository,
+    userPreferences: com.daysync.app.core.config.UserPreferences,
 ) : ViewModel() {
+
+    /** When the diet is locked, applying a template to a day is disabled. */
+    val dietLocked: Boolean = userPreferences.dietLocked
 
     val templates: StateFlow<List<MealTemplate>> = repository.getAllMealTemplates()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

@@ -208,7 +208,9 @@ private fun HealthDashboard(
 
         // Periodic statistics
         val stats = state.periodStats
-        if (stats.avgSleepMinutes != null || stats.avgWeight != null || stats.totalCalorieDeficit != null) {
+        if (stats.avgSleepMinutes != null || stats.avgWeight != null ||
+            stats.totalCalorieDeficit != null || stats.avgCaloriesBurned != null || stats.avgWater != null
+        ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -257,17 +259,50 @@ private fun HealthDashboard(
                                 )
                             }
                         }
-                        stats.totalCalorieDeficit?.let {
-                            val sign = if (it >= 0) "+" else ""
+                        if (stats.dietLocked) {
+                            stats.avgCaloriesBurned?.let {
+                                Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                                    Text(
+                                        "${it.toInt()}",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                    Text(
+                                        "Avg Burned/day",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                                    )
+                                }
+                            }
+                        } else {
+                            stats.totalCalorieDeficit?.let {
+                                val sign = if (it >= 0) "+" else ""
+                                Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                                    Text(
+                                        "$sign${it.toInt()}",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                        color = if (it >= 0) Color(0xFF4CAF50) else Color(0xFFEF5350),
+                                    )
+                                    Text(
+                                        if (it >= 0) "Cal Deficit" else "Cal Surplus",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                                    )
+                                }
+                            }
+                        }
+                        stats.avgWater?.let {
                             Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
                                 Text(
-                                    "$sign${it.toInt()}",
+                                    "$it L",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                    color = if (it >= 0) Color(0xFF4CAF50) else Color(0xFFEF5350),
+                                    color = Color(0xFF29B6F6),
                                 )
                                 Text(
-                                    if (it >= 0) "Cal Deficit" else "Cal Surplus",
+                                    "Avg Water",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                                 )

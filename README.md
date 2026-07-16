@@ -93,7 +93,6 @@ All keys live in `local.properties` (gitignored) and surface as `BuildConfig` fi
 | `TMDB_API_KEY`, `OMDB_API_KEY` | Movie / TV metadata in Media |
 | `RAWG_API_KEY` | Game metadata in Media |
 | `NOTION_API_KEY` + `NOTION_MEAL_DATABASE_ID` / `NOTION_JOURNAL_DATABASE_ID` / `NOTION_MEDIA_DATABASE_ID` | Notion import / export |
-| `CALORIE_DEFICIT_BASELINE` | Pre-app baseline added to all-time calorie deficit (default `0`) |
 | `RELEASE_STORE_FILE`, `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD` | Release signing |
 
 Supabase schema lives under `supabase/migrations/` — apply each `.sql` in order via the Supabase SQL Editor before first sync, and apply any new migration before installing a build that references it.

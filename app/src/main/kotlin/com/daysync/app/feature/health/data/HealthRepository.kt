@@ -33,7 +33,6 @@ interface HealthRepository {
     // Cross-feature: read calories consumed from nutrition for a date
     suspend fun getCaloriesConsumed(date: LocalDate): Double?
 
-    // All-time calorie deficit — baseline + sum of (totalCalories - caloriesConsumed) across
-    // all days where totalCalories is logged. Days without logged calories don't contribute.
-    suspend fun getAllTimeCalorieDeficit(): Double
+    // Cross-feature: read water intake (litres) from nutrition for a date; null if none logged.
+    suspend fun getWaterLiters(date: LocalDate): Double?
 }

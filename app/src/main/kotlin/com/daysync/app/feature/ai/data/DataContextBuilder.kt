@@ -115,10 +115,11 @@ class DataContextBuilder(
                 sb.appendLine("Nutrition consumed: No data")
             }
 
-            // Calorie deficit
+            // Calorie deficit — omitted when the diet is locked (the user no longer
+            // logs consumed calories, so a net deficit would be misleading).
             val burned = override?.totalCalories
             val consumed = dayNutrition?.totalCalories
-            if (burned != null && consumed != null) {
+            if (!userPreferences.dietLocked && burned != null && consumed != null) {
                 val deficit = burned - consumed
                 val label = if (deficit >= 0) "deficit" else "surplus"
                 sb.appendLine("Calories burned: ${burned.toInt()} kcal, $label: ${deficit.toInt()} kcal")

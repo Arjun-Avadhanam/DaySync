@@ -38,7 +38,9 @@ data class HealthDailySummary(
     val floorsClimbed: Double? = null,
     val vo2Max: Double? = null,
     val weight: Double? = null,
-    val allTimeCalorieDeficit: Double? = null,
+    // When the diet is locked the user no longer logs consumed calories, so the
+    // net deficit is meaningless — the card shows calories burned instead.
+    val dietLocked: Boolean = false,
 )
 
 data class SleepSummary(
@@ -117,6 +119,11 @@ data class PeriodStats(
     val avgSleepMinutes: Int? = null,
     val avgWeight: Double? = null,
     val totalCalorieDeficit: Double? = null,
+    val avgWater: Double? = null,
+    // Average daily calories burned over the period; shown instead of the net
+    // deficit when the diet is locked.
+    val avgCaloriesBurned: Double? = null,
+    val dietLocked: Boolean = false,
 )
 
 data class WorkoutTrendPoint(

@@ -181,9 +181,18 @@ fun NutritionLogTemplateScreen(
                                 amountMultipliers = amountOverrides.toMap().ifEmpty { null },
                             )
                         },
+                        enabled = !viewModel.dietLocked,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text("Log to ${MealTime.fromDbValue(mealTime).displayName}")
+                    }
+                    if (viewModel.dietLocked) {
+                        Text(
+                            "Diet is locked — unlock it on the Nutrition screen to log meals.",
+                            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                 }

@@ -145,8 +145,7 @@ class HealthViewModel @Inject constructor(
             val dayMetrics = healthRepository.getMetricsByDateRange(dayStart, dayEnd).first()
             val currentOverride = healthRepository.observeDailyOverride(date).first()
             val caloriesConsumed = healthRepository.getCaloriesConsumed(date)
-            val allTimeDeficit = healthRepository.getAllTimeCalorieDeficit()
-            val dailySummary = buildDailySummary(dayMetrics, currentOverride, caloriesConsumed, allTimeDeficit)
+            val dailySummary = buildDailySummary(dayMetrics, currentOverride, caloriesConsumed)
 
             // Sleep sessions for the selected date
             val sleepSessions = healthRepository.getSleepSessions(dayStart, dayEnd).first()
@@ -310,7 +309,6 @@ class HealthViewModel @Inject constructor(
         metrics: List<com.daysync.app.core.database.entity.HealthMetricEntity>,
         override: com.daysync.app.core.database.entity.DailyHealthOverrideEntity?,
         caloriesConsumed: Double?,
-        allTimeCalorieDeficit: Double?,
     ): HealthDailySummary {
         val byType = metrics.associateBy { it.type }
         // Calories are always manual — HC total is unreliable (OHealth
@@ -332,7 +330,7 @@ class HealthViewModel @Inject constructor(
             floorsClimbed = byType["FLOORS"]?.value,
             vo2Max = byType["VO2MAX"]?.value,
             weight = byType["WEIGHT"]?.value,
-            allTimeCalorieDeficit = allTimeCalorieDeficit,
+            dietLocked = userPreferences.dietLocked,
         )
     }
 
@@ -404,6 +402,8 @@ class HealthViewModel @Inject constructor(
         val startDate = java.time.Instant.ofEpochMilli(start.toEpochMilliseconds()).atZone(zone).toLocalDate()
         val endDate = java.time.Instant.ofEpochMilli(end.toEpochMilliseconds()).atZone(zone).toLocalDate()
         val weights = mutableListOf<Double>()
+        val burnedDays = mutableListOf<Double>()
+        val waterDays = mutableListOf<Double>()
         var totalBurned = 0.0
         var totalConsumed = 0.0
         var cursor = startDate
@@ -414,18 +414,25 @@ class HealthViewModel @Inject constructor(
             val dayWeights = listOfNotNull(override?.weightMorning, override?.weightEvening, override?.weightNight)
             if (dayWeights.isNotEmpty()) weights.add(dayWeights.average())
             // Manual calories burned
-            override?.totalCalories?.let { totalBurned += it }
+            override?.totalCalories?.let { totalBurned += it; burnedDays.add(it) }
             // Calories consumed from nutrition
             healthRepository.getCaloriesConsumed(kDate)?.let { totalConsumed += it }
+            // Water intake (litres) — average over days with an entry
+            healthRepository.getWaterLiters(kDate)?.let { waterDays.add(it) }
             cursor = cursor.plusDays(1)
         }
         val avgWeight = if (weights.isNotEmpty()) weights.average() else null
         val totalDeficit = if (totalBurned > 0 || totalConsumed > 0) totalBurned - totalConsumed else null
+        val avgBurned = if (burnedDays.isNotEmpty()) burnedDays.average() else null
+        val avgWater = if (waterDays.isNotEmpty()) waterDays.average() else null
 
         return PeriodStats(
             avgSleepMinutes = avgSleep,
             avgWeight = avgWeight?.let { Math.round(it * 10.0) / 10.0 },
             totalCalorieDeficit = totalDeficit,
+            avgWater = avgWater?.let { Math.round(it * 10.0) / 10.0 },
+            avgCaloriesBurned = avgBurned?.let { Math.round(it) .toDouble() },
+            dietLocked = userPreferences.dietLocked,
         )
     }
 

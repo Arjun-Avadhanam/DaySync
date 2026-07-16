@@ -63,6 +63,17 @@ class UserPreferences @Inject constructor(
         get() = prefs.getInt(KEY_REMINDER_MINUTE, 30)
         set(value) = prefs.edit().putInt(KEY_REMINDER_MINUTE, value).apply()
 
+    // ── Diet lock ───────────────────────────────────────────────────
+
+    /**
+     * When locked (default), daily food logging is read-only — the user has a
+     * settled diet and no longer tracks each meal. Water stays editable, and the
+     * Health screen shows calories burned instead of a net deficit.
+     */
+    var dietLocked: Boolean
+        get() = prefs.getBoolean(KEY_DIET_LOCKED, true)
+        set(value) = prefs.edit().putBoolean(KEY_DIET_LOCKED, value).apply()
+
     // ── Notion (optional) ───────────────────────────────────────────
 
     val isNotionConfigured: Boolean
@@ -72,12 +83,6 @@ class UserPreferences @Inject constructor(
         get() = prefs.getString(KEY_NOTION_SUMMARY_PAGE, "") ?: ""
         set(value) = prefs.edit().putString(KEY_NOTION_SUMMARY_PAGE, value).apply()
 
-    // ── Calorie deficit baseline ────────────────────────────────────
-
-    var calorieDeficitBaseline: Int
-        get() = prefs.getInt(KEY_CALORIE_BASELINE, com.daysync.app.BuildConfig.CALORIE_DEFICIT_BASELINE)
-        set(value) = prefs.edit().putInt(KEY_CALORIE_BASELINE, value).apply()
-
     companion object {
         private const val KEY_TIMEZONE = "timezone"
         private const val KEY_CURRENCY = "currency"
@@ -85,8 +90,8 @@ class UserPreferences @Inject constructor(
         private const val KEY_SYNC_MINUTE = "sync_minute"
         private const val KEY_REMINDER_HOUR = "reminder_hour"
         private const val KEY_REMINDER_MINUTE = "reminder_minute"
+        private const val KEY_DIET_LOCKED = "diet_locked"
         private const val KEY_NOTION_SUMMARY_PAGE = "notion_summary_page_id"
-        private const val KEY_CALORIE_BASELINE = "calorie_deficit_baseline"
 
         val SUPPORTED_CURRENCIES = listOf("INR", "USD", "EUR", "GBP", "AED", "SGD", "AUD", "CAD", "JPY")
 

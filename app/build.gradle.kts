@@ -54,7 +54,6 @@ android {
         buildConfigField("String", "NOTION_MEAL_DATABASE_ID", "\"${localProperties.getProperty("NOTION_MEAL_DATABASE_ID", "")}\"")
         buildConfigField("String", "NOTION_JOURNAL_DATABASE_ID", "\"${localProperties.getProperty("NOTION_JOURNAL_DATABASE_ID", "")}\"")
         buildConfigField("String", "NOTION_MEDIA_DATABASE_ID", "\"${localProperties.getProperty("NOTION_MEDIA_DATABASE_ID", "")}\"")
-        buildConfigField("int", "CALORIE_DEFICIT_BASELINE", localProperties.getProperty("CALORIE_DEFICIT_BASELINE", "0"))
     }
 
     buildTypes {

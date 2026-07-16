@@ -24,6 +24,7 @@ import com.daysync.app.feature.nutrition.ui.util.fmtNutrition
 fun MealEntryRow(
     entryWithFood: MealEntryWithFood,
     onDelete: () -> Unit,
+    isLocked: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -58,12 +59,14 @@ fun MealEntryRow(
                 color = MaterialTheme.colorScheme.primary,
             )
 
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Outlined.Delete,
-                    contentDescription = "Delete",
-                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                )
+            if (!isLocked) {
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Outlined.Delete,
+                        contentDescription = "Delete",
+                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                    )
+                }
             }
         }
     }

@@ -33,6 +33,7 @@ sealed interface NutritionDailyTrackerState {
         val totalCarbs: Double,
         val totalFat: Double,
         val totalSugar: Double,
+        val isLocked: Boolean,
     ) : NutritionDailyTrackerState
     data class Error(val message: String) : NutritionDailyTrackerState
 }
@@ -41,16 +42,20 @@ sealed interface NutritionDailyTrackerState {
 @HiltViewModel
 class NutritionDailyTrackerViewModel @Inject constructor(
     private val repository: NutritionRepository,
+    private val userPreferences: com.daysync.app.core.config.UserPreferences,
 ) : ViewModel() {
 
     private val _currentDate = MutableStateFlow(Clock.System.todayIn(TimeZone.currentSystemDefault()))
     val currentDate: StateFlow<LocalDate> = _currentDate
 
+    private val _locked = MutableStateFlow(userPreferences.dietLocked)
+
     val state: StateFlow<NutritionDailyTrackerState> = _currentDate.flatMapLatest { date ->
         combine(
             repository.getMealEntriesWithFoodByDate(date),
             repository.getDailySummary(date),
-        ) { entries, summary ->
+            _locked,
+        ) { entries, summary, locked ->
             val grouped = MealTime.entries.associateWith { mealTime ->
                 entries.filter { it.entry.mealTime == mealTime }
             }
@@ -69,9 +74,15 @@ class NutritionDailyTrackerViewModel @Inject constructor(
                 totalCarbs = totalCarbs,
                 totalFat = totalFat,
                 totalSugar = totalSugar,
+                isLocked = locked,
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), NutritionDailyTrackerState.Loading)
+
+    fun setLocked(locked: Boolean) {
+        userPreferences.dietLocked = locked
+        _locked.value = locked
+    }
 
     fun navigateToPreviousDay() {
         _currentDate.value = _currentDate.value.let {

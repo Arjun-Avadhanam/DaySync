@@ -37,6 +37,7 @@ fun MealSectionCard(
     entries: List<MealEntryWithFood>,
     onAddEntry: () -> Unit,
     onDeleteEntry: (String) -> Unit,
+    isLocked: Boolean,
     modifier: Modifier = Modifier,
 ) {
     var expanded by rememberSaveable { mutableStateOf(true) }
@@ -72,12 +73,14 @@ fun MealSectionCard(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                IconButton(onClick = onAddEntry) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Add ${mealTime.displayName}",
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
+                if (!isLocked) {
+                    IconButton(onClick = onAddEntry) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Add ${mealTime.displayName}",
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                 }
 
                 Icon(
@@ -101,6 +104,7 @@ fun MealSectionCard(
                             MealEntryRow(
                                 entryWithFood = entryWithFood,
                                 onDelete = { onDeleteEntry(entryWithFood.entry.id) },
+                                isLocked = isLocked,
                             )
                         }
                     }

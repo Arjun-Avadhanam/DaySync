@@ -100,10 +100,35 @@ fun HealthSummaryCard(
                 )
             }
 
-            // Calorie deficit/surplus
+            // Calorie deficit/surplus — but when the diet is locked the user no
+            // longer logs consumed calories, so show calories burned instead.
             val burned = summary.totalCalories
             val consumed = summary.caloriesConsumed
-            if (burned != null && consumed != null) {
+            if (summary.dietLocked) {
+                if (burned != null) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f),
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "Calories Burned",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                        Text(
+                            text = "${burned.toInt()} kcal",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
+                }
+            } else if (burned != null && consumed != null) {
                 val deficit = burned - consumed
                 val sign = if (deficit >= 0) "+" else ""
                 val label = if (deficit >= 0) "Deficit" else "Surplus"
@@ -163,35 +188,6 @@ fun HealthSummaryCard(
                 )
             }
 
-            // All-time calorie deficit — always shown, baseline + accumulated deltas
-            summary.allTimeCalorieDeficit?.let { allTime ->
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f),
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "All-Time Calorie Deficit",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                    val sign = if (allTime >= 0) "+" else ""
-                    Text(
-                        text = "$sign${allTime.toInt()} kcal",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (allTime >= 0) {
-                            Color(0xFF4CAF50)
-                        } else {
-                            Color(0xFFEF5350)
-                        },
-                    )
-                }
-            }
         }
     }
 
